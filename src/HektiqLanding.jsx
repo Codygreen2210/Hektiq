@@ -254,13 +254,13 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ fontSize: "clamp(42px, 6vw, 72px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: -2, color: TEXT, margin: "0 0 24px", fontFamily: DISPLAY }}>
-            Your AI tools are costing you<br />
+          <h1 className="hero-headline" style={{ fontWeight: 800, lineHeight: 1.15, letterSpacing: -1, color: TEXT, margin: "0 0 24px", fontFamily: DISPLAY }}>
+            Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
 
           {/* Subheadline */}
-          <p style={{ fontSize: 18, color: MUTED, lineHeight: 1.65, maxWidth: 560, margin: "0 auto 40px", fontWeight: 400 }}>
+          <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: MUTED, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 40px", fontWeight: 400 }}>
             Hektiq tracks every subscription, surfaces every overlap, and tells you exactly what to cut — before it cuts into your runway.
           </p>
 
@@ -533,6 +533,12 @@ export default function HektiqLanding() {
         input::placeholder { color: ${MUTED}; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes scanline { 0%{opacity:0;transform:scaleX(0.2)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.2)} }
+        .hero-headline { font-size: clamp(28px, 5vw, 68px); }
+        @media (max-width: 480px) {
+          .hero-headline { font-size: 32px; letter-spacing: -0.5px; line-height: 1.25; }
+          nav { padding: 0 20px !important; }
+          section { padding-left: 20px !important; padding-right: 20px !important; }
+        }
       `}</style>
     </div>
   );
