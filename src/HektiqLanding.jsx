@@ -18,6 +18,16 @@ const DISPLAY = "'Syne', sans-serif";
 const BODY    = "'DM Sans', sans-serif";
 
 // ── HOOKS ──────────────────────────────────────────────────────
+function useIsMobile() {
+  const [mobile, setMobile] = useState(typeof window !== "undefined" && window.innerWidth < 600);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 600);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return mobile;
+}
+
 function useInView(ref) {
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -199,6 +209,7 @@ export default function HektiqLanding() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const mobile = useIsMobile();
 
   const statsRef = useRef();
   const statsInView = useInView(statsRef);
@@ -303,8 +314,8 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── STATS ── */}
-      <section ref={statsRef} style={{ padding: "60px 48px", borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }}>
+      <section ref={statsRef} style={{ padding: mobile ? "40px 20px" : "60px 48px", borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: mobile ? 0 : 2 }}>
           {[
             { label: "Average monthly AI spend", value: stat1, prefix: "$", suffix: "", color: WARN },
             { label: "Of that spend is wasted", value: stat2, prefix: "", suffix: "%", color: WARN },
@@ -312,7 +323,7 @@ export default function HektiqLanding() {
             { label: "Average tools per builder", value: stat4, prefix: "", suffix: "", color: TEXT },
           ].map((s, i) => (
             <div key={i} style={{ textAlign: "center", padding: "24px 20px", borderRight: i < 3 ? `1px solid ${BORDER}` : "none" }}>
-              <div style={{ fontSize: 44, fontWeight: 800, color: s.color, fontFamily: MONO, lineHeight: 1, marginBottom: 10 }}>
+              <div style={{ fontSize: mobile ? 28 : 44, fontWeight: 800, color: s.color, fontFamily: MONO, lineHeight: 1, marginBottom: 10 }}>
                 {s.prefix}{s.value.toLocaleString()}{s.suffix}
               </div>
               <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5 }}>{s.label}</div>
@@ -322,11 +333,11 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── PROBLEM ── */}
-      <section style={{ padding: "100px 48px", maxWidth: 1000, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+      <section style={{ padding: mobile ? "60px 20px" : "100px 48px", maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: mobile ? 40 : 80, alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>THE PROBLEM</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, letterSpacing: -1, marginBottom: 20, fontFamily: DISPLAY }}>
+            <h2 style={{ fontSize: mobile ? 26 : 36, fontWeight: 800, lineHeight: 1.2, letterSpacing: -1, marginBottom: 20, fontFamily: DISPLAY }}>
               AI tool sprawl is the new silent killer.
             </h2>
             <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.75, marginBottom: 28 }}>
@@ -372,7 +383,7 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section style={{ padding: "0 48px 100px" }}>
+      <section style={{ padding: mobile ? "0 20px 60px" : "0 48px 100px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>FEATURES</div>
@@ -380,7 +391,7 @@ export default function HektiqLanding() {
               Built for how builders actually work.
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
             <FeatureCard delay={0}   icon="◈" accent={ACID}   title="Stack Health Score"      body="A single living score that reflects your stack's efficiency, redundancy, and optimization level. Watch it improve as you act on recommendations." />
             <FeatureCard delay={60}  icon="✦" accent={ACID}   title="AI Recommendations"      body="Hektiq doesn't just show your data — it tells you what to do with it. Every recommendation includes projected savings and efficiency gains." />
             <FeatureCard delay={120} icon="⚠" accent={WARN}   title="Overlap Detection"       body="Stop paying twice for the same capability. Hektiq maps which tools do overlapping jobs and shows you exactly how much it's costing you." />
@@ -394,7 +405,7 @@ export default function HektiqLanding() {
       {/* ── ARCHETYPES ── */}
       <section style={{ padding: "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1000, margin: "60px auto 0" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: mobile ? 40 : 80, alignItems: "center" }}>
             <div>
               <div style={{ fontSize: 10, color: PURPLE, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>BUILDER ARCHETYPE</div>
               <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, lineHeight: 1.2, marginBottom: 20 }}>
@@ -410,7 +421,7 @@ export default function HektiqLanding() {
                 See all archetypes →
               </button>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 10 }}>
               <ArchetypeCard name="The Solo Hacker"       emoji="⚡" color={ACID}   traits={["High experimentation", "Fast shipper", "Over-subscribed"]} />
               <ArchetypeCard name="The API Hoarder"       emoji="◆" color={BLUE}   traits={["Loves raw APIs", "Heavy CLI user", "Automation-first"]} />
               <ArchetypeCard name="The Workflow Purist"   emoji="◎" color={GREEN}  traits={["Minimal stack", "High ROI focus", "Low redundancy"]} />
@@ -429,7 +440,7 @@ export default function HektiqLanding() {
             <p style={{ fontSize: 15, color: MUTED }}>Most builders pay for Hektiq with their first month's savings.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 }}>
             {/* Free */}
             <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "28px 28px" }}>
               <div style={{ fontSize: 11, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>FREE</div>
