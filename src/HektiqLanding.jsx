@@ -267,7 +267,7 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ fontSize: mobile ? "26px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.2, letterSpacing: mobile ? "-0.5px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
+          <h1 style={{ fontSize: mobile ? "22px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.25, letterSpacing: mobile ? "0px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
             Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
@@ -541,7 +541,7 @@ export default function HektiqLanding() {
       </footer>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=optional');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${BG}; }
         input::placeholder { color: ${MUTED}; }
