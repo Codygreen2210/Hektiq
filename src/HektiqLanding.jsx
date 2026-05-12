@@ -813,18 +813,22 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" style={{ padding: "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 740, margin: "60px auto 0" }}>
+      <section id="pricing" style={{ padding: mobile ? "40px 20px 60px" : "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
+        <div style={{ maxWidth: 740, margin: mobile ? "0 auto" : "60px auto 0" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>PRICING</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, marginBottom: 14 }}>Simple. No surprises.</h2>
-            <p style={{ fontSize: 15, color: MUTED }}>Most builders pay for Hektiq with their first month's savings.</p>
+            <h2 style={{ fontSize: mobile ? 26 : 36, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, marginBottom: 14 }}>Simple. No surprises.</h2>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: `${WARN}10`, border: `1px solid ${WARN}30`, borderRadius: 20, padding: "5px 16px", marginBottom: 14 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: WARN, display: "inline-block" }} />
+              <span style={{ fontSize: 10, color: WARN, letterSpacing: 2, fontFamily: MONO }}>LAUNCH PRICING — NOT YET AVAILABLE</span>
+            </div>
+            <p style={{ fontSize: 14, color: MUTED }}>Join the waitlist now to lock in early access pricing when we launch.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 }}>
             {/* Free */}
-            <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "28px 28px" }}>
-              <div style={{ fontSize: 11, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>FREE</div>
+            <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "28px 28px", opacity: 0.7 }}>
+              <div style={{ fontSize: 11, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>FREE — AT LAUNCH</div>
               <div style={{ fontSize: 40, fontWeight: 800, color: TEXT, fontFamily: MONO, lineHeight: 1, marginBottom: 6 }}>$0</div>
               <div style={{ fontSize: 12, color: MUTED, marginBottom: 28 }}>Forever free, no card required</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
@@ -834,20 +838,23 @@ export default function HektiqLanding() {
                   </div>
                 ))}
               </div>
-              <button style={{ width: "100%", background: "transparent", border: `1px solid ${BORDER}`, color: MUTED, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: BODY }}>
-                Start Free
+              <button
+                onClick={() => document.getElementById("hero-email")?.scrollIntoView({ behavior: "smooth" })}
+                style={{ width: "100%", background: "transparent", border: `1px solid ${BORDER}`, color: MUTED, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: BODY }}
+              >
+                Join Waitlist
               </button>
             </div>
 
             {/* Pro */}
             <div style={{ background: PANEL, border: `1px solid ${ACID}40`, borderRadius: 12, padding: "28px 28px", position: "relative", boxShadow: `0 0 40px ${ACID}0a` }}>
-              <div style={{ position: "absolute", top: -1, left: 24, background: ACID, color: BG, fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 6px 6px", letterSpacing: 2 }}>MOST POPULAR</div>
-              <div style={{ fontSize: 11, color: ACID, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>PRO</div>
+              <div style={{ position: "absolute", top: -1, left: 24, background: ACID, color: BG, fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 6px 6px", letterSpacing: 2 }}>EARLY ACCESS PRICING</div>
+              <div style={{ fontSize: 11, color: ACID, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>PRO — AT LAUNCH</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
                 <div style={{ fontSize: 40, fontWeight: 800, color: TEXT, fontFamily: MONO, lineHeight: 1 }}>$19</div>
                 <div style={{ fontSize: 13, color: MUTED }}>/month</div>
               </div>
-              <div style={{ fontSize: 12, color: MUTED, marginBottom: 28 }}>Avg builder saves $51/mo. ROI in week one.</div>
+              <div style={{ fontSize: 12, color: MUTED, marginBottom: 28 }}>Waitlist members get first access + locked-in early pricing.</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
                 {[
                   "Everything in Free",
@@ -866,8 +873,11 @@ export default function HektiqLanding() {
                   </div>
                 ))}
               </div>
-              <button style={{ width: "100%", background: ACID, border: "none", color: BG, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 16px ${ACID}44` }}>
-                Get Early Access
+              <button
+                onClick={() => document.getElementById("hero-email")?.scrollIntoView({ behavior: "smooth" })}
+                style={{ width: "100%", background: ACID, border: "none", color: BG, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 16px ${ACID}44` }}
+              >
+                Join Waitlist for Early Access →
               </button>
             </div>
           </div>
