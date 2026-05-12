@@ -59,13 +59,13 @@ function BurnTicker() {
   }, []);
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 72, fontWeight: 800, color: WARN, fontFamily: MONO, letterSpacing: -2, lineHeight: 1, textShadow: `0 0 40px ${WARN}33` }}>
+      <div style={{ fontSize: "clamp(36px, 10vw, 72px)", fontWeight: 800, color: WARN, fontFamily: MONO, letterSpacing: "-0.03em", lineHeight: 1, textShadow: `0 0 40px ${WARN}33` }}>
         ${amount.toFixed(6)}
       </div>
-      <div style={{ fontSize: 13, color: MUTED, fontFamily: MONO, marginTop: 10 }}>
+      <div style={{ fontSize: "clamp(11px, 2vw, 13px)", color: MUTED, fontFamily: MONO, marginTop: 10 }}>
         burned since you opened this page
       </div>
-      <div style={{ fontSize: 10, color: "#3a4448", fontFamily: MONO, marginTop: 6, letterSpacing: 0.5 }}>
+      <div style={{ fontSize: "clamp(9px, 1.5vw, 10px)", color: "#3a4448", fontFamily: MONO, marginTop: 6, letterSpacing: 0.5 }}>
         Based on avg AI builder spend · <span style={{ color: MUTED }}>$191/mo</span> · <span style={{ color: MUTED }}>$0.0000726/sec</span> · <span style={{ color: MUTED }}>$2,292/yr</span>
       </div>
     </div>
@@ -238,7 +238,7 @@ export default function HektiqLanding() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "120px 48px 80px", position: "relative", overflow: "hidden" }}>
+      <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "120px 24px 80px", position: "relative", overflow: "hidden" }}>
 
         {/* Background grid */}
         <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${BORDER} 1px, transparent 1px), linear-gradient(90deg, ${BORDER} 1px, transparent 1px)`, backgroundSize: "60px 60px", opacity: 0.3 }} />
@@ -246,7 +246,7 @@ export default function HektiqLanding() {
         {/* Radial glow */}
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 400, background: `radial-gradient(ellipse, ${ACID}06 0%, transparent 70%)`, pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", maxWidth: 800 }}>
+        <div style={{ position: "relative", maxWidth: 760, width: "100%" }}>
           {/* Eyebrow */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: `${ACID}10`, border: `1px solid ${ACID}30`, borderRadius: 20, padding: "5px 16px", marginBottom: 28 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACID, display: "inline-block", animation: "blink 2s infinite", boxShadow: `0 0 6px ${ACID}` }} />
@@ -254,13 +254,13 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 className="hero-headline" style={{ fontWeight: 800, lineHeight: 1.15, letterSpacing: -1, color: TEXT, margin: "0 0 24px", fontFamily: DISPLAY }}>
+          <h1 style={{ fontSize: "clamp(26px, 7vw, 64px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY, wordBreak: "break-word", overflowWrap: "break-word" }}>
             Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
 
           {/* Subheadline */}
-          <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: MUTED, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 40px", fontWeight: 400 }}>
+          <p style={{ fontSize: "clamp(13px, 2.5vw, 17px)", color: MUTED, lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px", fontWeight: 400 }}>
             Hektiq tracks every subscription, surfaces every overlap, and tells you exactly what to cut — before it cuts into your runway.
           </p>
 
