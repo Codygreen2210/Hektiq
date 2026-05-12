@@ -779,6 +779,9 @@ export default function HektiqLanding() {
             <FeatureCard delay={180} icon="⚡" accent={BLUE}   title="Stack Simulation"        body="Before you cancel or consolidate, simulate the change. See the new monthly cost, annual savings, and efficiency gain before committing." />
             <FeatureCard delay={240} icon="◉" accent={PURPLE} title="Builder Archetype"       body="Discover your builder identity — The Solo Hacker, The API Hoarder, The Workflow Purist. Share it. Compare it. Own it." />
             <FeatureCard delay={300} icon="↑" accent={GREEN}  title="Price Change Alerts"     body="Get notified the moment a tool in your stack raises its prices. No more silent billing increases eating into your margins." />
+            <FeatureCard delay={360} icon="◎" accent={WARN}   title="Charge Receipts"         body="Every time a tool bills you — monthly renewal, annual charge, usage spike — Hektiq sends you a clean receipt with your running total and YTD spend. No more hunting billing pages." />
+            <FeatureCard delay={420} icon="▣" accent={BLUE}   title="ROI Tagging"             body="Tie tools to projects and revenue. See which subscriptions are actually making you money and which are pure cost with no return." />
+            <FeatureCard delay={480} icon="◆" accent={GREEN}  title="Dead Weight Detection"   body="Hektiq flags any tool you haven't actively used in 30+ days that's still billing you. One tap to pause and stop the bleed." />
           </div>
         </div>
       </section>
@@ -863,6 +866,8 @@ export default function HektiqLanding() {
                   "Stack Simulation",
                   "ROI tagging per project",
                   "Price change alerts",
+                  "Charge receipts — every billing event",
+                  "Dead weight detection",
                   "Weekly digest email",
                   "Public stack page",
                   "Community benchmarks",
