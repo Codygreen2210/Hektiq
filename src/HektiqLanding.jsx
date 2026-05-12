@@ -204,6 +204,244 @@ function ArchetypeCard({ name, emoji, color, traits }) {
   );
 }
 
+// ── STACK CALCULATOR ──────────────────────────────────────────
+const COMMON_TOOLS = [
+  { name: "Claude API",     cost: 20  },
+  { name: "ChatGPT Plus",   cost: 20  },
+  { name: "Cursor Pro",     cost: 20  },
+  { name: "Perplexity Pro", cost: 20  },
+  { name: "Midjourney",     cost: 10  },
+  { name: "Runway ML",      cost: 15  },
+  { name: "ElevenLabs",     cost: 22  },
+  { name: "GitHub Copilot", cost: 10  },
+  { name: "Notion AI",      cost: 10  },
+  { name: "Zapier",         cost: 20  },
+  { name: "Vercel Pro",     cost: 20  },
+  { name: "Supabase",       cost: 25  },
+  { name: "Replit",         cost: 20  },
+  { name: "Lovable",        cost: 25  },
+  { name: "Bolt",           cost: 20  },
+  { name: "Other",          cost: 0   },
+];
+
+function StackCalculator({ mobile, submitted, setSubmitted, email, setEmail, handleSubmit, loading }) {
+  const [selected, setSelected] = useState({});
+  const [customCosts, setCustomCosts] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [calcEmail, setCalcEmail] = useState("");
+  const [calcSubmitted, setCalcSubmitted] = useState(false);
+  const [calcLoading, setCalcLoading] = useState(false);
+
+  const toggleTool = (name) => {
+    setSelected(s => ({ ...s, [name]: !s[name] }));
+    setShowResults(false);
+  };
+
+  const getCost = (tool) => {
+    if (customCosts[tool.name] !== undefined) return Number(customCosts[tool.name]) || 0;
+    return tool.cost;
+  };
+
+  const activeTools = COMMON_TOOLS.filter(t => selected[t.name]);
+  const totalMonthly = activeTools.reduce((s, t) => s + getCost(t), 0);
+  const totalAnnual = totalMonthly * 12;
+
+  // Overlap score: if they have 2+ AI chat tools, flag them
+  const aiChatTools = ["Claude API", "ChatGPT Plus", "Perplexity Pro"].filter(n => selected[n]);
+  const devTools = ["Cursor Pro", "GitHub Copilot", "Replit"].filter(n => selected[n]);
+  const noCodeTools = ["Lovable", "Bolt", "Replit"].filter(n => selected[n]);
+  const overlapGroups = [aiChatTools, devTools, noCodeTools].filter(g => g.length > 1);
+  const overlapCount = overlapGroups.reduce((s, g) => s + g.length - 1, 0);
+  const overlapCost = overlapCount * 18; // avg overlap waste
+  const healthScore = Math.max(20, Math.min(99, 95 - (activeTools.length * 4) - (overlapCount * 12)));
+
+  const scoreColor = healthScore >= 75 ? GREEN : healthScore >= 50 ? WARN : "#ff4444";
+
+  const handleCalcSubmit = async () => {
+    if (!calcEmail.includes("@")) return;
+    setCalcLoading(true);
+    try {
+      await fetch("https://formspree.io/f/mdabbjvn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ email: calcEmail, monthly: totalMonthly, tools: activeTools.map(t => t.name).join(", ") }),
+      });
+    } catch (e) {}
+    setCalcLoading(false);
+    setCalcSubmitted(true);
+  };
+
+  return (
+    <section id="calculator" style={{ padding: mobile ? "40px 20px" : "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
+      <div style={{ maxWidth: 720, margin: mobile ? "0 auto" : "60px auto 0" }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 14 }}>FREE TOOL</div>
+          <h2 style={{ fontSize: mobile ? 24 : 34, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, marginBottom: 12 }}>
+            What's your AI stack costing you?
+          </h2>
+          <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
+            Select your tools below. We'll calculate your monthly burn, overlap waste, and stack health score instantly.
+          </p>
+        </div>
+
+        {/* Tool selector */}
+        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
+          {COMMON_TOOLS.map(tool => {
+            const active = selected[tool.name];
+            return (
+              <div key={tool.name} onClick={() => toggleTool(tool.name)} style={{
+                background: active ? `${ACID}12` : PANEL,
+                border: `1px solid ${active ? ACID + "50" : BORDER}`,
+                borderRadius: 8, padding: "10px 12px", cursor: "pointer",
+                transition: "all 0.15s",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, color: active ? ACID : TEXT, fontWeight: active ? 600 : 400 }}>{tool.name}</div>
+                  {active && tool.name !== "Other" && (
+                    <div style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginTop: 2 }}>${getCost(tool)}/mo</div>
+                  )}
+                </div>
+                {active && (
+                  <div style={{ width: 16, height: 16, borderRadius: "50%", background: ACID, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: 9, color: BG, fontWeight: 900 }}>✓</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Custom cost inputs for selected tools */}
+        {activeTools.length > 0 && (
+          <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 18px", marginBottom: 16 }}>
+            <div style={{ fontSize: 10, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>ADJUST COSTS (OPTIONAL)</div>
+            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(3,1fr)", gap: 8 }}>
+              {activeTools.map(tool => (
+                <div key={tool.name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 11, color: MUTED, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tool.name}</span>
+                  <div style={{ display: "flex", alignItems: "center", background: PANEL_2, border: `1px solid ${BORDER}`, borderRadius: 5, padding: "4px 8px", width: 72 }}>
+                    <span style={{ color: MUTED, fontSize: 12, marginRight: 2 }}>$</span>
+                    <input
+                      type="number"
+                      value={customCosts[tool.name] !== undefined ? customCosts[tool.name] : tool.cost}
+                      onChange={e => setCustomCosts(c => ({ ...c, [tool.name]: e.target.value }))}
+                      style={{ width: "100%", background: "transparent", border: "none", color: TEXT, fontSize: 12, fontFamily: MONO, outline: "none" }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Calculate button */}
+        {activeTools.length > 0 && !showResults && (
+          <button onClick={() => setShowResults(true)} style={{
+            width: "100%", background: ACID, color: BG, border: "none",
+            padding: "14px", borderRadius: 8, fontSize: 14, fontWeight: 700,
+            cursor: "pointer", fontFamily: BODY, marginBottom: 16,
+            boxShadow: `0 0 20px ${ACID}44`,
+          }}>
+            Calculate My Stack →
+          </button>
+        )}
+
+        {/* Results */}
+        {showResults && activeTools.length > 0 && (
+          <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+
+            {/* Score banner */}
+            <div style={{ background: `${scoreColor}10`, borderBottom: `1px solid ${scoreColor}25`, padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 10, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 6 }}>STACK HEALTH SCORE</div>
+                <div style={{ fontSize: 52, fontWeight: 800, color: scoreColor, fontFamily: MONO, lineHeight: 1 }}>{healthScore}</div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                  {healthScore >= 75 ? "Well optimized" : healthScore >= 50 ? "Needs attention" : "Critical — act now"}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 10, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 6 }}>ANNUAL BURN</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: WARN, fontFamily: MONO, lineHeight: 1 }}>${totalAnnual.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>${totalMonthly}/mo across {activeTools.length} tools</div>
+              </div>
+            </div>
+
+            {/* Breakdown */}
+            <div style={{ padding: "20px 24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(3,1fr)", gap: 12, marginBottom: 20 }}>
+                {[
+                  { label: "Monthly Burn",    value: `$${totalMonthly}`,          color: WARN  },
+                  { label: "Annual Burn",     value: `$${totalAnnual.toLocaleString()}`, color: WARN  },
+                  { label: "Overlap Waste",   value: overlapCost > 0 ? `~$${overlapCost}/mo` : "None detected", color: overlapCost > 0 ? WARN : GREEN },
+                ].map(s => (
+                  <div key={s.label} style={{ background: PANEL_2, borderRadius: 8, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 9, color: MUTED, fontFamily: MONO, letterSpacing: 1.5, marginBottom: 6 }}>{s.label.toUpperCase()}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: MONO }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Overlap warnings */}
+              {overlapGroups.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  {overlapGroups.map((group, i) => (
+                    <div key={i} style={{ background: `${WARN}08`, border: `1px solid ${WARN}25`, borderRadius: 8, padding: "10px 14px", marginBottom: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <span style={{ color: WARN, fontSize: 14, flexShrink: 0 }}>⚠</span>
+                      <div>
+                        <div style={{ fontSize: 12, color: WARN, fontWeight: 600, marginBottom: 3 }}>Overlap detected</div>
+                        <div style={{ fontSize: 11, color: MUTED }}>{group.join(" + ")} are doing overlapping jobs. You may be able to consolidate.</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Email gate for full report */}
+              {!calcSubmitted ? (
+                <div style={{ background: `${ACID}08`, border: `1px solid ${ACID}25`, borderRadius: 10, padding: "18px 20px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: ACID, marginBottom: 6 }}>Get your full optimization report</div>
+                  <div style={{ fontSize: 12, color: MUTED, marginBottom: 14 }}>
+                    We'll send a detailed breakdown with specific tool replacement recommendations and projected savings.
+                  </div>
+                  <div style={{ display: "flex", gap: 0, background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 7, overflow: "hidden" }}>
+                    <input
+                      value={calcEmail}
+                      onChange={e => setCalcEmail(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleCalcSubmit()}
+                      placeholder="your@email.com"
+                      style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "12px 16px", color: TEXT, fontSize: 13, fontFamily: BODY, outline: "none" }}
+                    />
+                    <button onClick={handleCalcSubmit} disabled={calcLoading} style={{ background: ACID, color: BG, border: "none", padding: mobile ? "12px 14px" : "12px 20px", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {calcLoading ? "..." : "Send Report →"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 10, padding: "16px 20px", display: "flex", gap: 12, alignItems: "center" }}>
+                  <span style={{ color: GREEN, fontSize: 18 }}>◆</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: GREEN, marginBottom: 3 }}>Report on its way</div>
+                    <div style={{ fontSize: 12, color: MUTED }}>Check your inbox. You're also on the early access list for when Hektiq launches.</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTools.length === 0 && (
+          <div style={{ textAlign: "center", padding: "24px", color: MUTED, fontSize: 13 }}>
+            ↑ Select the AI tools you're currently paying for
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── MAIN ───────────────────────────────────────────────────────
 export default function HektiqLanding() {
   const [email, setEmail] = useState("");
@@ -224,7 +462,7 @@ export default function HektiqLanding() {
     if (!email.includes("@")) return;
     setLoading(true);
     try {
-      await fetch("https://formspree.io/f/mdabbjvn", {
+      await fetch("https://formspree.io/f/REPLACE_WITH_YOUR_ID", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ email }),
@@ -279,7 +517,7 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ fontSize: mobile ? "22px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.25, letterSpacing: mobile ? "0px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
+          <h1 style={{ fontSize: mobile ? "20px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.25, letterSpacing: mobile ? "0px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
             Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
@@ -508,16 +746,19 @@ export default function HektiqLanding() {
         </div>
       </section>
 
+      {/* ── STACK CALCULATOR ── */}
+      <StackCalculator mobile={mobile} submitted={submitted} setSubmitted={setSubmitted} email={email} setEmail={setEmail} handleSubmit={handleSubmit} loading={loading} />
+
       {/* ── FINAL CTA ── */}
       <section style={{ padding: "0 48px 120px", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 640, margin: "80px auto 0", textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 20 }}>GET STARTED</div>
-          <h2 style={{ fontSize: 42, fontWeight: 800, letterSpacing: -1.5, fontFamily: DISPLAY, lineHeight: 1.15, marginBottom: 20 }}>
-            Start for free.<br />
-            <span style={{ color: ACID }}>Optimize in 5 minutes.</span>
+          <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 20 }}>EARLY ACCESS</div>
+          <h2 style={{ fontSize: mobile ? 26 : 42, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, lineHeight: 1.15, marginBottom: 20 }}>
+            Launching soon.<br />
+            <span style={{ color: ACID }}>Get early access.</span>
           </h2>
           <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.7, marginBottom: 36 }}>
-            Add your first tool in under a minute. Hektiq will show you what's wrong with your stack before you finish your coffee.
+            Hektiq is currently in development. Join the waitlist and you'll be first in when we launch — plus get a free stack audit when we go live.
           </p>
           {!submitted ? (
             <div style={{ display: "flex", gap: 0, maxWidth: 420, margin: "0 auto", background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden", boxShadow: `0 0 30px rgba(0,0,0,0.4)` }}>
@@ -526,10 +767,10 @@ export default function HektiqLanding() {
                 onChange={e => setEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
                 placeholder="your@email.com"
-                style={{ flex: 1, background: "transparent", border: "none", padding: "14px 18px", color: TEXT, fontSize: 14, fontFamily: BODY, outline: "none" }}
+                style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "14px 18px", color: TEXT, fontSize: 14, fontFamily: BODY, outline: "none" }}
               />
-              <button onClick={handleSubmit} style={{ background: ACID, color: BG, border: "none", padding: "14px 22px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: BODY }}>
-                Start Free →
+              <button onClick={handleSubmit} disabled={loading} style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 14px" : "14px 22px", fontWeight: 700, fontSize: mobile ? 12 : 13, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", flexShrink: 0 }}>
+                {loading ? "..." : mobile ? "Join →" : "Join Waitlist →"}
               </button>
             </div>
           ) : (
