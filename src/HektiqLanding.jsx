@@ -224,7 +224,7 @@ export default function HektiqLanding() {
     if (!email.includes("@")) return;
     setLoading(true);
     try {
-      await fetch(https://formspree.io/f/mdabbjvn, {
+      await fetch("https://formspree.io/f/mdabbjvn", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ email }),
