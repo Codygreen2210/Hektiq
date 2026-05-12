@@ -218,8 +218,20 @@ export default function HektiqLanding() {
   const stat3 = useCounter(580, 1400, statsInView);
   const stat4 = useCounter(7,   800,  statsInView);
 
-  const handleSubmit = () => {
-    if (email.includes("@")) setSubmitted(true);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email.includes("@")) return;
+    setLoading(true);
+    try {
+      await fetch("https://formspree.io/f/REPLACE_WITH_YOUR_ID", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch (e) {}
+    setLoading(false);
+    setSubmitted(true);
   };
 
   return (
@@ -286,10 +298,10 @@ export default function HektiqLanding() {
                 onChange={e => setEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
                 placeholder="your@email.com"
-                style={{ flex: 1, background: "transparent", border: "none", padding: "14px 18px", color: TEXT, fontSize: 14, fontFamily: BODY, outline: "none" }}
+                style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "14px 18px", color: TEXT, fontSize: 14, fontFamily: BODY, outline: "none" }}
               />
-              <button onClick={handleSubmit} style={{ background: ACID, color: BG, border: "none", padding: "14px 22px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: BODY, letterSpacing: 0.5, whiteSpace: "nowrap" }}>
-                Get Early Access →
+              <button onClick={handleSubmit} disabled={loading} style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 14px" : "14px 22px", fontWeight: 700, fontSize: mobile ? 12 : 13, cursor: "pointer", fontFamily: BODY, letterSpacing: 0.5, whiteSpace: "nowrap", flexShrink: 0 }}>
+                {loading ? "..." : mobile ? "Join →" : "Get Early Access →"}
               </button>
             </div>
           ) : (
