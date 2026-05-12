@@ -236,7 +236,9 @@ export default function HektiqLanding() {
         <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: 5, color: ACID, fontFamily: DISPLAY, textShadow: `0 0 16px ${ACID}44` }}>Hektiq</div>
         <div style={{ display: "flex", gap: 32, fontSize: 12, color: MUTED }}>
           {["Features", "Pricing", "Benchmarks", "Blog"].map(l => (
-            <span key={l} style={{ cursor: "pointer", letterSpacing: 1, transition: "color 0.15s" }}
+            <span key={l}
+              onClick={() => document.getElementById(l.toLowerCase())?.scrollIntoView({ behavior: "smooth" })}
+              style={{ cursor: "pointer", letterSpacing: 1, transition: "color 0.15s", color: MUTED }}
               onMouseEnter={e => e.target.style.color = TEXT}
               onMouseLeave={e => e.target.style.color = MUTED}
             >{l}</span>
@@ -244,7 +246,7 @@ export default function HektiqLanding() {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 16px", borderRadius: 5, fontSize: 12, cursor: "pointer", fontFamily: BODY, letterSpacing: 0.5 }}>Sign in</button>
-          <button style={{ background: ACID, color: BG, border: "none", padding: "7px 18px", borderRadius: 5, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 14px ${ACID}44` }}>Get Early Access</button>
+          <button onClick={() => document.getElementById("hero-email")?.focus()} style={{ background: ACID, color: BG, border: "none", padding: "7px 18px", borderRadius: 5, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 14px ${ACID}44` }}>Get Early Access</button>
         </div>
       </nav>
 
@@ -265,7 +267,7 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ fontSize: "clamp(26px, 7vw, 64px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY, wordBreak: "break-word", overflowWrap: "break-word" }}>
+          <h1 style={{ fontSize: mobile ? "34px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.2, letterSpacing: mobile ? "-0.5px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
             Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
@@ -279,6 +281,7 @@ export default function HektiqLanding() {
           {!submitted ? (
             <div style={{ display: "flex", gap: 0, maxWidth: 440, margin: "0 auto 24px", background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden", boxShadow: `0 0 30px rgba(0,0,0,0.4)` }}>
               <input
+                id="hero-email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
@@ -383,7 +386,7 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section style={{ padding: mobile ? "0 20px 60px" : "0 48px 100px" }}>
+      <section id="features" style={{ padding: mobile ? "0 20px 60px" : "0 48px 100px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>FEATURES</div>
@@ -403,7 +406,7 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── ARCHETYPES ── */}
-      <section style={{ padding: "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
+      <section id="benchmarks" style={{ padding: "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1000, margin: "60px auto 0" }}>
           <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: mobile ? 40 : 80, alignItems: "center" }}>
             <div>
@@ -432,7 +435,7 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── PRICING ── */}
-      <section style={{ padding: "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
+      <section id="pricing" style={{ padding: "0 48px 100px", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 740, margin: "60px auto 0" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>PRICING</div>
