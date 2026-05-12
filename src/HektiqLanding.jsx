@@ -267,7 +267,7 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ fontSize: mobile ? "34px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.2, letterSpacing: mobile ? "-0.5px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
+          <h1 style={{ fontSize: mobile ? "26px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.2, letterSpacing: mobile ? "-0.5px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
             Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
@@ -420,9 +420,9 @@ export default function HektiqLanding() {
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.75, marginBottom: 32 }}>
                 "My AI Stack Score is 74 — I'm a Solo Hacker" is more shareable than any tweet about your monthly spend.
               </p>
-              <button style={{ background: `${PURPLE}15`, border: `1px solid ${PURPLE}40`, color: PURPLE, padding: "10px 22px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: BODY, letterSpacing: 0.5 }}>
-                See all archetypes →
-              </button>
+              <div style={{ fontSize: 12, color: MUTED, letterSpacing: 0.5 }}>
+                Scroll down to see all archetypes ↓
+              </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 10 }}>
               <ArchetypeCard name="The Solo Hacker"       emoji="⚡" color={ACID}   traits={["High experimentation", "Fast shipper", "Over-subscribed"]} />
