@@ -688,14 +688,14 @@ export default function HektiqDashboard() {
   const totalROI     = analyzedTools.reduce((s,t) => s+(t.roi||0), 0);
 
   // ── HEALTH SCORE ─────────────────────────────────────────────
-  const healthScore = analyzedTools.length === 0 ? 100 : Math.max(10, Math.min(99,
+  const healthScore = analyzedTools.length === 0 ? 0 : Math.max(10, Math.min(99,
     95
     - (analyzedTools.length > 5 ? (analyzedTools.length - 5) * 4 : 0)
     - (overlapDetails.length * 15)
     - (deadTools.length * 8)
     - (totalSpend > 200 ? 5 : 0)
   ));
-  const healthColor = analyzedTools.length === 0 ? ACID : healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
+  const healthColor = analyzedTools.length === 0 ? MUTED : healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
 
   // ── HEALTH ISSUES ─────────────────────────────────────────────
   const dynamicIssues = [
