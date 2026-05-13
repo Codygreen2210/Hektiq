@@ -638,76 +638,115 @@ export default function HektiqDashboard() {
     catch {}
   }, [userTools]);
 
-  const handleAddTool = (newTool) => setUserTools(prev => [...prev, newTool]);
-  const handleRemoveTool = (id) => setUserTools(prev => prev.filter(t => t.id !== id));
+  const handleAddTool    = (newTool) => setUserTools(prev => [...prev, newTool]);
+  const handleRemoveTool = (id)      => setUserTools(prev => prev.filter(t => (t.id||t.name) !== id));
 
-  const totalSpend   = userTools.reduce((s,t) => s+t.cost, 0);
-  const overlapCost  = userTools.filter(t=>t.overlap).reduce((s,t)=>s+t.cost,0);
-  const yearForecast = Math.round(totalSpend*12*1.08);
-  const totalROI     = userTools.reduce((s,t)=>s+t.roi,0);
-  const deadTools    = userTools.filter(t=>t.daysAgo > 20);
-  const overlapTools = userTools.filter(t=>t.overlap);
+  // ── LIVE OVERLAP ANALYSIS ─────────────────────────────────────
+  const OVERLAP_GROUPS = [
+    { label:"AI Chat",        members:["Claude API","ChatGPT","Perplexity","Anthropic API","OpenAI API"] },
+    { label:"AI Code",        members:["Cursor","GitHub Copilot","Replit","Bolt","Lovable","Codeium"] },
+    { label:"AI Image",       members:["Midjourney","Runway ML","DALL-E","Stable Diffusion","Adobe Firefly"] },
+    { label:"AI Video",       members:["Runway ML","Synthesia","HeyGen","Pika"] },
+    { label:"AI Audio",       members:["ElevenLabs","Murf","Descript"] },
+    { label:"Hosting",        members:["Vercel","Netlify","Railway","Fly.io","Render","Heroku"] },
+    { label:"Database",       members:["Supabase","PlanetScale","MongoDB Atlas","Neon","Firebase"] },
+    { label:"Email",          members:["Resend","Mailgun","SendGrid","Postmark"] },
+    { label:"Analytics",      members:["PostHog","Mixpanel","Amplitude","Segment"] },
+    { label:"Error tracking", members:["Sentry","Bugsnag","Datadog","Rollbar"] },
+    { label:"CDN/DNS",        members:["Cloudflare","Fastly"] },
+    { label:"Storage",        members:["Backblaze","AWS","Cloudflare R2"] },
+    { label:"Payments",       members:["Stripe","Lemon Squeezy","Paddle","Gumroad"] },
+    { label:"Design",         members:["Figma","Sketch","Adobe XD","Framer"] },
+    { label:"Automation",     members:["Zapier","Make","n8n","Pipedream"] },
+  ];
 
-  // ── DYNAMIC HEALTH SCORE ──────────────────────────────────────
+  const overlapIds = new Set();
+  const overlapDetails = [];
+  OVERLAP_GROUPS.forEach(group => {
+    const hits = userTools.filter(t =>
+      group.members.some(m => t.name.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(t.name.toLowerCase()))
+    );
+    if (hits.length > 1) {
+      hits.forEach(t => overlapIds.add(t.id || t.name));
+      overlapDetails.push({ label: group.label, tools: hits.map(t=>t.name), cost: hits.reduce((s,t)=>s+t.cost,0) });
+    }
+  });
+
+  // Annotate each tool with live overlap flag
+  const analyzedTools = userTools.map(t => ({
+    ...t,
+    overlap: overlapIds.has(t.id || t.name),
+  }));
+
+  const totalSpend   = analyzedTools.reduce((s,t) => s+t.cost, 0);
+  const overlapTools = analyzedTools.filter(t => t.overlap);
+  const overlapCost  = overlapTools.reduce((s,t) => s+t.cost, 0);
+  const deadTools    = analyzedTools.filter(t => (t.daysAgo||0) > 20);
+  const yearForecast = Math.round(totalSpend * 12 * 1.08);
+  const totalROI     = analyzedTools.reduce((s,t) => s+(t.roi||0), 0);
+
+  // ── HEALTH SCORE ─────────────────────────────────────────────
   const healthScore = Math.max(10, Math.min(99,
     95
-    - (userTools.length > 5 ? (userTools.length - 5) * 5 : 0)
-    - (overlapTools.length * 12)
+    - (analyzedTools.length > 5 ? (analyzedTools.length - 5) * 4 : 0)
+    - (overlapDetails.length * 15)
     - (deadTools.length * 8)
+    - (totalSpend > 200 ? 5 : 0)
   ));
   const healthColor = healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
 
-  // ── DYNAMIC HEALTH ISSUES ─────────────────────────────────────
+  // ── HEALTH ISSUES ─────────────────────────────────────────────
   const dynamicIssues = [
-    overlapTools.length > 0 && { label:`Tool redundancy detected (${overlapTools.length})`, severity:"high" },
-    deadTools.length > 0    && { label:`${deadTools.length} underused subscription${deadTools.length>1?"s":""}`, severity:"medium" },
-    userTools.length > 6    && { label:"Stack complexity high", severity:"medium" },
-    totalSpend > 150        && { label:"Above average spend", severity:"low" },
+    overlapDetails.length > 0 && { label:`${overlapDetails.length} overlap group${overlapDetails.length>1?"s":""} detected`, severity:"high"   },
+    deadTools.length > 0      && { label:`${deadTools.length} underused subscription${deadTools.length>1?"s":""}`,             severity:"medium" },
+    analyzedTools.length > 6  && { label:`Stack complexity: ${analyzedTools.length} tools`,                                    severity:"medium" },
+    totalSpend > 200           && { label:"Spend above average ($200/mo)",                                                      severity:"low"    },
   ].filter(Boolean);
 
-  // ── DYNAMIC SPEND CHART ───────────────────────────────────────
+  // ── SPEND CHART ───────────────────────────────────────────────
   const dynamicSpendData = [
-    { month:"Nov", spend: Math.round(totalSpend * 0.74), forecast:null },
-    { month:"Dec", spend: Math.round(totalSpend * 0.83), forecast:null },
-    { month:"Jan", spend: Math.round(totalSpend * 0.90), forecast:null },
-    { month:"Feb", spend: Math.round(totalSpend * 0.85), forecast:null },
-    { month:"Mar", spend: Math.round(totalSpend * 0.99), forecast:null },
-    { month:"Apr", spend: Math.round(totalSpend * 1.00), forecast:null },
-    { month:"May", spend: totalSpend, forecast: totalSpend },
-    { month:"Jun", spend: null, forecast: Math.round(totalSpend * 1.04) },
-    { month:"Jul", spend: null, forecast: Math.round(totalSpend * 1.08) },
-    { month:"Aug", spend: null, forecast: Math.round(totalSpend * 1.12) },
+    { month:"Nov", spend:Math.round(totalSpend*0.74), forecast:null },
+    { month:"Dec", spend:Math.round(totalSpend*0.83), forecast:null },
+    { month:"Jan", spend:Math.round(totalSpend*0.90), forecast:null },
+    { month:"Feb", spend:Math.round(totalSpend*0.85), forecast:null },
+    { month:"Mar", spend:Math.round(totalSpend*0.99), forecast:null },
+    { month:"Apr", spend:Math.round(totalSpend*1.00), forecast:null },
+    { month:"May", spend:totalSpend, forecast:totalSpend },
+    { month:"Jun", spend:null, forecast:Math.round(totalSpend*1.04) },
+    { month:"Jul", spend:null, forecast:Math.round(totalSpend*1.08) },
+    { month:"Aug", spend:null, forecast:Math.round(totalSpend*1.12) },
   ];
 
-  // ── DYNAMIC RECOMMENDATIONS ───────────────────────────────────
+  // ── RECOMMENDATIONS ───────────────────────────────────────────
   const dynamicRecs = [
-    overlapTools.length >= 2 && {
-      id:1, label:"CONSOLIDATE AI CORE",
-      detail:`You have ${overlapTools.length} overlapping tools. Consolidating could save $${overlapCost}/mo.`,
-      savings: overlapCost, efficiency:"+18%", confidence:94,
-    },
+    ...overlapDetails.map((od,i) => ({
+      id:`overlap_${i}`,
+      label:`${od.label.toUpperCase()} OVERLAP`,
+      detail:`${od.tools.join(" + ")} are doing the same job. Consolidate to one tool to save ~$${Math.round(od.cost*0.5)}/mo.`,
+      savings: Math.round(od.cost*0.5), efficiency:"+12%", confidence:91,
+    })),
     deadTools.length > 0 && {
-      id:2, label:"PAUSE DEAD WEIGHT",
+      id:"dead", label:"PAUSE DEAD WEIGHT",
       detail:`${deadTools.map(t=>t.name).join(", ")} ${deadTools.length>1?"haven't":"hasn't"} been used recently. Pause to save $${deadTools.reduce((s,t)=>s+t.cost,0)}/mo.`,
-      savings: deadTools.reduce((s,t)=>s+t.cost,0), efficiency:"+4%", confidence:88,
+      savings:deadTools.reduce((s,t)=>s+t.cost,0), efficiency:"+4%", confidence:88,
     },
-    userTools.length > 6 && {
-      id:3, label:"REDUCE STACK SIZE",
-      detail:`You're running ${userTools.length} tools. Most efficient builders use 4 or fewer.`,
-      savings: null, efficiency:null, confidence:76,
+    analyzedTools.length > 7 && {
+      id:"size", label:"REDUCE STACK SIZE",
+      detail:`You're running ${analyzedTools.length} tools. Most profitable builders use 4-5. Consider what you can cut.`,
+      savings:null, efficiency:null, confidence:76,
     },
   ].filter(Boolean);
 
-  // ── DYNAMIC RELATIONSHIP GRAPH ────────────────────────────────
-  const dynamicNodes = {};
+  // ── RELATIONSHIP GRAPH NODES ──────────────────────────────────
   const nodePositions = [
     {x:100,y:110},{x:220,y:52},{x:370,y:72},{x:240,y:172},
     {x:95,y:205},{x:310,y:215},{x:450,y:155},{x:160,y:280},
     {x:380,y:290},{x:480,y:60},{x:50,y:60},
   ];
-  userTools.forEach((t,i) => {
-    const pos = nodePositions[i] || { x: 100 + (i%4)*120, y: 60 + Math.floor(i/4)*100 };
-    dynamicNodes[t.id] = { x:pos.x, y:pos.y, label:t.name, cost:t.cost, overlap:t.overlap, dead:!t.active||t.daysAgo>20 };
+  const dynamicNodes = {};
+  analyzedTools.forEach((t,i) => {
+    const pos = nodePositions[i] || { x:100+(i%4)*120, y:60+Math.floor(i/4)*100 };
+    dynamicNodes[t.id||t.name] = { x:pos.x, y:pos.y, label:t.name, cost:t.cost, overlap:t.overlap, dead:!t.active||(t.daysAgo||0)>20 };
   });
 
   const severityColor = s => s==="high"?WARN:s==="medium"?BLUE:MUTED;
@@ -959,8 +998,8 @@ export default function HektiqDashboard() {
 
             {/* Scrollable tool list */}
             <div style={{ overflowY:"auto", maxHeight:280, display:"flex", flexDirection:"column", gap:2 }}>
-              {userTools.map((tool,i) => {
-                const isDead = tool.daysAgo > 20;
+              {analyzedTools.map((tool,i) => {
+                const isDead = (tool.daysAgo||0) > 20;
                 const roiColor = tool.roi > 100 ? GREEN : tool.roi > 0 ? BLUE : MUTED;
                 return (
                   <div key={tool.id || tool.name}
