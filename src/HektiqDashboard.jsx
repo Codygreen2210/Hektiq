@@ -686,14 +686,14 @@ export default function HektiqDashboard() {
   const totalROI     = analyzedTools.reduce((s,t) => s+(t.roi||0), 0);
 
   // ── HEALTH SCORE ─────────────────────────────────────────────
-  const healthScore = Math.max(10, Math.min(99,
+  const healthScore = analyzedTools.length === 0 ? 100 : Math.max(10, Math.min(99,
     95
     - (analyzedTools.length > 5 ? (analyzedTools.length - 5) * 4 : 0)
     - (overlapDetails.length * 15)
     - (deadTools.length * 8)
     - (totalSpend > 200 ? 5 : 0)
   ));
-  const healthColor = healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
+  const healthColor = analyzedTools.length === 0 ? ACID : healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
 
   // ── HEALTH ISSUES ─────────────────────────────────────────────
   const dynamicIssues = [
@@ -718,7 +718,7 @@ export default function HektiqDashboard() {
   ];
 
   // ── RECOMMENDATIONS ───────────────────────────────────────────
-  const dynamicRecs = [
+  const dynamicRecs = analyzedTools.length === 0 ? [] : [
     ...overlapDetails.map((od,i) => ({
       id:`overlap_${i}`,
       label:`${od.label.toUpperCase()} OVERLAP`,
@@ -840,7 +840,16 @@ export default function HektiqDashboard() {
               </div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {(dynamicIssues.length > 0 ? dynamicIssues : [{ label:"No issues detected", severity:"low" }]).map((issue,i) => (
+              {analyzedTools.length === 0 ? (
+                <div style={{ gridColumn:"1/-1", background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:6, padding:"12px", textAlign:"center" }}>
+                  <div style={{ fontSize:11, color:MUTED }}>Add tools to see health analysis</div>
+                </div>
+              ) : dynamicIssues.length === 0 ? (
+                <div style={{ gridColumn:"1/-1", background:`${GREEN}08`, border:`1px solid ${GREEN}25`, borderRadius:6, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ width:6, height:6, borderRadius:"50%", background:GREEN, flexShrink:0 }}/>
+                  <div style={{ fontSize:11, color:"#8a9299" }}>No issues detected — stack is clean</div>
+                </div>
+              ) : dynamicIssues.map((issue,i) => (
                 <div key={i} style={{ background:PANEL_2, border:`1px solid ${severityColor(issue.severity)}22`, borderRadius:6, padding:"9px 12px", display:"flex", alignItems:"center", gap:8 }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:severityColor(issue.severity), flexShrink:0, boxShadow:`0 0 6px ${severityColor(issue.severity)}` }}/>
                   <div style={{ fontSize:11, color:"#8a9299" }}>{issue.label}</div>
@@ -1066,7 +1075,16 @@ export default function HektiqDashboard() {
                 <span style={{ fontSize:8, color:MUTED, fontFamily:MONO }}>AI ACTIVE</span>
               </div>
             </div>
-            {(dynamicRecs.length > 0 ? dynamicRecs : [{ id:0, label:"STACK LOOKS GOOD", detail:"No major issues detected. Keep monitoring for price changes and new overlaps.", savings:null, efficiency:null, confidence:100 }]).map(rec => (
+            {analyzedTools.length === 0 ? (
+              <div style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:8, padding:"16px 14px", textAlign:"center" }}>
+                <div style={{ fontSize:11, color:MUTED }}>Add tools to your stack to get recommendations</div>
+              </div>
+            ) : dynamicRecs.length === 0 ? (
+              <div style={{ background:`${GREEN}08`, border:`1px solid ${GREEN}25`, borderRadius:8, padding:"12px 14px", display:"flex", gap:10, alignItems:"center" }}>
+                <span style={{ color:GREEN, fontSize:14 }}>◆</span>
+                <div style={{ fontSize:11, color:MUTED }}>Stack looks clean — no overlaps or dead weight detected.</div>
+              </div>
+            ) : dynamicRecs.map(rec => (
               <div key={rec.id} style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:8, padding:"12px 14px" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
                   <div style={{ fontSize:10, fontWeight:700, color:ACID, letterSpacing:1, fontFamily:MONO }}>✦ {rec.label}</div>
