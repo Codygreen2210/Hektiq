@@ -150,7 +150,7 @@ function Counter({ target, prefix="", suffix="", duration=1000 }) {
 }
 
 // ── TOOL RELATIONSHIP GRAPH ────────────────────────────────────
-function RelationshipGraph({ userTools, dynamicNodes }) {
+function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
   const [hovered, setHovered] = useState(null);
   const W = 560, H = 260;
   const activeNodes = dynamicNodes || nodes;
@@ -298,10 +298,10 @@ function RelationshipGraph({ userTools, dynamicNodes }) {
       {/* Legend stat */}
       <div style={{ display:"flex", gap:20, marginTop:8, paddingTop:12, borderTop:`1px solid ${BORDER}` }}>
         {[
-          { label:"Workflow connections", value:"5", color:ACID  },
-          { label:"Overlap conflicts",    value:"2", color:WARN  },
-          { label:"Inactive nodes",       value:"1", color:MUTED },
-          { label:"Redundancy cost",      value:"$40/mo", color:WARN },
+          { label:"Workflow connections", value: activeEdges.filter(e=>e.type==="workflow").length.toString(), color:ACID },
+          { label:"Overlap conflicts",    value: activeEdges.filter(e=>e.type==="overlap").length.toString(),  color:WARN },
+          { label:"Inactive nodes",       value: Object.values(activeNodes).filter(n=>n.dead).length.toString(), color:MUTED },
+          { label:"Redundancy cost",      value: userTools?.filter(t=>overlapIds?.has(t.id||t.name)).reduce((s,t)=>s+t.cost,0) > 0 ? `$${userTools.filter(t=>overlapIds?.has(t.id||t.name)).reduce((s,t)=>s+t.cost,0)}/mo` : "None", color:WARN },
         ].map(s => (
           <div key={s.label}>
             <div style={{ fontSize:9, color:MUTED, fontFamily:MONO, marginBottom:3 }}>{s.label}</div>
@@ -826,10 +826,12 @@ export default function HektiqDashboard() {
                   <div style={{ fontSize:12, color:GREEN, fontFamily:MONO }}>▲ live</div>
                 </div>
               </div>
+              {analyzedTools.length > 0 && dynamicIssues.length > 0 && (
               <div style={{ background:`${WARN}15`, border:`1px solid ${WARN}40`, color:WARN, fontSize:9, padding:"5px 12px", borderRadius:3, letterSpacing:2, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:WARN, boxShadow:`0 0 8px ${WARN}`, animation:"blink 1.5s infinite" }}/>
                 {dynamicIssues.length} ISSUES DETECTED
               </div>
+              )}
             </div>
             <div style={{ marginBottom:18 }}>
               <div style={{ height:4, background:"#1a2022", borderRadius:2, overflow:"hidden" }}>
@@ -887,7 +889,7 @@ export default function HektiqDashboard() {
             { label:"ANNUAL FORECAST",   value:yearForecast, prefix:"$", suffix:"",    sub:"↑ trending upward",         color:WARN  },
             { label:"ACTIVE TOOLS",      value:userTools.length, prefix:"",  suffix:"",    sub:"3 over optimal",            color:TEXT  },
             { label:"REVENUE ATTRIBUTED",value:totalROI,     prefix:"$", suffix:"/mo", sub:"from tagged tools",         color:GREEN },
-            { label:"POTENTIAL SAVINGS", value:51,           prefix:"$", suffix:"/mo", sub:"via recommendations",       color:ACID  },
+            { label:"POTENTIAL SAVINGS", value: dynamicRecs.reduce((s,r)=>s+(r.savings||0),0), prefix:"$", suffix:"/mo", sub: dynamicRecs.length > 0 ? "via recommendations" : "stack looks clean", color:ACID  },
           ].map(({label,value,prefix,suffix,sub,color}) => (
             <div key={label} style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 18px", position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", bottom:-20, right:-20, width:70, height:70, borderRadius:"50%", background:`${color}06`, filter:"blur(20px)" }}/>
@@ -899,29 +901,37 @@ export default function HektiqDashboard() {
         </div>
 
         {/* ── PRICE ALERTS ── */}
-        <div style={{ marginBottom:14 }}>
-          <div style={{ display:"flex", gap:12 }}>
-            {priceAlerts.map((a,i) => (
-              <div key={i} style={{ flex:1, background:`${WARN}08`, border:`1px solid ${WARN}30`, borderRadius:8, padding:"12px 16px", display:"flex", alignItems:"center", gap:14 }}>
-                <div style={{ width:36, height:36, borderRadius:8, background:`${WARN}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ color:WARN, fontSize:14 }}>↑</span>
-                </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:3 }}>
-                    <span style={{ fontSize:11, fontWeight:700, color:WARN, letterSpacing:1, fontFamily:MONO }}>PRICE INCREASE</span>
-                    <span style={{ background:`${WARN}22`, color:WARN, fontSize:9, padding:"2px 7px", borderRadius:3, fontFamily:MONO, fontWeight:700 }}>{a.change}</span>
-                    <span style={{ fontSize:10, color:TEXT }}>{a.tool}</span>
+        {analyzedTools.length > 0 && (() => {
+          const relevantAlerts = priceAlerts.filter(a =>
+            analyzedTools.some(t => t.name.toLowerCase().includes(a.tool.toLowerCase()) || a.tool.toLowerCase().includes(t.name.toLowerCase()))
+          );
+          if (relevantAlerts.length === 0) return null;
+          return (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ display:"flex", gap:12 }}>
+                {relevantAlerts.map((a,i) => (
+                  <div key={i} style={{ flex:1, background:`${WARN}08`, border:`1px solid ${WARN}30`, borderRadius:8, padding:"12px 16px", display:"flex", alignItems:"center", gap:14 }}>
+                    <div style={{ width:36, height:36, borderRadius:8, background:`${WARN}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <span style={{ color:WARN, fontSize:14 }}>↑</span>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:3 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:WARN, letterSpacing:1, fontFamily:MONO }}>PRICE INCREASE</span>
+                        <span style={{ background:`${WARN}22`, color:WARN, fontSize:9, padding:"2px 7px", borderRadius:3, fontFamily:MONO, fontWeight:700 }}>{a.change}</span>
+                        <span style={{ fontSize:10, color:TEXT }}>{a.tool}</span>
+                      </div>
+                      <div style={{ fontSize:10, color:MUTED }}>{a.detail}</div>
+                    </div>
+                    <div style={{ textAlign:"right", flexShrink:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:WARN, fontFamily:MONO }}>+${a.impact}/mo</div>
+                      <div style={{ fontSize:9, color:MUTED, fontFamily:MONO }}>+${a.impact*12}/yr</div>
+                    </div>
                   </div>
-                  <div style={{ fontSize:10, color:MUTED }}>{a.detail}</div>
-                </div>
-                <div style={{ textAlign:"right", flexShrink:0 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:WARN, fontFamily:MONO }}>+${a.impact}/mo</div>
-                  <div style={{ fontSize:9, color:MUTED, fontFamily:MONO }}>+${a.impact*12}/yr</div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          );
+        })()}
 
         {/* ── CHARTS ROW ── */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 255px", gap:14, marginBottom:14 }}>
@@ -933,6 +943,11 @@ export default function HektiqDashboard() {
                 <span style={{ color:MUTED }}>╌ forecast</span>
               </div>
             </div>
+            {analyzedTools.length === 0 ? (
+              <div style={{ height:140, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ fontSize:12, color:MUTED }}>Add tools to see spend trajectory</div>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={140}>
               <AreaChart data={dynamicSpendData} margin={{ top:4, right:0, bottom:0, left:-18 }}>
                 <defs>
@@ -953,6 +968,7 @@ export default function HektiqDashboard() {
                 <Area type="monotone" dataKey="forecast" stroke={MUTED} strokeWidth={1.5} strokeDasharray="4 3" fill="url(#fGrad)" dot={false} connectNulls={false}/>
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </div>
 
           <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"18px 20px 12px" }}>
@@ -1112,12 +1128,12 @@ export default function HektiqDashboard() {
 
         {/* ── TOOL RELATIONSHIP GRAPH ── */}
         <div style={{ marginBottom:14 }}>
-          <RelationshipGraph userTools={userTools} dynamicNodes={dynamicNodes}/>
+          <RelationshipGraph userTools={analyzedTools} dynamicNodes={dynamicNodes} overlapIds={overlapIds}/>
         </div>
 
         {/* ── STACK SIMULATION ── */}
         <div style={{ marginBottom:14 }}>
-          <StackSimulation totalSpend={totalSpend}/>
+          {analyzedTools.length > 0 && <StackSimulation totalSpend={totalSpend} analyzedTools={analyzedTools}/>}
         </div>
 
         {/* ── COMMUNITY BENCHMARKS ── */}
