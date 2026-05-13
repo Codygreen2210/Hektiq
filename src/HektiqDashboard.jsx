@@ -789,7 +789,7 @@ export default function HektiqDashboard() {
         </div>
         <div style={{ padding:"16px 24px 0", borderTop:`1px solid ${BORDER}` }}>
           <div style={{ fontSize:10, color:MUTED, letterSpacing:1 }}>BUILDER</div>
-          <div style={{ fontSize:13, color:TEXT, marginTop:4, fontWeight:600 }}>cody.eth</div>
+          <div style={{ fontSize:13, color:TEXT, marginTop:4, fontWeight:600 }}>Builder</div>
           <div style={{ marginTop:8, display:"inline-flex", alignItems:"center", gap:5, background:`${ACID}12`, border:`1px solid ${ACID}30`, color:ACID, fontSize:9, padding:"3px 10px", letterSpacing:2, borderRadius:3, fontWeight:600 }}>
             <span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:ACID, boxShadow:`0 0 6px ${ACID}` }}/>PRO
           </div>
@@ -802,11 +802,11 @@ export default function HektiqDashboard() {
         {/* Header */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
           <div>
-            <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:MONO }}>MAY 2026 · BUILDER CONTROL CENTER</div>
+            <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:MONO }}>{new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER</div>
             <div style={{ fontSize:22, fontWeight:700, color:TEXT, letterSpacing:-0.5 }}>AI Stack Dashboard</div>
           </div>
           <div style={{ display:"flex", gap:10 }}>
-            <button style={{ background:"transparent", color:MUTED, border:`1px solid ${BORDER}`, padding:"8px 16px", fontFamily:SANS, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5 }}>IMPORT TOOL</button>
+            <button onClick={() => alert("Auto-import coming soon — connect your billing accounts directly.")} style={{ background:"transparent", color:MUTED, border:`1px solid ${BORDER}`, padding:"8px 16px", fontFamily:SANS, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5 }}>IMPORT TOOL</button>
             <button onClick={()=>setShowAddTool(true)} style={{ background:ACID, color:BG, border:"none", padding:"8px 18px", fontFamily:SANS, fontWeight:700, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5, boxShadow:`0 0 16px ${ACID}44` }}>+ ADD TOOL</button>
           </div>
         </div>
@@ -896,11 +896,11 @@ export default function HektiqDashboard() {
         {/* ── STAT CARDS ── */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:14 }}>
           {[
-            { label:"MONTHLY BURN",      value:totalSpend,   prefix:"$", suffix:"",    sub:"+$12 vs last month",       color:WARN  },
-            { label:"ANNUAL FORECAST",   value:yearForecast, prefix:"$", suffix:"",    sub:"↑ trending upward",         color:WARN  },
-            { label:"ACTIVE TOOLS",      value:userTools.length, prefix:"",  suffix:"",    sub:"3 over optimal",            color:TEXT  },
-            { label:"REVENUE ATTRIBUTED",value:totalROI,     prefix:"$", suffix:"/mo", sub:"from tagged tools",         color:GREEN },
-            { label:"POTENTIAL SAVINGS", value: dynamicRecs.reduce((s,r)=>s+(r.savings||0),0), prefix:"$", suffix:"/mo", sub: dynamicRecs.length > 0 ? "via recommendations" : "stack looks clean", color:ACID  },
+            { label:"MONTHLY BURN",      value:totalSpend,           prefix:"$", suffix:"",    sub: totalSpend === 0 ? "no tools added" : `$${totalSpend * 12}/yr projected`,  color:WARN  },
+            { label:"ANNUAL FORECAST",   value:yearForecast,         prefix:"$", suffix:"",    sub: analyzedTools.length === 0 ? "add tools to forecast" : "↑ trending upward", color:WARN  },
+            { label:"ACTIVE TOOLS",      value:analyzedTools.length, prefix:"",  suffix:"",    sub: analyzedTools.length === 0 ? "none added yet" : analyzedTools.length > 6 ? `${analyzedTools.length - 6} over optimal` : "within optimal range", color:TEXT },
+            { label:"REVENUE ATTRIBUTED",value:totalROI,             prefix:"$", suffix:"/mo", sub: totalROI === 0 ? "tag tools to projects" : "from tagged tools",             color:GREEN },
+            { label:"POTENTIAL SAVINGS", value:dynamicRecs.reduce((s,r)=>s+(r.savings||0),0), prefix:"$", suffix:"/mo", sub: dynamicRecs.length > 0 ? `${dynamicRecs.length} recommendation${dynamicRecs.length>1?"s":""}` : "stack looks clean", color:ACID },
           ].map(({label,value,prefix,suffix,sub,color}) => (
             <div key={label} style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 18px", position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", bottom:-20, right:-20, width:70, height:70, borderRadius:"50%", background:`${color}06`, filter:"blur(20px)" }}/>
@@ -984,7 +984,14 @@ export default function HektiqDashboard() {
 
           <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"18px 20px 12px" }}>
             <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, marginBottom:4, fontFamily:MONO }}>STACK SCORE HISTORY</div>
-            <div style={{ fontSize:9, color:GREEN, fontFamily:MONO, marginBottom:12 }}>▲ +20 pts over 6 months</div>
+            <div style={{ fontSize:9, color: analyzedTools.length === 0 ? MUTED : GREEN, fontFamily:MONO, marginBottom:12 }}>
+              {analyzedTools.length === 0 ? "Add tools to track score over time" : `Current score: ${healthScore}%`}
+            </div>
+            {analyzedTools.length === 0 ? (
+              <div style={{ height:100, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ fontSize:11, color:MUTED }}>No history yet</div>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={100}>
               <LineChart data={scoreHistory} margin={{ top:4, right:0, bottom:0, left:-24 }}>
                 <CartesianGrid stroke={BORDER} vertical={false}/>
@@ -994,12 +1001,13 @@ export default function HektiqDashboard() {
                 <Line type="monotone" dataKey="score" stroke={ACID} strokeWidth={2} dot={{ fill:ACID, r:3 }}/>
               </LineChart>
             </ResponsiveContainer>
+            )}
             <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${BORDER}` }}>
               {[
-                { label:"First optimization", done:true  },
-                { label:"Score above 70",      done:true  },
-                { label:"Zero redundancy",     done:false },
-                { label:"Top 10% builder",     done:false },
+                { label:"First tool added",     done: analyzedTools.length >= 1  },
+                { label:"Score above 70",        done: healthScore >= 70           },
+                { label:"Zero redundancy",       done: overlapDetails.length === 0 && analyzedTools.length > 0 },
+                { label:"Top 10% builder",       done: healthScore >= 90           },
               ].map(m => (
                 <div key={m.label} style={{ display:"flex", alignItems:"center", gap:6, fontSize:9, color: m.done?ACID:MUTED, marginBottom:4 }}>
                   <span>{m.done?"◆":"◇"}</span>{m.label}
