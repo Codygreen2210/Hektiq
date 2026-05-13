@@ -926,12 +926,16 @@ export default function HektiqLanding() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: `1px solid ${BORDER}`, padding: "32px 48px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <footer style={{ borderTop: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : "32px 48px", display: "flex", flexDirection: mobile ? "column" : "row", justifyContent: "space-between", alignItems: mobile ? "flex-start" : "center", gap: mobile ? 16 : 0 }}>
         <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 5, color: ACID, fontFamily: DISPLAY, opacity: 0.6 }}>Hektiq</div>
-        <div style={{ display: "flex", gap: 28, fontSize: 11, color: MUTED }}>
-          {["Privacy", "Terms", "Twitter", "Contact"].map(l => (
+        <div style={{ display: "flex", gap: mobile ? 20 : 28, fontSize: 11, color: MUTED, flexWrap: "wrap" }}>
+          {["Privacy", "Terms", "Contact"].map(l => (
             <span key={l} style={{ cursor: "pointer" }}>{l}</span>
           ))}
+          <span
+            onClick={() => window.open("https://x.com/HektiqMedia", "_blank")}
+            style={{ cursor: "pointer" }}
+          >Twitter</span>
         </div>
         <div style={{ fontSize: 11, color: MUTED, fontFamily: MONO }}>© 2026 Hektiq</div>
       </footer>
