@@ -624,11 +624,22 @@ export default function HektiqDashboard() {
   const [hoveredTool, setHoveredTool] = useState(null);
   const [digestOn, setDigestOn]     = useState(true);
   const [showAddTool, setShowAddTool] = useState(false);
-  const [userTools, setUserTools]   = useState(tools);
 
-  const handleAddTool = (newTool) => {
-    setUserTools(prev => [...prev, newTool]);
-  };
+  // ── PERSIST TO LOCALSTORAGE ───────────────────────────────────
+  const [userTools, setUserTools] = useState(() => {
+    try {
+      const saved = localStorage.getItem("hektiq_tools");
+      return saved ? JSON.parse(saved) : tools;
+    } catch { return tools; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem("hektiq_tools", JSON.stringify(userTools)); }
+    catch {}
+  }, [userTools]);
+
+  const handleAddTool = (newTool) => setUserTools(prev => [...prev, newTool]);
+  const handleRemoveTool = (id) => setUserTools(prev => prev.filter(t => t.id !== id));
 
   const totalSpend   = userTools.reduce((s,t) => s+t.cost, 0);
   const overlapCost  = userTools.filter(t=>t.overlap).reduce((s,t)=>s+t.cost,0);
@@ -927,37 +938,41 @@ export default function HektiqDashboard() {
         <div style={{ display:"grid", gridTemplateColumns:"1fr 330px", gap:14, marginBottom:14 }}>
 
           {/* Tool Stack with ROI */}
-          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px" }}>
+          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", display:"flex", flexDirection:"column" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO }}>YOUR STACK</div>
               <div style={{ display:"flex", gap:10, fontSize:9, fontFamily:MONO }}>
-                <span style={{ color:WARN }}>⚠ 2 overlapping</span>
-                <span style={{ color:"#2d3539" }}>|</span>
-                <span style={{ color:MUTED }}>1 dead weight</span>
+                {overlapTools.length > 0 && <span style={{ color:WARN }}>⚠ {overlapTools.length} overlapping</span>}
+                {deadTools.length > 0 && <><span style={{ color:"#2d3539" }}>|</span><span style={{ color:MUTED }}>{deadTools.length} dead weight</span></>}
               </div>
             </div>
 
             {/* Column headers */}
-            <div style={{ display:"flex", padding:"0 10px 7px", borderBottom:`1px solid ${BORDER}`, marginBottom:4 }}>
+            <div style={{ display:"flex", padding:"0 10px 7px", borderBottom:`1px solid ${BORDER}`, marginBottom:4, flexShrink:0 }}>
               <div style={{ width:26 }}/>
               <div style={{ flex:1, fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:MONO }}>TOOL · PROJECT</div>
               <div style={{ width:55, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:MONO }}>ROI/MO</div>
               <div style={{ width:50, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:MONO }}>COST</div>
               <div style={{ width:65, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:MONO }}>ANNUAL</div>
+              <div style={{ width:24 }}/>
             </div>
 
-            <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+            {/* Scrollable tool list */}
+            <div style={{ overflowY:"auto", maxHeight:280, display:"flex", flexDirection:"column", gap:2 }}>
               {userTools.map((tool,i) => {
                 const isDead = tool.daysAgo > 20;
                 const roiColor = tool.roi > 100 ? GREEN : tool.roi > 0 ? BLUE : MUTED;
                 return (
-                  <div key={tool.name} onMouseEnter={()=>setHoveredTool(i)} onMouseLeave={()=>setHoveredTool(null)} style={{
-                    display:"flex", alignItems:"center", padding:"9px 10px", borderRadius:7,
-                    background: tool.overlap?`${WARN}08`:isDead?`${MUTED}04`:hoveredTool===i?PANEL_2:"transparent",
-                    transition:"all 0.15s", cursor:"default",
-                    borderLeft: tool.overlap?`2px solid ${WARN}`:isDead?`2px solid ${MUTED}33`:"2px solid transparent",
-                    opacity: isDead?0.65:1,
-                  }}>
+                  <div key={tool.id || tool.name}
+                    onMouseEnter={() => setHoveredTool(i)}
+                    onMouseLeave={() => setHoveredTool(null)}
+                    style={{
+                      display:"flex", alignItems:"center", padding:"9px 10px", borderRadius:7,
+                      background: tool.overlap?`${WARN}08`:isDead?`${MUTED}04`:hoveredTool===i?PANEL_2:"transparent",
+                      transition:"all 0.15s",
+                      borderLeft: tool.overlap?`2px solid ${WARN}`:isDead?`2px solid ${MUTED}33`:"2px solid transparent",
+                      opacity: isDead?0.65:1,
+                    }}>
                     <div style={{ width:26, fontSize:12, color: isDead?MUTED:ACID }}>{tool.icon}</div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:12, color: isDead?MUTED:TEXT, fontWeight:500 }}>{tool.name}</div>
@@ -979,11 +994,19 @@ export default function HektiqDashboard() {
                       <div style={{ fontSize:11, color:MUTED, fontFamily:MONO }}>${tool.cost*12}</div>
                       {isDead && <div style={{ fontSize:8, color:WARN, fontFamily:MONO }}>dead wt</div>}
                     </div>
+                    {/* Remove button */}
+                    <div
+                      onClick={() => handleRemoveTool(tool.id || tool.name)}
+                      style={{ width:24, textAlign:"right", color:"#2d3539", fontSize:13, cursor:"pointer", transition:"color 0.15s", paddingLeft:6 }}
+                      onMouseEnter={e => e.currentTarget.style.color = WARN}
+                      onMouseLeave={e => e.currentTarget.style.color = "#2d3539"}
+                    >✕</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", fontSize:11 }}>
+
+            <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", fontSize:11, flexShrink:0 }}>
               <span style={{ color:MUTED, fontFamily:MONO }}>TOTAL</span>
               <span style={{ fontFamily:MONO }}>
                 <span style={{ color:TEXT, fontWeight:700 }}>${totalSpend}/mo</span>
