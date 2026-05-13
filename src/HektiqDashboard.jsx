@@ -402,6 +402,187 @@ function StackSimulation({ totalSpend }) {
   );
 }
 
+// ── ADD TOOL MODAL ────────────────────────────────────────────
+const TOOL_OPTIONS = [
+  { name: "Claude API",      cat: "AI Core",      icon: "◆", plans: [{ label:"Pro $20",cost:20},{ label:"Max $100",cost:100},{ label:"Team $30",cost:30}] },
+  { name: "ChatGPT",         cat: "AI Core",      icon: "◉", plans: [{ label:"Plus $20",cost:20},{ label:"Team $30",cost:30},{ label:"Enterprise $60",cost:60}] },
+  { name: "Cursor",          cat: "Dev",          icon: "▸", plans: [{ label:"Pro $20",cost:20},{ label:"Business $40",cost:40}] },
+  { name: "Perplexity",      cat: "Research",     icon: "◈", plans: [{ label:"Pro $20",cost:20}] },
+  { name: "GitHub Copilot",  cat: "Dev",          icon: "◓", plans: [{ label:"Individual $10",cost:10},{ label:"Business $19",cost:19}] },
+  { name: "Midjourney",      cat: "Creative",     icon: "◐", plans: [{ label:"Basic $10",cost:10},{ label:"Standard $30",cost:30},{ label:"Pro $60",cost:60}] },
+  { name: "Runway ML",       cat: "Creative",     icon: "◑", plans: [{ label:"Standard $15",cost:15},{ label:"Pro $35",cost:35}] },
+  { name: "ElevenLabs",      cat: "Audio",        icon: "◒", plans: [{ label:"Creator $22",cost:22},{ label:"Pro $99",cost:99}] },
+  { name: "Lovable",         cat: "Dev",          icon: "◈", plans: [{ label:"Starter $25",cost:25},{ label:"Launch $50",cost:50}] },
+  { name: "Bolt",            cat: "Dev",          icon: "◉", plans: [{ label:"Pro $20",cost:20}] },
+  { name: "Vercel",          cat: "Infra",        icon: "▲", plans: [{ label:"Pro $20",cost:20}] },
+  { name: "Supabase",        cat: "Infra",        icon: "◫", plans: [{ label:"Pro $25",cost:25}] },
+  { name: "Cloudflare",      cat: "Infra",        icon: "☁", plans: [{ label:"Pro $20",cost:20},{ label:"Business $200",cost:200}] },
+  { name: "GitHub",          cat: "Dev",          icon: "◎", plans: [{ label:"Team $4",cost:4}] },
+  { name: "Notion AI",       cat: "Productivity", icon: "▣", plans: [{ label:"Plus $10",cost:10},{ label:"Business $15",cost:15}] },
+  { name: "Linear",          cat: "Productivity", icon: "◈", plans: [{ label:"Business $8",cost:8}] },
+  { name: "Figma",           cat: "Design",       icon: "◐", plans: [{ label:"Professional $15",cost:15},{ label:"Org $45",cost:45}] },
+  { name: "OpenAI API",      cat: "AI Core",      icon: "◉", plans: [{ label:"~$20/mo",cost:20},{ label:"~$50/mo",cost:50},{ label:"~$100/mo",cost:100}] },
+  { name: "Anthropic API",   cat: "AI Core",      icon: "◆", plans: [{ label:"~$20/mo",cost:20},{ label:"~$50/mo",cost:50},{ label:"~$100/mo",cost:100}] },
+  { name: "Hetzner",         cat: "Infra",        icon: "◈", plans: [{ label:"~$4/mo",cost:4},{ label:"~$18/mo",cost:18},{ label:"~$50/mo",cost:50}] },
+  { name: "AWS",             cat: "Infra",        icon: "◆", plans: [{ label:"~$10/mo",cost:10},{ label:"~$50/mo",cost:50},{ label:"~$100/mo",cost:100}] },
+  { name: "Custom",          cat: "Other",        icon: "＋", plans: [] },
+];
+
+const CATEGORIES = ["All", "AI Core", "Dev", "Creative", "Infra", "Design", "Productivity", "Audio", "Research", "Other"];
+
+function AddToolModal({ onClose, onAdd }) {
+  const [step, setStep]             = useState(1);
+  const [search, setSearch]         = useState("");
+  const [catFilter, setCatFilter]   = useState("All");
+  const [picked, setPicked]         = useState(null);
+  const [plan, setPlan]             = useState("");
+  const [customName, setCustomName] = useState("");
+  const [customCost, setCustomCost] = useState("");
+  const [project, setProject]       = useState("");
+  const [billingCycle, setBillingCycle] = useState("monthly");
+
+  const filtered = TOOL_OPTIONS.filter(t => {
+    const matchCat    = catFilter === "All" || t.cat === catFilter;
+    const matchSearch = t.name.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const selectedPlan = picked?.plans.find(p => p.label === plan);
+  const cost = picked?.name === "Custom" ? Number(customCost) || 0 : selectedPlan?.cost || 0;
+
+  const handleAdd = () => {
+    const toolName = picked?.name === "Custom" ? customName : picked?.name;
+    if (!toolName) return;
+    onAdd({
+      id: Date.now().toString(),
+      name: toolName,
+      cat: picked?.cat || "Other",
+      icon: picked?.icon || "◆",
+      cost,
+      plan: picked?.name === "Custom" ? "Custom" : plan,
+      project: project || "—",
+      billingCycle,
+      trend: "stable",
+      overlap: false,
+      daysAgo: 0,
+      active: true,
+      roi: 0,
+    });
+    onClose();
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:12, width:"100%", maxWidth:540, maxHeight:"85vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:`0 0 60px rgba(0,0,0,0.6)` }}>
+
+        {/* Header */}
+        <div style={{ padding:"18px 22px", borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:TEXT }}>{step === 1 ? "Add a Tool" : `Configure ${picked?.name === "Custom" ? "Custom Tool" : picked?.name}`}</div>
+            <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, marginTop:2 }}>STEP {step} OF 2</div>
+          </div>
+          <div onClick={onClose} style={{ cursor:"pointer", color:MUTED, fontSize:18, lineHeight:1, padding:4 }}>✕</div>
+        </div>
+
+        {step === 1 && (
+          <>
+            <div style={{ padding:"14px 22px 10px", flexShrink:0 }}>
+              <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tools..." style={{ width:"100%", background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:7, padding:"10px 14px", color:TEXT, fontSize:13, fontFamily:SANS, outline:"none" }} />
+            </div>
+            <div style={{ padding:"0 22px 12px", display:"flex", gap:6, flexWrap:"wrap", flexShrink:0 }}>
+              {CATEGORIES.map(c => (
+                <div key={c} onClick={() => setCatFilter(c)} style={{ padding:"4px 10px", borderRadius:20, fontSize:10, cursor:"pointer", background: catFilter===c ? `${ACID}15` : PANEL_2, border:`1px solid ${catFilter===c ? ACID+"44" : BORDER}`, color: catFilter===c ? ACID : MUTED, fontFamily:MONO }}>
+                  {c}
+                </div>
+              ))}
+            </div>
+            <div style={{ overflowY:"auto", flex:1, padding:"0 22px 16px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                {filtered.map(tool => (
+                  <div key={tool.name} onClick={() => { setPicked(tool); setPlan(tool.plans[0]?.label || ""); setStep(2); }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = ACID+"44"}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = BORDER}
+                    style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:8, padding:"12px 14px", cursor:"pointer", transition:"all 0.15s", display:"flex", alignItems:"center", gap:10 }}>
+                    <span style={{ color:ACID, fontSize:14, flexShrink:0 }}>{tool.icon}</span>
+                    <div>
+                      <div style={{ fontSize:12, color:TEXT, fontWeight:500 }}>{tool.name}</div>
+                      <div style={{ fontSize:9, color:MUTED, fontFamily:MONO, letterSpacing:1 }}>{tool.cat.toUpperCase()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {step === 2 && picked && (
+          <div style={{ overflowY:"auto", flex:1, padding:"20px 22px" }}>
+            {picked.name === "Custom" && (
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, letterSpacing:1.5, marginBottom:8 }}>TOOL NAME</div>
+                <input autoFocus value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. My Custom Tool" style={{ width:"100%", background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:7, padding:"10px 14px", color:TEXT, fontSize:13, fontFamily:SANS, outline:"none" }} />
+              </div>
+            )}
+            {picked.plans.length > 0 && (
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, letterSpacing:1.5, marginBottom:8 }}>PLAN</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {picked.plans.map(p => (
+                    <div key={p.label} onClick={() => setPlan(p.label)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", borderRadius:7, cursor:"pointer", background: plan===p.label ? `${ACID}10` : PANEL_2, border:`1px solid ${plan===p.label ? ACID+"44" : BORDER}`, transition:"all 0.15s" }}>
+                      <span style={{ fontSize:12, color: plan===p.label ? ACID : TEXT }}>{p.label}</span>
+                      <span style={{ fontSize:12, color:MUTED, fontFamily:MONO }}>${p.cost}/mo</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {picked.name === "Custom" && (
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, letterSpacing:1.5, marginBottom:8 }}>MONTHLY COST</div>
+                <div style={{ display:"flex", alignItems:"center", background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:7, padding:"10px 14px" }}>
+                  <span style={{ color:MUTED, marginRight:6 }}>$</span>
+                  <input type="number" value={customCost} onChange={e => setCustomCost(e.target.value)} placeholder="0" style={{ background:"transparent", border:"none", color:TEXT, fontSize:13, fontFamily:MONO, outline:"none", width:"100%" }} />
+                  <span style={{ color:MUTED, fontSize:11 }}>/mo</span>
+                </div>
+              </div>
+            )}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, letterSpacing:1.5, marginBottom:8 }}>BILLING CYCLE</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {["monthly","annual"].map(b => (
+                  <div key={b} onClick={() => setBillingCycle(b)} style={{ flex:1, padding:"10px", borderRadius:7, cursor:"pointer", textAlign:"center", background: billingCycle===b ? `${ACID}10` : PANEL_2, border:`1px solid ${billingCycle===b ? ACID+"44" : BORDER}`, fontSize:12, color: billingCycle===b ? ACID : TEXT, textTransform:"capitalize" }}>{b}</div>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom:20 }}>
+              <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, letterSpacing:1.5, marginBottom:8 }}>PROJECT (OPTIONAL)</div>
+              <input value={project} onChange={e => setProject(e.target.value)} placeholder="e.g. My App, Client Work, Personal" style={{ width:"100%", background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:7, padding:"10px 14px", color:TEXT, fontSize:13, fontFamily:SANS, outline:"none" }} />
+            </div>
+            {cost > 0 && (
+              <div style={{ background:`${ACID}08`, border:`1px solid ${ACID}25`, borderRadius:8, padding:"12px 16px", marginBottom:20, display:"flex", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, marginBottom:4 }}>MONTHLY</div>
+                  <div style={{ fontSize:20, fontWeight:800, color:ACID, fontFamily:MONO }}>${cost}</div>
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, marginBottom:4 }}>ANNUAL</div>
+                  <div style={{ fontSize:20, fontWeight:800, color:WARN, fontFamily:MONO }}>${cost * 12}</div>
+                </div>
+              </div>
+            )}
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setStep(1)} style={{ flex:1, background:"transparent", border:`1px solid ${BORDER}`, color:MUTED, padding:"11px", borderRadius:7, fontSize:13, cursor:"pointer", fontFamily:SANS }}>← Back</button>
+              <button onClick={handleAdd} disabled={!plan && picked.name !== "Custom"} style={{ flex:2, background:ACID, border:"none", color:BG, padding:"11px", borderRadius:7, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:SANS, boxShadow:`0 0 16px ${ACID}44`, opacity:(!plan && picked.name !== "Custom") ? 0.4 : 1 }}>
+                Add to Stack →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── TOOLTIPS ─────────────────────────────────────────────────
 const SpendTip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -427,14 +608,20 @@ const ScoreTip = ({ active, payload, label }) => {
 
 // ── MAIN ──────────────────────────────────────────────────────
 export default function HektiqDashboard() {
-  const [activeNav, setActiveNav] = useState("DASHBOARD");
+  const [activeNav, setActiveNav]   = useState("DASHBOARD");
   const [hoveredTool, setHoveredTool] = useState(null);
-  const [digestOn, setDigestOn] = useState(true);
+  const [digestOn, setDigestOn]     = useState(true);
+  const [showAddTool, setShowAddTool] = useState(false);
+  const [userTools, setUserTools]   = useState(tools);
 
-  const totalSpend  = tools.reduce((s,t) => s+t.cost, 0);
-  const overlapCost = tools.filter(t=>t.overlap).reduce((s,t)=>s+t.cost,0);
-  const yearForecast= Math.round(totalSpend*12*1.08);
-  const totalROI    = tools.reduce((s,t)=>s+t.roi,0);
+  const handleAddTool = (newTool) => {
+    setUserTools(prev => [...prev, newTool]);
+  };
+
+  const totalSpend   = userTools.reduce((s,t) => s+t.cost, 0);
+  const overlapCost  = userTools.filter(t=>t.overlap).reduce((s,t)=>s+t.cost,0);
+  const yearForecast = Math.round(totalSpend*12*1.08);
+  const totalROI     = userTools.reduce((s,t)=>s+t.roi,0);
   const severityColor = s => s==="high"?WARN:s==="medium"?BLUE:MUTED;
 
   return (
@@ -491,7 +678,7 @@ export default function HektiqDashboard() {
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <button style={{ background:"transparent", color:MUTED, border:`1px solid ${BORDER}`, padding:"8px 16px", fontFamily:SANS, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5 }}>IMPORT TOOL</button>
-            <button style={{ background:ACID, color:BG, border:"none", padding:"8px 18px", fontFamily:SANS, fontWeight:700, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5, boxShadow:`0 0 16px ${ACID}44` }}>+ ADD TOOL</button>
+            <button onClick={()=>setShowAddTool(true)} style={{ background:ACID, color:BG, border:"none", padding:"8px 18px", fontFamily:SANS, fontWeight:700, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5, boxShadow:`0 0 16px ${ACID}44` }}>+ ADD TOOL</button>
           </div>
         </div>
 
@@ -562,7 +749,7 @@ export default function HektiqDashboard() {
           {[
             { label:"MONTHLY BURN",      value:totalSpend,   prefix:"$", suffix:"",    sub:"+$12 vs last month",       color:WARN  },
             { label:"ANNUAL FORECAST",   value:yearForecast, prefix:"$", suffix:"",    sub:"↑ trending upward",         color:WARN  },
-            { label:"ACTIVE TOOLS",      value:tools.length, prefix:"",  suffix:"",    sub:"3 over optimal",            color:TEXT  },
+            { label:"ACTIVE TOOLS",      value:userTools.length, prefix:"",  suffix:"",    sub:"3 over optimal",            color:TEXT  },
             { label:"REVENUE ATTRIBUTED",value:totalROI,     prefix:"$", suffix:"/mo", sub:"from tagged tools",         color:GREEN },
             { label:"POTENTIAL SAVINGS", value:51,           prefix:"$", suffix:"/mo", sub:"via recommendations",       color:ACID  },
           ].map(({label,value,prefix,suffix,sub,color}) => (
@@ -683,7 +870,7 @@ export default function HektiqDashboard() {
             </div>
 
             <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-              {tools.map((tool,i) => {
+              {userTools.map((tool,i) => {
                 const isDead = tool.daysAgo > 20;
                 const roiColor = tool.roi > 100 ? GREEN : tool.roi > 0 ? BLUE : MUTED;
                 return (
@@ -824,6 +1011,13 @@ export default function HektiqDashboard() {
           .hektiq-main { padding: 16px !important; }
         }
       `}</style>
+
+      {/* ── ADD TOOL MODAL ── */}
+      {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
+
     </div>
   );
 }
+
+
+
