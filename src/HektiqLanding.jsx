@@ -206,90 +206,212 @@ function ArchetypeCard({ name, emoji, color, traits }) {
 
 // ── STACK CALCULATOR ──────────────────────────────────────────
 const TOOL_PLANS = [
-  { name: "Claude API", icon: "◆", plans: [
+  { name: "Claude API", icon: "◆", category: "agent", plans: [
     { label: "Free",     cost: 0   },
     { label: "Pro",      cost: 20  },
     { label: "Max",      cost: 100 },
     { label: "Team",     cost: 30  },
   ]},
-  { name: "ChatGPT", icon: "◉", plans: [
+  { name: "ChatGPT", icon: "◉", category: "agent", plans: [
     { label: "Free",       cost: 0  },
     { label: "Plus",       cost: 20 },
     { label: "Team",       cost: 30 },
     { label: "Enterprise", cost: 60 },
   ]},
-  { name: "Cursor", icon: "▸", plans: [
+  { name: "Cursor", icon: "▸", category: "agent", plans: [
     { label: "Hobby",    cost: 0  },
     { label: "Pro",      cost: 20 },
     { label: "Business", cost: 40 },
   ]},
-  { name: "Perplexity", icon: "◈", plans: [
+  { name: "Perplexity", icon: "◈", category: "agent", plans: [
     { label: "Free", cost: 0  },
     { label: "Pro",  cost: 20 },
   ]},
-  { name: "Midjourney", icon: "◐", plans: [
+  { name: "Midjourney", icon: "◐", category: "agent", plans: [
     { label: "Basic",    cost: 10  },
     { label: "Standard", cost: 30  },
     { label: "Pro",      cost: 60  },
     { label: "Mega",     cost: 120 },
   ]},
-  { name: "Runway ML", icon: "◑", plans: [
+  { name: "Runway ML", icon: "◑", category: "agent", plans: [
     { label: "Standard",  cost: 15 },
     { label: "Pro",       cost: 35 },
     { label: "Unlimited", cost: 95 },
   ]},
-  { name: "ElevenLabs", icon: "◒", plans: [
+  { name: "ElevenLabs", icon: "◒", category: "agent", plans: [
     { label: "Free",    cost: 0  },
     { label: "Starter", cost: 5  },
     { label: "Creator", cost: 22 },
     { label: "Pro",     cost: 99 },
   ]},
-  { name: "GitHub Copilot", icon: "◓", plans: [
+  { name: "GitHub Copilot", icon: "◓", category: "agent", plans: [
     { label: "Individual", cost: 10 },
     { label: "Business",   cost: 19 },
     { label: "Enterprise", cost: 39 },
   ]},
-  { name: "Notion AI", icon: "▣", plans: [
+  { name: "GitHub", icon: "◎", category: "tools", plans: [
+    { label: "Free", cost: 0 },
+    { label: "Team", cost: 4 },
+    { label: "Enterprise", cost: 21 },
+  ]},
+  { name: "Notion AI", icon: "▣", category: "tools", plans: [
     { label: "Free",     cost: 0  },
     { label: "Plus",     cost: 10 },
     { label: "Business", cost: 15 },
   ]},
-  { name: "Zapier", icon: "⚡", plans: [
+  { name: "Zapier", icon: "⚡", category: "tools", plans: [
     { label: "Free",         cost: 0  },
     { label: "Starter",      cost: 20 },
     { label: "Professional", cost: 49 },
     { label: "Team",         cost: 69 },
   ]},
-  { name: "Vercel", icon: "▲", plans: [
+  { name: "Vercel", icon: "▲", category: "tools", plans: [
     { label: "Hobby", cost: 0  },
     { label: "Pro",   cost: 20 },
   ]},
-  { name: "Supabase", icon: "◫", plans: [
+  { name: "Supabase", icon: "◫", category: "tools", plans: [
     { label: "Free",  cost: 0  },
     { label: "Pro",   cost: 25 },
     { label: "Team",  cost: 599},
   ]},
-  { name: "Replit", icon: "◧", plans: [
+  { name: "Replit", icon: "◧", category: "agent", plans: [
     { label: "Free",  cost: 0  },
     { label: "Core",  cost: 15 },
     { label: "Teams", cost: 20 },
   ]},
-  { name: "Lovable", icon: "◈", plans: [
-    { label: "Free",   cost: 0   },
-    { label: "Starter",cost: 25  },
-    { label: "Launch", cost: 50  },
-    { label: "Scale",  cost: 100 },
+  { name: "Lovable", icon: "◈", category: "agent", plans: [
+    { label: "Free",    cost: 0   },
+    { label: "Starter", cost: 25  },
+    { label: "Launch",  cost: 50  },
+    { label: "Scale",   cost: 100 },
   ]},
-  { name: "Bolt", icon: "◉", plans: [
+  { name: "Bolt", icon: "◉", category: "agent", plans: [
     { label: "Free", cost: 0  },
     { label: "Pro",  cost: 20 },
   ]},
-  { name: "Other (unlisted)", icon: "＋", plans: [
+  // ── Infrastructure (Pieter Levels stack) ──
+  { name: "Cloudflare", icon: "☁", category: "tools", plans: [
+    { label: "Free",       cost: 0   },
+    { label: "Pro",        cost: 20  },
+    { label: "Business",   cost: 200 },
+  ]},
+  { name: "Hetzner", icon: "◈", category: "tools", plans: [
+    { label: "CX22 (~2GB)", cost: 4  },
+    { label: "CX32 (~4GB)", cost: 9  },
+    { label: "CX42 (~8GB)", cost: 18 },
+    { label: "CX52 (~16GB)",cost: 36 },
+    { label: "Custom ~$50", cost: 50 },
+  ]},
+  { name: "Backblaze", icon: "◉", category: "tools", plans: [
+    { label: "B2 ~$7",  cost: 7  },
+    { label: "B2 ~$15", cost: 15 },
+    { label: "B2 ~$30", cost: 30 },
+  ]},
+  { name: "Xero", icon: "▦", category: "tools", plans: [
+    { label: "Starter",  cost: 15 },
+    { label: "Standard", cost: 42 },
+    { label: "Premium",  cost: 78 },
+  ]},
+  // ── Marc Lou stack ──
+  { name: "MongoDB Atlas", icon: "◉", category: "tools", plans: [
+    { label: "Free M0",   cost: 0  },
+    { label: "Flex",      cost: 10 },
+    { label: "Dedicated", cost: 57 },
+  ]},
+  { name: "Resend", icon: "◎", category: "tools", plans: [
+    { label: "Free",  cost: 0  },
+    { label: "Pro",   cost: 20 },
+    { label: "Scale", cost: 90 },
+  ]},
+  { name: "Mailgun", icon: "◈", category: "tools", plans: [
+    { label: "Free (trial)", cost: 0 },
+    { label: "Foundation",   cost: 4 },
+    { label: "Growth",       cost: 35},
+  ]},
+  { name: "Stripe", icon: "◆", category: "tools", plans: [
+    { label: "Pay-as-go (2.9%+30¢)", cost: 0  },
+    { label: "Custom",                cost: 0  },
+  ]},
+  { name: "Lemon Squeezy", icon: "◑", category: "tools", plans: [
+    { label: "Pay-as-go (5%+50¢)", cost: 0 },
+  ]},
+  { name: "Tailwind CSS", icon: "▸", category: "tools", plans: [
+    { label: "Free (open source)", cost: 0 },
+    { label: "Tailwind UI",        cost: 25 },
+  ]},
+  // ── Other popular tools ──
+  { name: "Linear", icon: "◈", category: "tools", plans: [
+    { label: "Free",     cost: 0  },
+    { label: "Business", cost: 8  },
+  ]},
+  { name: "Figma", icon: "◐", category: "tools", plans: [
+    { label: "Free",         cost: 0  },
+    { label: "Professional", cost: 15 },
+    { label: "Organization", cost: 45 },
+  ]},
+  { name: "Loom", icon: "◒", category: "tools", plans: [
+    { label: "Free",     cost: 0  },
+    { label: "Business", cost: 15 },
+  ]},
+  { name: "Slack", icon: "◉", category: "tools", plans: [
+    { label: "Free",    cost: 0  },
+    { label: "Pro",     cost: 8  },
+    { label: "Business",cost: 15 },
+  ]},
+  { name: "Intercom", icon: "◎", category: "tools", plans: [
+    { label: "Essential", cost: 39  },
+    { label: "Advanced",  cost: 99  },
+    { label: "Expert",    cost: 139 },
+  ]},
+  { name: "PostHog", icon: "◓", category: "tools", plans: [
+    { label: "Free",  cost: 0  },
+    { label: "Scale", cost: 20 },
+  ]},
+  { name: "Sentry", icon: "▣", category: "tools", plans: [
+    { label: "Free",     cost: 0  },
+    { label: "Team",     cost: 26 },
+    { label: "Business", cost: 80 },
+  ]},
+  { name: "PlanetScale", icon: "◫", category: "tools", plans: [
+    { label: "Hobby",  cost: 0  },
+    { label: "Scaler", cost: 39 },
+  ]},
+  { name: "Railway", icon: "◧", category: "tools", plans: [
+    { label: "Free",   cost: 0  },
+    { label: "Hobby",  cost: 5  },
+    { label: "Pro",    cost: 20 },
+  ]},
+  { name: "Fly.io", icon: "◑", category: "tools", plans: [
+    { label: "Pay-as-go ~$5",  cost: 5  },
+    { label: "Pay-as-go ~$20", cost: 20 },
+    { label: "Pay-as-go ~$50", cost: 50 },
+  ]},
+  { name: "AWS", icon: "◆", category: "tools", plans: [
+    { label: "~$10/mo",  cost: 10  },
+    { label: "~$50/mo",  cost: 50  },
+    { label: "~$100/mo", cost: 100 },
+    { label: "~$500/mo", cost: 500 },
+  ]},
+  { name: "OpenAI API", icon: "◉", category: "agent", plans: [
+    { label: "Pay-as-go ~$10",  cost: 10  },
+    { label: "Pay-as-go ~$50",  cost: 50  },
+    { label: "Pay-as-go ~$100", cost: 100 },
+  ]},
+  { name: "Anthropic API", icon: "◆", category: "agent", plans: [
+    { label: "Pay-as-go ~$20",  cost: 20  },
+    { label: "Pay-as-go ~$50",  cost: 50  },
+    { label: "Pay-as-go ~$100", cost: 100 },
+  ]},
+  { name: "Other (unlisted)", icon: "＋", category: "agent", plans: [
     { label: "Custom", cost: 0 },
   ]},
 ];
 
+const AI_AGENTS   = TOOL_PLANS.filter(t => t.category === "agent");
+const INFRA_TOOLS = TOOL_PLANS.filter(t => t.category === "tools");
+
 function StackCalculator({ mobile }) {
+  const [tab, setTab]                 = useState("agent");
   const [selected, setSelected]       = useState({});
   const [planChoice, setPlanChoice]   = useState({});
   const [customCosts, setCustomCosts] = useState({});
@@ -320,10 +442,13 @@ function StackCalculator({ mobile }) {
   const totalMonthly = activeTools.reduce((s, t) => s + getCost(t), 0);
   const totalAnnual  = totalMonthly * 12;
 
-  const aiChatTools  = ["Claude API","ChatGPT","Perplexity"].filter(n => selected[n]);
+  const aiChatTools  = ["Claude API","ChatGPT","Perplexity","Anthropic API","OpenAI API"].filter(n => selected[n]);
   const devTools     = ["Cursor","GitHub Copilot","Replit"].filter(n => selected[n]);
   const noCodeTools  = ["Lovable","Bolt","Replit"].filter(n => selected[n]);
-  const overlapGroups= [aiChatTools, devTools, noCodeTools].filter(g => g.length > 1);
+  const emailTools   = ["Resend","Mailgun"].filter(n => selected[n]);
+  const dbTools      = ["Supabase","MongoDB Atlas","PlanetScale"].filter(n => selected[n]);
+  const hostTools    = ["Vercel","Railway","Fly.io","Hetzner","AWS"].filter(n => selected[n]);
+  const overlapGroups= [aiChatTools, devTools, noCodeTools, emailTools, dbTools, hostTools].filter(g => g.length > 1);
   const overlapCount = overlapGroups.reduce((s, g) => s + g.length - 1, 0);
   const overlapCost  = overlapCount * 18;
   const healthScore  = Math.max(20, Math.min(99, 95 - (activeTools.length * 4) - (overlapCount * 12)));
@@ -358,9 +483,32 @@ function StackCalculator({ mobile }) {
           </p>
         </div>
 
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 20, background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden" }}>
+          {[
+            { key: "agent", label: "AI Agents", count: AI_AGENTS.length },
+            { key: "tools", label: "Infrastructure & Tools", count: INFRA_TOOLS.length },
+          ].map(t => (
+            <div key={t.key} onClick={() => setTab(t.key)} style={{
+              flex: 1, padding: "12px 16px", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              background: tab === t.key ? `${ACID}12` : "transparent",
+              borderBottom: tab === t.key ? `2px solid ${ACID}` : "2px solid transparent",
+              transition: "all 0.15s",
+              fontSize: 12, fontWeight: tab === t.key ? 700 : 400,
+              color: tab === t.key ? ACID : MUTED,
+              lineHeight: 1,
+            }}>
+              <span>{tab === t.key ? (t.key === "agent" ? "🤖" : "🔧") : (t.key === "agent" ? "🤖" : "🔧")}</span>
+              <span>{t.label}</span>
+              <span style={{ fontSize: 10, color: tab === t.key ? ACID_S : "#2d3539", fontFamily: MONO }}>({t.count})</span>
+            </div>
+          ))}
+        </div>
+
         {/* Tool grid with plan dropdowns */}
         <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
-          {TOOL_PLANS.map(tool => {
+          {(tab === "agent" ? AI_AGENTS : INFRA_TOOLS).map(tool => {
             const active = selected[tool.name];
             const chosenLabel = planChoice[tool.name] || (tool.plans.find(p => p.cost > 0) || tool.plans[0])?.label;
             const chosenPlan  = tool.plans.find(p => p.label === chosenLabel) || tool.plans[0];
