@@ -296,6 +296,7 @@ function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
       </svg>
 
       {/* Legend stat */}
+      {userTools?.length > 0 && (
       <div style={{ display:"flex", gap:20, marginTop:8, paddingTop:12, borderTop:`1px solid ${BORDER}` }}>
         {[
           { label:"Workflow connections", value: activeEdges.filter(e=>e.type==="workflow").length.toString(), color:ACID },
@@ -309,6 +310,7 @@ function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }
