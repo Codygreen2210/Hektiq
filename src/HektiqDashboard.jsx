@@ -150,9 +150,20 @@ function Counter({ target, prefix="", suffix="", duration=1000 }) {
 }
 
 // ── TOOL RELATIONSHIP GRAPH ────────────────────────────────────
-function RelationshipGraph() {
+function RelationshipGraph({ userTools, dynamicNodes }) {
   const [hovered, setHovered] = useState(null);
   const W = 560, H = 260;
+  const activeNodes = dynamicNodes || nodes;
+
+  // Auto-generate edges based on tool categories
+  const autoEdges = [];
+  const toolList = userTools || [];
+  toolList.forEach((t, i) => {
+    toolList.slice(i+1).forEach(t2 => {
+      if (t.cat === t2.cat) autoEdges.push({ from:t.id, to:t2.id, type: t.overlap||t2.overlap ? "overlap" : "workflow" });
+    });
+  });
+  const activeEdges = autoEdges.length > 0 ? autoEdges : edges;
 
   const isEdgeActive = (e) => {
     if (!hovered) return true;
@@ -161,7 +172,7 @@ function RelationshipGraph() {
   const isNodeDimmed = (id) => {
     if (!hovered) return false;
     if (id === hovered) return false;
-    return !edges.some(e => (e.from === id || e.to === id) && (e.from === hovered || e.to === hovered));
+    return !activeEdges.some(e => (e.from === id || e.to === id) && (e.from === hovered || e.to === hovered));
   };
 
   return (
@@ -194,8 +205,9 @@ function RelationshipGraph() {
         </defs>
 
         {/* Edges */}
-        {edges.map((e, i) => {
-          const a = nodes[e.from], b = nodes[e.to];
+        {activeEdges.map((e, i) => {
+          const a = activeNodes[e.from], b = activeNodes[e.to];
+          if (!a || !b) return null;
           const active = isEdgeActive(e);
           const isOverlap = e.type === "overlap";
           return (
@@ -211,7 +223,7 @@ function RelationshipGraph() {
         })}
 
         {/* Nodes */}
-        {Object.entries(nodes).map(([id, n]) => {
+        {Object.entries(activeNodes).map(([id, n]) => {
           const isHov = hovered === id;
           const dimmed = isNodeDimmed(id);
           const nodeColor = n.overlap ? WARN : n.dead ? MUTED : ACID;
@@ -622,6 +634,71 @@ export default function HektiqDashboard() {
   const overlapCost  = userTools.filter(t=>t.overlap).reduce((s,t)=>s+t.cost,0);
   const yearForecast = Math.round(totalSpend*12*1.08);
   const totalROI     = userTools.reduce((s,t)=>s+t.roi,0);
+  const deadTools    = userTools.filter(t=>t.daysAgo > 20);
+  const overlapTools = userTools.filter(t=>t.overlap);
+
+  // ── DYNAMIC HEALTH SCORE ──────────────────────────────────────
+  const healthScore = Math.max(10, Math.min(99,
+    95
+    - (userTools.length > 5 ? (userTools.length - 5) * 5 : 0)
+    - (overlapTools.length * 12)
+    - (deadTools.length * 8)
+  ));
+  const healthColor = healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
+
+  // ── DYNAMIC HEALTH ISSUES ─────────────────────────────────────
+  const dynamicIssues = [
+    overlapTools.length > 0 && { label:`Tool redundancy detected (${overlapTools.length})`, severity:"high" },
+    deadTools.length > 0    && { label:`${deadTools.length} underused subscription${deadTools.length>1?"s":""}`, severity:"medium" },
+    userTools.length > 6    && { label:"Stack complexity high", severity:"medium" },
+    totalSpend > 150        && { label:"Above average spend", severity:"low" },
+  ].filter(Boolean);
+
+  // ── DYNAMIC SPEND CHART ───────────────────────────────────────
+  const dynamicSpendData = [
+    { month:"Nov", spend: Math.round(totalSpend * 0.74), forecast:null },
+    { month:"Dec", spend: Math.round(totalSpend * 0.83), forecast:null },
+    { month:"Jan", spend: Math.round(totalSpend * 0.90), forecast:null },
+    { month:"Feb", spend: Math.round(totalSpend * 0.85), forecast:null },
+    { month:"Mar", spend: Math.round(totalSpend * 0.99), forecast:null },
+    { month:"Apr", spend: Math.round(totalSpend * 1.00), forecast:null },
+    { month:"May", spend: totalSpend, forecast: totalSpend },
+    { month:"Jun", spend: null, forecast: Math.round(totalSpend * 1.04) },
+    { month:"Jul", spend: null, forecast: Math.round(totalSpend * 1.08) },
+    { month:"Aug", spend: null, forecast: Math.round(totalSpend * 1.12) },
+  ];
+
+  // ── DYNAMIC RECOMMENDATIONS ───────────────────────────────────
+  const dynamicRecs = [
+    overlapTools.length >= 2 && {
+      id:1, label:"CONSOLIDATE AI CORE",
+      detail:`You have ${overlapTools.length} overlapping tools. Consolidating could save $${overlapCost}/mo.`,
+      savings: overlapCost, efficiency:"+18%", confidence:94,
+    },
+    deadTools.length > 0 && {
+      id:2, label:"PAUSE DEAD WEIGHT",
+      detail:`${deadTools.map(t=>t.name).join(", ")} ${deadTools.length>1?"haven't":"hasn't"} been used recently. Pause to save $${deadTools.reduce((s,t)=>s+t.cost,0)}/mo.`,
+      savings: deadTools.reduce((s,t)=>s+t.cost,0), efficiency:"+4%", confidence:88,
+    },
+    userTools.length > 6 && {
+      id:3, label:"REDUCE STACK SIZE",
+      detail:`You're running ${userTools.length} tools. Most efficient builders use 4 or fewer.`,
+      savings: null, efficiency:null, confidence:76,
+    },
+  ].filter(Boolean);
+
+  // ── DYNAMIC RELATIONSHIP GRAPH ────────────────────────────────
+  const dynamicNodes = {};
+  const nodePositions = [
+    {x:100,y:110},{x:220,y:52},{x:370,y:72},{x:240,y:172},
+    {x:95,y:205},{x:310,y:215},{x:450,y:155},{x:160,y:280},
+    {x:380,y:290},{x:480,y:60},{x:50,y:60},
+  ];
+  userTools.forEach((t,i) => {
+    const pos = nodePositions[i] || { x: 100 + (i%4)*120, y: 60 + Math.floor(i/4)*100 };
+    dynamicNodes[t.id] = { x:pos.x, y:pos.y, label:t.name, cost:t.cost, overlap:t.overlap, dead:!t.active||t.daysAgo>20 };
+  });
+
   const severityColor = s => s==="high"?WARN:s==="medium"?BLUE:MUTED;
 
   return (
@@ -654,8 +731,8 @@ export default function HektiqDashboard() {
         <div style={{ padding:"0 24px 16px" }}>
           <div style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:8, padding:"12px 14px" }}>
             <div style={{ fontSize:9, color:MUTED, letterSpacing:2, marginBottom:6 }}>CONNECTED TOOLS</div>
-            <div style={{ fontSize:22, fontWeight:800, color:TEXT, fontFamily:MONO }}>7</div>
-            <div style={{ fontSize:9, color:MUTED, marginTop:2 }}>2 need review</div>
+            <div style={{ fontSize:22, fontWeight:800, color:TEXT, fontFamily:MONO }}>{userTools.length}</div>
+            <div style={{ fontSize:9, color:MUTED, marginTop:2 }}>{overlapTools.length > 0 ? `${overlapTools.length} overlapping` : "Stack looks clean"}</div>
           </div>
         </div>
         <div style={{ padding:"16px 24px 0", borderTop:`1px solid ${BORDER}` }}>
@@ -693,27 +770,27 @@ export default function HektiqDashboard() {
               <div>
                 <div style={{ fontSize:10, color:MUTED, letterSpacing:3, marginBottom:8, fontFamily:MONO }}>STACK HEALTH</div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-                  <div style={{ fontSize:52, fontWeight:800, color:ACID, lineHeight:1, fontFamily:MONO, textShadow:`0 0 30px ${ACID}44` }}>
-                    <Counter target={74} suffix="%"/>
+                  <div style={{ fontSize:52, fontWeight:800, color:healthColor, lineHeight:1, fontFamily:MONO, textShadow:`0 0 30px ${healthColor}44` }}>
+                    <Counter target={healthScore} suffix="%"/>
                   </div>
-                  <div style={{ fontSize:12, color:GREEN, fontFamily:MONO }}>▲ +6 this month</div>
+                  <div style={{ fontSize:12, color:GREEN, fontFamily:MONO }}>▲ live</div>
                 </div>
               </div>
               <div style={{ background:`${WARN}15`, border:`1px solid ${WARN}40`, color:WARN, fontSize:9, padding:"5px 12px", borderRadius:3, letterSpacing:2, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:WARN, boxShadow:`0 0 8px ${WARN}`, animation:"blink 1.5s infinite" }}/>
-                4 ISSUES DETECTED
+                {dynamicIssues.length} ISSUES DETECTED
               </div>
             </div>
             <div style={{ marginBottom:18 }}>
               <div style={{ height:4, background:"#1a2022", borderRadius:2, overflow:"hidden" }}>
-                <div style={{ width:"74%", height:"100%", background:`linear-gradient(90deg,${ACID_S},${ACID})`, borderRadius:2, boxShadow:`0 0 10px ${ACID}66` }}/>
+                <div style={{ width:`${healthScore}%`, height:"100%", background:`linear-gradient(90deg,${ACID_S},${healthColor})`, borderRadius:2, boxShadow:`0 0 10px ${healthColor}66`, transition:"width 0.8s ease" }}/>
               </div>
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, fontSize:9, color:"#2a3035", fontFamily:MONO }}>
                 <span>0</span><span>CRITICAL</span><span>WARNING</span><span>OPTIMAL</span><span>100</span>
               </div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {healthIssues.map((issue,i) => (
+              {(dynamicIssues.length > 0 ? dynamicIssues : [{ label:"No issues detected", severity:"low" }]).map((issue,i) => (
                 <div key={i} style={{ background:PANEL_2, border:`1px solid ${severityColor(issue.severity)}22`, borderRadius:6, padding:"9px 12px", display:"flex", alignItems:"center", gap:8 }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:severityColor(issue.severity), flexShrink:0, boxShadow:`0 0 6px ${severityColor(issue.severity)}` }}/>
                   <div style={{ fontSize:11, color:"#8a9299" }}>{issue.label}</div>
@@ -798,7 +875,7 @@ export default function HektiqDashboard() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={spendData} margin={{ top:4, right:0, bottom:0, left:-18 }}>
+              <AreaChart data={dynamicSpendData} margin={{ top:4, right:0, bottom:0, left:-18 }}>
                 <defs>
                   <linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={ACID} stopOpacity={0.18}/>
@@ -927,7 +1004,7 @@ export default function HektiqDashboard() {
                 <span style={{ fontSize:8, color:MUTED, fontFamily:MONO }}>AI ACTIVE</span>
               </div>
             </div>
-            {recommendations.map(rec => (
+            {(dynamicRecs.length > 0 ? dynamicRecs : [{ id:0, label:"STACK LOOKS GOOD", detail:"No major issues detected. Keep monitoring for price changes and new overlaps.", savings:null, efficiency:null, confidence:100 }]).map(rec => (
               <div key={rec.id} style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:8, padding:"12px 14px" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
                   <div style={{ fontSize:10, fontWeight:700, color:ACID, letterSpacing:1, fontFamily:MONO }}>✦ {rec.label}</div>
@@ -955,7 +1032,7 @@ export default function HektiqDashboard() {
 
         {/* ── TOOL RELATIONSHIP GRAPH ── */}
         <div style={{ marginBottom:14 }}>
-          <RelationshipGraph/>
+          <RelationshipGraph userTools={userTools} dynamicNodes={dynamicNodes}/>
         </div>
 
         {/* ── STACK SIMULATION ── */}
