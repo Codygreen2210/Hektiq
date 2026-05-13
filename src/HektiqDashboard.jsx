@@ -877,7 +877,16 @@ export default function HektiqDashboard() {
                   </div>
                 ))}
               </div>
-              <button style={{ background:`${PURPLE}15`, border:`1px solid ${PURPLE}40`, color:PURPLE, padding:"7px 18px", borderRadius:4, fontSize:10, letterSpacing:1.5, cursor:"pointer", fontFamily:SANS, fontWeight:600, width:"100%" }}>
+              <button
+                onClick={() => {
+                  const text = `My Hektiq Stack Score: ${healthScore}% — I'm "The Solo Hacker" 🔥\n\nStack: ${analyzedTools.length} tools · $${totalSpend}/mo burn\n\nCheck yours at hektiq.com`;
+                  if (navigator.share) {
+                    navigator.share({ title: "My Hektiq Stack", text });
+                  } else {
+                    navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+                  }
+                }}
+                style={{ background:`${PURPLE}15`, border:`1px solid ${PURPLE}40`, color:PURPLE, padding:"7px 18px", borderRadius:4, fontSize:10, letterSpacing:1.5, cursor:"pointer", fontFamily:SANS, fontWeight:600, width:"100%" }}>
                 SHARE ARCHETYPE ↗
               </button>
             </div>
