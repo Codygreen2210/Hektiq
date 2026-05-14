@@ -768,7 +768,7 @@ export default function HektiqLanding() {
             <button style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 14px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap" }}>Sign in</button>
           )}
           <button
-            onClick={() => document.getElementById("hero-email")?.focus()}
+            onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
             style={{ background: WARN, color: "#fff", border: "none", padding: mobile ? "7px 12px" : "7px 16px", borderRadius: 5, fontSize: mobile ? 11 : 12, fontWeight: 700, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", boxShadow: `0 0 12px ${WARN}44` }}
           >
             {mobile ? "Join →" : "Get Early Access"}
@@ -777,7 +777,7 @@ export default function HektiqLanding() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "120px 24px 80px", position: "relative", overflow: "hidden" }}>
+      <section id="hero-section" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "120px 24px 80px", position: "relative", overflow: "hidden" }}>
 
         {/* Background grid */}
         <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${BORDER} 1px, transparent 1px), linear-gradient(90deg, ${BORDER} 1px, transparent 1px)`, backgroundSize: "60px 60px", opacity: 0.3 }} />
@@ -1007,7 +1007,7 @@ export default function HektiqLanding() {
                 ))}
               </div>
               <button
-                onClick={() => document.getElementById("hero-email")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
                 style={{ width: "100%", background: "transparent", border: `1px solid ${BORDER}`, color: MUTED, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: BODY }}
               >
                 Join Waitlist
@@ -1044,7 +1044,7 @@ export default function HektiqLanding() {
                 ))}
               </div>
               <button
-                onClick={() => document.getElementById("hero-email")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
                 style={{ width: "100%", background: ACID, border: "none", color: BG, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 16px ${ACID}44` }}
               >
                 Join Waitlist for Early Access →
