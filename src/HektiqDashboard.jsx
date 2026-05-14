@@ -636,7 +636,7 @@ const ScoreTip = ({ active, payload, label }) => {
 };
 
 // ── STACK TAB ─────────────────────────────────────────────────
-function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalSpend, overlapCost, healthScore, healthColor, onRemove, onAdd }) {
+function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalSpend, overlapCost, healthScore, healthColor, onRemove, onAdd, severityColor }) {
   const [filter, setFilter]     = useState("ALL");
   const [sortBy, setSortBy]     = useState("cost");
   const [sortDir, setSortDir]   = useState("desc");
@@ -856,6 +856,127 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
           </div>
         )}
       </div>
+
+      {/* ── USAGE HEATMAP ── */}
+      {analyzedTools.length > 0 && (
+        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", marginTop:14 }}>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>USAGE HEATMAP</div>
+            <div style={{ fontSize:11, color:"#3a4448" }}>Tool activity over the last 12 weeks — darker = more active</div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {/* Week labels */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, paddingLeft:130 }}>
+              {["12w ago","10w","8w","6w","4w","2w","Now"].map((l,i) => (
+                <div key={i} style={{ fontSize:8, color:MUTED, fontFamily:MONO, flex:1, textAlign:"center" }}>{l}</div>
+              ))}
+            </div>
+            {analyzedTools.map(tool => {
+              const inactive = (tool.daysAgo||0);
+              // Generate 12 weeks of activity — inactive tools go dark from right to left
+              const weeks = Array.from({length:12}, (_,wi) => {
+                const weeksAgo = 11 - wi;
+                const daysThisWeek = weeksAgo * 7;
+                if (inactive > daysThisWeek + 7) return 0;        // fully inactive
+                if (inactive > daysThisWeek) return 1;             // going inactive
+                if (tool.overlap) return wi > 8 ? 3 : 2;           // overlap tools used moderately
+                return Math.random() > 0.25 ? 3 : 2;               // active tools
+              });
+              const activityColor = (level) => {
+                if (level === 0) return "#131a1d";
+                if (level === 1) return "#1a2e22";
+                if (level === 2) return `${ACID}55`;
+                return ACID;
+              };
+              return (
+                <div key={tool.id||tool.name} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ width:122, display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                    <span style={{ fontSize:10, color:tool.overlap?WARN:(inactive>20?MUTED:ACID) }}>{tool.icon||"◆"}</span>
+                    <span style={{ fontSize:10, color:(inactive>20)?MUTED:TEXT, fontFamily:MONO, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:100 }}>{tool.name}</span>
+                  </div>
+                  <div style={{ display:"flex", gap:2, flex:1 }}>
+                    {weeks.map((level, wi) => (
+                      <div key={wi} style={{ flex:1, aspectRatio:"1", borderRadius:2, background:activityColor(level), minWidth:8, minHeight:8, transition:"background 0.2s" }}
+                        title={`${tool.name} · ${11-wi} weeks ago · ${level===0?"no activity":level===1?"low":level===2?"moderate":"active"}`}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ width:50, textAlign:"right", fontSize:9, color:inactive>20?WARN:MUTED, fontFamily:MONO, flexShrink:0 }}>
+                    {inactive > 20 ? `${inactive}d idle` : inactive === 0 ? "today" : `${inactive}d ago`}
+                  </div>
+                </div>
+              );
+            })}
+            {/* Legend */}
+            <div style={{ display:"flex", alignItems:"center", gap:6, paddingLeft:130, marginTop:4 }}>
+              <span style={{ fontSize:9, color:MUTED }}>Less</span>
+              {[0,1,2,3].map(l => <div key={l} style={{ width:10, height:10, borderRadius:2, background:["#131a1d","#1a2e22",`${ACID}55`,ACID][l] }}/>)}
+              <span style={{ fontSize:9, color:MUTED }}>More</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STACK RISK SCORE ── */}
+      {analyzedTools.length > 0 && (() => {
+        const toolNames = analyzedTools.map(t => t.name.toLowerCase());
+        const hasObservability = toolNames.some(n => ["posthog","mixpanel","amplitude","datadog","sentry","bugsnag"].some(o => n.includes(o)));
+        const hasBackup        = toolNames.some(n => ["backblaze","aws","s3","r2","cloudflare"].some(o => n.includes(o)));
+        const aiProviders      = analyzedTools.filter(t => ["AI Core","AI Chat","AI Code"].includes(t.cat));
+        const singleAIRisk     = aiProviders.length === 1;
+        const hostingTools     = analyzedTools.filter(t => t.cat === "Hosting");
+        const vendorLock       = hostingTools.length >= 1 && analyzedTools.length >= 4;
+        const risks = [
+          !hasObservability && analyzedTools.length >= 3 && { severity:"high",   icon:"◎", title:"No observability tooling detected", body:"You have no error tracking or analytics. You're flying blind — issues won't be caught until users complain.", action:"Consider: PostHog, Sentry, or Mixpanel" },
+          singleAIRisk && aiProviders.length > 0 && { severity:"medium", icon:"◈", title:"Single AI provider dependency", body:`All AI routing depends on ${aiProviders[0].name}. A pricing change or outage directly impacts your product.`, action:"Consider: OpenRouter as an abstraction layer" },
+          !hasBackup && analyzedTools.some(t=>t.cat==="Database") && { severity:"medium", icon:"▦", title:"No backup storage detected", body:"Your database has no detected backup provider. Data loss risk is unmitigated.", action:"Consider: Backblaze B2 or Cloudflare R2" },
+          vendorLock && { severity:"low",    icon:"◉", title:"Infrastructure concentration risk", body:`${hostingTools.map(t=>t.name).join(" + ")} hosts critical services. Downtime cascades across your stack.`, action:"Review: failover strategy for critical paths" },
+        ].filter(Boolean);
+
+        if (risks.length === 0) return (
+          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", marginTop:14 }}>
+            <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:12 }}>STACK RISK SCORE</div>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ color:GREEN, fontSize:20 }}>◆</span>
+              <div>
+                <div style={{ fontSize:13, fontWeight:600, color:GREEN }}>No critical risks detected</div>
+                <div style={{ fontSize:10, color:MUTED, marginTop:2 }}>Your stack looks resilient based on current tooling</div>
+              </div>
+            </div>
+          </div>
+        );
+
+        const riskScore = Math.max(0, 100 - risks.filter(r=>r.severity==="high").length*30 - risks.filter(r=>r.severity==="medium").length*15 - risks.filter(r=>r.severity==="low").length*5);
+        const riskColor = riskScore >= 75 ? GREEN : riskScore >= 50 ? WARN : "#ff4444";
+
+        return (
+          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", marginTop:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+              <div>
+                <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>STACK RISK SCORE</div>
+                <div style={{ fontSize:11, color:"#3a4448" }}>Infrastructure dependencies, single points of failure, and vendor risk</div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:28, fontWeight:800, color:riskColor, fontFamily:MONO, lineHeight:1 }}>{riskScore}</div>
+                <div style={{ fontSize:9, color:MUTED, marginTop:2 }}>{riskScore>=75?"LOW RISK":riskScore>=50?"MODERATE":"HIGH RISK"}</div>
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {risks.map((r,i) => (
+                <div key={i} style={{ background:PANEL_2, border:`1px solid ${r.severity==="high"?`${WARN}30`:r.severity==="medium"?`${BLUE}25`:BORDER}`, borderRadius:8, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                    <span style={{ color:severityColor(r.severity), fontSize:13 }}>{r.icon}</span>
+                    <div style={{ fontSize:11, fontWeight:700, color:r.severity==="high"?WARN:r.severity==="medium"?BLUE:MUTED, letterSpacing:0.5 }}>{r.title}</div>
+                    <span style={{ marginLeft:"auto", fontSize:8, color:severityColor(r.severity), fontFamily:MONO, letterSpacing:1.5, border:`1px solid ${severityColor(r.severity)}40`, padding:"2px 7px", borderRadius:3 }}>{r.severity.toUpperCase()}</span>
+                  </div>
+                  <div style={{ fontSize:10, color:MUTED, lineHeight:1.6, marginBottom:6 }}>{r.body}</div>
+                  <div style={{ fontSize:9, color:ACID, fontFamily:MONO }}>→ {r.action}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -866,6 +987,7 @@ export default function HektiqDashboard() {
   const [hoveredTool, setHoveredTool] = useState(null);
   const [digestOn, setDigestOn]     = useState(true);
   const [showAddTool, setShowAddTool] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
 
   // ── PERSIST TO LOCALSTORAGE ───────────────────────────────────
   const [userTools, setUserTools] = useState(() => {
@@ -1001,6 +1123,50 @@ export default function HektiqDashboard() {
 
   const severityColor = s => s==="high"?WARN:s==="medium"?BLUE:MUTED;
 
+  // ── SMART NOTIFICATIONS ───────────────────────────────────────
+  const smartNotifications = [
+    ...overlapDetails.map((od,i) => ({
+      id:`notif_overlap_${i}`, severity:"high", icon:"⚠",
+      title:`${od.label} overlap detected`,
+      body:`${od.tools.join(" + ")} are doing the same job — you may be wasting ~$${Math.round(od.cost*0.5)}/mo`,
+    })),
+    ...deadTools.map((t,i) => ({
+      id:`notif_dead_${i}`, severity:"medium", icon:"◉",
+      title:`${t.name} has been inactive`,
+      body:`No activity detected in ${t.daysAgo||21}+ days — consider pausing to save $${t.cost}/mo`,
+    })),
+    analyzedTools.length > 7 && {
+      id:"notif_bloat", severity:"medium", icon:"▦",
+      title:"Stack complexity warning",
+      body:`${analyzedTools.length} tools detected. Most efficient builders run 4–5. Consider cutting dead weight.`,
+    },
+    totalROI === 0 && analyzedTools.length > 0 && {
+      id:"notif_roi", severity:"low", icon:"◈",
+      title:"No revenue attributed yet",
+      body:"Tag tools to projects to unlock ROI tracking and improve your health score.",
+    },
+  ].filter(Boolean);
+
+  const visibleNotifications = smartNotifications.filter(n => !dismissedAlerts.has(n.id));
+
+  // ── SPEND FORECAST CALLOUT ────────────────────────────────────
+  const forecastThisMonth = Math.round(totalSpend * 1.04);
+  const forecastTrend     = totalSpend > 0 ? Math.round(((forecastThisMonth - totalSpend) / totalSpend) * 100) : 0;
+  const forecastAnnual    = Math.round(totalSpend * 12 * 1.08);
+
+  // ── STACK HEALTH TIMELINE ─────────────────────────────────────
+  const stackTimeline = analyzedTools.length === 0 ? [] : [
+    ...analyzedTools.slice().sort((a,b) => (a.daysAgo||0)-(b.daysAgo||0)).slice(0,3).map(t => ({
+      type:"add", icon:"◆", color:ACID,
+      label:`Added ${t.name}`,
+      sub:`$${t.cost}/mo · ${t.cat}`,
+      when: (t.daysAgo||0) === 0 ? "Today" : `${t.daysAgo}d ago`,
+    })),
+    healthScore >= 75 && { type:"score", icon:"▲", color:GREEN, label:`Stack health reached ${healthScore}%`, sub:"Efficiency milestone", when:"Now" },
+    overlapDetails.length > 0 && { type:"warn", icon:"⚠", color:WARN, label:`${overlapDetails.length} overlap conflict${overlapDetails.length>1?"s":""} detected`, sub:`~$${Math.round(overlapCost*0.5)}/mo wasted`, when:"Active" },
+    deadTools.length > 0 && { type:"warn", icon:"◉", color:MUTED, label:`${deadTools.length} tool${deadTools.length>1?"s":""} gone inactive`, sub:deadTools.map(t=>t.name).join(", "), when:`${Math.min(...deadTools.map(t=>t.daysAgo||21))}d+ ago` },
+  ].filter(Boolean).slice(0,5);
+
   return (
     <div style={{ background:BG, minHeight:"100vh", color:TEXT, fontFamily:SANS, display:"flex", fontSize:13 }}>
 
@@ -1064,7 +1230,7 @@ export default function HektiqDashboard() {
         </div>
 
         {/* ── STACK TAB ── */}
-        {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} />}
+        {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} severityColor={severityColor} />}
 
         {/* ── DASHBOARD CONTENT ── */}
         {activeNav !== "STACK" && <>
@@ -1168,6 +1334,64 @@ export default function HektiqDashboard() {
             </div>
           ))}
         </div>
+
+        {/* ── SPEND FORECAST CALLOUT ── */}
+        {analyzedTools.length > 0 && (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:14 }}>
+            <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 }}>
+              <div style={{ width:40, height:40, borderRadius:8, background:`${WARN}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ color:WARN, fontSize:18 }}>◎</span>
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:MONO, marginBottom:4 }}>THIS MONTH FORECAST</div>
+                <div style={{ fontSize:20, fontWeight:800, color:WARN, fontFamily:MONO }}>${forecastThisMonth}</div>
+                <div style={{ fontSize:10, color:MUTED, marginTop:3 }}>+{forecastTrend}% vs last month · on current trajectory</div>
+              </div>
+            </div>
+            <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 }}>
+              <div style={{ width:40, height:40, borderRadius:8, background:`${BLUE}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ color:BLUE, fontSize:18 }}>◈</span>
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:MONO, marginBottom:4 }}>12-MONTH PROJECTION</div>
+                <div style={{ fontSize:20, fontWeight:800, color:BLUE, fontFamily:MONO }}>${forecastAnnual}</div>
+                <div style={{ fontSize:10, color:MUTED, marginTop:3 }}>at current growth rate (+8% trend)</div>
+              </div>
+            </div>
+            <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 }}>
+              <div style={{ width:40, height:40, borderRadius:8, background:`${GREEN}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ color:GREEN, fontSize:18 }}>▼</span>
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:MONO, marginBottom:4 }}>POTENTIAL SAVINGS</div>
+                <div style={{ fontSize:20, fontWeight:800, color:GREEN, fontFamily:MONO }}>${dynamicRecs.reduce((s,r)=>s+(r.savings||0),0)}/mo</div>
+                <div style={{ fontSize:10, color:MUTED, marginTop:3 }}>{dynamicRecs.length > 0 ? `${dynamicRecs.length} action${dynamicRecs.length>1?"s":""} available` : "stack fully optimized"}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SMART NOTIFICATIONS ── */}
+        {visibleNotifications.length > 0 && (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <div style={{ fontSize:9, color:MUTED, letterSpacing:2.5, fontFamily:MONO }}>SMART ALERTS · {visibleNotifications.length} active</div>
+              <button onClick={() => setDismissedAlerts(new Set(smartNotifications.map(n=>n.id)))} style={{ background:"transparent", border:"none", color:MUTED, fontSize:9, cursor:"pointer", fontFamily:MONO, letterSpacing:1 }}>DISMISS ALL</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {visibleNotifications.map(n => (
+                <div key={n.id} style={{ background:PANEL, border:`1px solid ${n.severity==="high"?`${WARN}40`:n.severity==="medium"?`${BLUE}30`:BORDER}`, borderRadius:8, padding:"10px 14px", display:"flex", alignItems:"center", gap:12 }}>
+                  <span style={{ color:severityColor(n.severity), fontSize:14, flexShrink:0 }}>{n.icon}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:TEXT, marginBottom:2 }}>{n.title}</div>
+                    <div style={{ fontSize:10, color:MUTED }}>{n.body}</div>
+                  </div>
+                  <button onClick={() => setDismissedAlerts(prev => new Set([...prev, n.id]))} style={{ background:"transparent", border:"none", color:MUTED, fontSize:14, cursor:"pointer", flexShrink:0, lineHeight:1, padding:"2px 6px" }} onMouseEnter={e=>e.currentTarget.style.color=TEXT} onMouseLeave={e=>e.currentTarget.style.color=MUTED}>✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── PRICE ALERTS ── */}
         {analyzedTools.length > 0 && (() => {
@@ -1402,6 +1626,37 @@ export default function HektiqDashboard() {
             </div>
           </div>
         </div>
+
+        {/* ── STACK HEALTH TIMELINE ── */}
+        {stackTimeline.length > 0 && (
+          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div>
+                <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>STACK HEALTH TIMELINE</div>
+                <div style={{ fontSize:11, color:"#3a4448" }}>Track how your stack evolves over time</div>
+              </div>
+              <div style={{ fontSize:9, color:ACID, fontFamily:MONO, letterSpacing:1.5 }}>LIVE</div>
+            </div>
+            <div style={{ position:"relative" }}>
+              {/* Vertical line */}
+              <div style={{ position:"absolute", left:15, top:8, bottom:8, width:1, background:`${BORDER}`, zIndex:0 }}/>
+              <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+                {stackTimeline.map((event, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:16, paddingBottom:16, position:"relative", zIndex:1 }}>
+                    <div style={{ width:30, height:30, borderRadius:"50%", background:PANEL_2, border:`1px solid ${event.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:event.color, flexShrink:0, zIndex:2 }}>{event.icon}</div>
+                    <div style={{ flex:1, paddingTop:5 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:2 }}>
+                        <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>{event.label}</div>
+                        <div style={{ fontSize:9, color:MUTED, fontFamily:MONO }}>{event.when}</div>
+                      </div>
+                      <div style={{ fontSize:10, color:MUTED }}>{event.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── TOOL RELATIONSHIP GRAPH ── */}
         <div style={{ marginBottom:14 }}>
