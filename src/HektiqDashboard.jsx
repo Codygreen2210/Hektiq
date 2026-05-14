@@ -155,12 +155,46 @@ function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
   const W = 560, H = 260;
   const activeNodes = dynamicNodes || nodes;
 
-  // Auto-generate edges based on tool categories
+  // Auto-generate edges based on tool categories + known workflow pairs
+  const WORKFLOW_PAIRS = [
+    // AI ↔ Hosting — AI APIs are called from serverless/hosting
+    ["AI Core","Hosting"], ["AI Code","Hosting"], ["Research","Hosting"],
+    // AI ↔ Database — AI apps read/write to databases
+    ["AI Core","Database"], ["Hosting","Database"],
+    // AI ↔ Auth
+    ["AI Core","Auth"], ["Hosting","Auth"],
+    // Dev tools chain
+    ["Dev","Hosting"], ["Dev","Database"],
+    // Payments ↔ Auth
+    ["Payments","Auth"],
+    // Analytics ↔ Hosting
+    ["Analytics","Hosting"],
+    // Email ↔ Auth
+    ["Email","Auth"],
+  ];
+
   const autoEdges = [];
   const toolList = userTools || [];
+
+  // Same-category = overlap or workflow
   toolList.forEach((t, i) => {
     toolList.slice(i+1).forEach(t2 => {
-      if (t.cat === t2.cat) autoEdges.push({ from:t.id, to:t2.id, type: t.overlap||t2.overlap ? "overlap" : "workflow" });
+      if (t.cat === t2.cat) {
+        autoEdges.push({ from: t.id||t.name, to: t2.id||t2.name, type: (t.overlap||t2.overlap) ? "overlap" : "workflow" });
+      }
+    });
+  });
+
+  // Cross-category workflow pairs
+  toolList.forEach((t, i) => {
+    toolList.slice(i+1).forEach(t2 => {
+      if (t.cat === t2.cat) return; // already handled above
+      const isWorkflowPair = WORKFLOW_PAIRS.some(([a,b]) =>
+        (t.cat===a && t2.cat===b) || (t.cat===b && t2.cat===a)
+      );
+      if (isWorkflowPair) {
+        autoEdges.push({ from: t.id||t.name, to: t2.id||t2.name, type: "workflow" });
+      }
     });
   });
   const activeEdges = autoEdges.length > 0 ? autoEdges : edges;
