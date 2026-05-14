@@ -799,39 +799,53 @@ export default function HektiqLanding() {
           </h1>
 
           {/* Subheadline */}
-          <p style={{ fontSize: "clamp(13px, 2.5vw, 17px)", color: MUTED, lineHeight: 1.7, maxWidth: 520, margin: "0 auto 36px", fontWeight: 400 }}>
-            Hektiq tracks every subscription, surfaces every overlap, and tells you exactly what to cut — before it cuts into your runway.
+          <p style={{ fontSize: "clamp(13px, 2.5vw, 17px)", color: MUTED, lineHeight: 1.7, maxWidth: 520, margin: "0 auto 32px", fontWeight: 400 }}>
+            Find out exactly how much you're wasting — free, in 30 seconds, no signup required.
           </p>
 
-          {/* Email capture */}
-          {!submitted ? (
-            <div style={{ display: "flex", gap: 0, maxWidth: 440, margin: "0 auto 24px", background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden", boxShadow: `0 0 30px rgba(0,0,0,0.4)` }}>
-              <input
-                id="hero-email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                placeholder="your@email.com"
-                style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "14px 18px", color: TEXT, fontSize: 14, fontFamily: BODY, outline: "none" }}
-              />
-              <button onClick={handleSubmit} disabled={loading} style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 14px" : "14px 22px", fontWeight: 700, fontSize: mobile ? 12 : 13, cursor: "pointer", fontFamily: BODY, letterSpacing: 0.5, whiteSpace: "nowrap", flexShrink: 0 }}>
-                {loading ? "..." : mobile ? "Join →" : "Get Early Access →"}
-              </button>
+          {/* Primary CTA — scroll to calculator */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 32 }}>
+            <button
+              onClick={() => document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth" })}
+              style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 28px" : "16px 36px", borderRadius: 8, fontWeight: 700, fontSize: mobile ? 14 : 16, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 24px ${ACID}44`, letterSpacing: 0.5 }}
+            >
+              Calculate My Stack Free →
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ height: 1, width: 40, background: BORDER }} />
+              <span style={{ fontSize: 11, color: MUTED }}>or join the waitlist</span>
+              <div style={{ height: 1, width: 40, background: BORDER }} />
             </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, maxWidth: 440, margin: "0 auto 24px", background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8, padding: "14px 22px" }}>
-              <span style={{ color: GREEN, fontSize: 16 }}>◆</span>
-              <span style={{ color: GREEN, fontSize: 14, fontWeight: 600 }}>You're on the list. We'll reach out soon.</span>
-            </div>
-          )}
+            {/* Secondary email capture */}
+            {!submitted ? (
+              <div style={{ display: "flex", gap: 0, maxWidth: 400, width: "100%", background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden" }}>
+                <input
+                  id="hero-email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                  placeholder="your@email.com"
+                  style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "12px 16px", color: TEXT, fontSize: 13, fontFamily: BODY, outline: "none" }}
+                />
+                <button onClick={handleSubmit} disabled={loading} style={{ background: PANEL_2, color: MUTED, border: "none", padding: mobile ? "12px 12px" : "12px 18px", fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", flexShrink: 0 }}>
+                  {loading ? "..." : mobile ? "Join →" : "Join Waitlist →"}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8, padding: "12px 20px" }}>
+                <span style={{ color: GREEN }}>◆</span>
+                <span style={{ color: GREEN, fontSize: 13, fontWeight: 600 }}>You're on the list. We'll reach out soon.</span>
+              </div>
+            )}
+          </div>
 
-          {/* Trust line with live counter */}
+          {/* Trust line */}
           <div style={{ fontSize: 11, color: MUTED, letterSpacing: 1, fontFamily: MONO }}>
             <SignupCounter /> builders already on the waitlist · No card required
           </div>
 
           {/* Live burn ticker */}
-          <div style={{ marginTop: 48, background: `${WARN}07`, border: `1px solid ${WARN}25`, borderRadius: 12, padding: "28px 40px", position: "relative", overflow: "hidden" }}>
+          <div style={{ marginTop: 40, background: `${WARN}07`, border: `1px solid ${WARN}25`, borderRadius: 12, padding: mobile ? "20px 20px" : "28px 40px", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", width: 300, height: 150, background: `radial-gradient(ellipse, ${WARN}08 0%, transparent 70%)`, pointerEvents: "none" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 18 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: WARN, display: "inline-block", animation: "blink 1s infinite", boxShadow: `0 0 8px ${WARN}` }} />
@@ -841,6 +855,9 @@ export default function HektiqLanding() {
           </div>
         </div>
       </section>
+
+      {/* ── CALCULATOR — moved up, directly after hero ── */}
+      <StackCalculator mobile={mobile} />
 
       {/* ── STATS ── */}
       <section ref={statsRef} style={{ padding: mobile ? "40px 20px" : "60px 48px", borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
@@ -1036,9 +1053,6 @@ export default function HektiqLanding() {
           </div>
         </div>
       </section>
-
-      {/* ── STACK CALCULATOR ── */}
-      <StackCalculator mobile={mobile} />
 
       {/* ── FINAL CTA ── */}
       <section style={{ padding: "0 48px 120px", borderTop: `1px solid ${BORDER}` }}>
