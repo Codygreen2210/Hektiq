@@ -880,7 +880,11 @@ export default function HektiqDashboard() {
     catch {}
   }, [userTools]);
 
-  const handleAddTool    = (newTool) => setUserTools(prev => [...prev, newTool]);
+  const handleAddTool    = (newTool) => setUserTools(prev => {
+    const exists = prev.some(t => t.name.toLowerCase() === newTool.name.toLowerCase());
+    if (exists) { alert(`"${newTool.name}" is already in your stack.`); return prev; }
+    return [...prev, newTool];
+  });
   const handleRemoveTool = (id)      => setUserTools(prev => prev.filter(t => (t.id||t.name) !== id));
 
   // ── LIVE OVERLAP ANALYSIS ─────────────────────────────────────
@@ -928,12 +932,16 @@ export default function HektiqDashboard() {
   const totalROI     = analyzedTools.reduce((s,t) => s+(t.roi||0), 0);
 
   // ── HEALTH SCORE ─────────────────────────────────────────────
+  // Formula: start 100, deduct for overlaps (-15 each), dead tools (-8 each),
+  // stack bloat > 5 tools (-4 per extra), ROI coverage (up to -15 if ROI = $0, scales to 0 when ROI >= spend). Floor 10, ceil 99.
+  const roiPenalty = analyzedTools.length === 0 || totalSpend === 0 ? 0
+    : Math.round((1 - Math.min(totalROI / totalSpend, 1)) * 15);
   const healthScore = analyzedTools.length === 0 ? 0 : Math.max(10, Math.min(99,
-    95
-    - (analyzedTools.length > 5 ? (analyzedTools.length - 5) * 4 : 0)
+    100
     - (overlapDetails.length * 15)
     - (deadTools.length * 8)
-    - (totalSpend > 200 ? 5 : 0)
+    - (analyzedTools.length > 5 ? (analyzedTools.length - 5) * 4 : 0)
+    - roiPenalty
   ));
   const healthColor = analyzedTools.length === 0 ? MUTED : healthScore >= 75 ? ACID : healthScore >= 50 ? WARN : "#ff4444";
 
