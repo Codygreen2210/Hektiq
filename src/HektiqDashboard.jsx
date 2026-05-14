@@ -635,6 +635,231 @@ const ScoreTip = ({ active, payload, label }) => {
   );
 };
 
+// ── STACK TAB ─────────────────────────────────────────────────
+function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalSpend, overlapCost, healthScore, healthColor, onRemove, onAdd }) {
+  const [filter, setFilter]     = useState("ALL");
+  const [sortBy, setSortBy]     = useState("cost");
+  const [sortDir, setSortDir]   = useState("desc");
+  const [groupBy, setGroupBy]   = useState(false);
+  const [editingCost, setEditingCost] = useState(null);
+
+  const filters = ["ALL", "ACTIVE", "OVERLAP", "INACTIVE"];
+
+  const filtered = analyzedTools.filter(t => {
+    if (filter === "ACTIVE")   return !t.overlap && (t.daysAgo||0) <= 20;
+    if (filter === "OVERLAP")  return t.overlap;
+    if (filter === "INACTIVE") return (t.daysAgo||0) > 20;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    let av, bv;
+    if (sortBy === "cost")    { av = a.cost;    bv = b.cost; }
+    if (sortBy === "name")    { av = a.name;    bv = b.name; }
+    if (sortBy === "roi")     { av = a.roi||0;  bv = b.roi||0; }
+    if (sortBy === "daysAgo") { av = a.daysAgo||0; bv = b.daysAgo||0; }
+    if (typeof av === "string") return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    return sortDir === "asc" ? av - bv : bv - av;
+  });
+
+  const toggleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(col); setSortDir("desc"); }
+  };
+
+  const SortIcon = ({ col }) => {
+    if (sortBy !== col) return <span style={{ color:"#2a3035", marginLeft:4 }}>↕</span>;
+    return <span style={{ color:ACID, marginLeft:4 }}>{sortDir === "desc" ? "↓" : "↑"}</span>;
+  };
+
+  const statusBadge = (t) => {
+    const isInactive = (t.daysAgo||0) > 20;
+    if (t.overlap)   return { label:"OVERLAP",  color:WARN,  bg:`${WARN}12`  };
+    if (isInactive)  return { label:"INACTIVE", color:MUTED, bg:`${MUTED}10` };
+    return               { label:"ACTIVE",   color:GREEN, bg:`${GREEN}10` };
+  };
+
+  const categories = [...new Set(sorted.map(t => t.cat))];
+
+  const renderRow = (t) => {
+    const badge = statusBadge(t);
+    return (
+      <div key={t.id||t.name} style={{
+        display:"grid", gridTemplateColumns:"2fr 100px 120px 90px 90px 90px 90px 80px",
+        alignItems:"center", padding:"12px 16px",
+        borderBottom:`1px solid ${BORDER}`,
+        background: t.overlap ? `${WARN}04` : "transparent",
+        transition:"background 0.15s",
+      }}
+        onMouseEnter={e => e.currentTarget.style.background = t.overlap ? `${WARN}08` : `${ACID}04`}
+        onMouseLeave={e => e.currentTarget.style.background = t.overlap ? `${WARN}04` : "transparent"}
+      >
+        {/* Tool name */}
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:28, height:28, borderRadius:6, background:PANEL_2, border:`1px solid ${BORDER}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:t.overlap?WARN:ACID, flexShrink:0 }}>{t.icon||"◆"}</div>
+          <div>
+            <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>{t.name}</div>
+            <div style={{ fontSize:10, color:MUTED }}>{t.project||"—"}</div>
+          </div>
+        </div>
+
+        {/* Category */}
+        <div style={{ fontSize:10, color:MUTED, fontFamily:MONO }}>{t.cat}</div>
+
+        {/* Status */}
+        <div>
+          <span style={{ fontSize:9, color:badge.color, background:badge.bg, padding:"3px 8px", borderRadius:3, letterSpacing:1.5, fontFamily:MONO, fontWeight:700 }}>{badge.label}</span>
+        </div>
+
+        {/* Monthly cost */}
+        <div style={{ fontSize:12, color:t.overlap?WARN:TEXT, fontFamily:MONO, fontWeight:600 }}>${t.cost}/mo</div>
+
+        {/* Annual */}
+        <div style={{ fontSize:11, color:MUTED, fontFamily:MONO }}>${t.cost*12}/yr</div>
+
+        {/* ROI */}
+        <div style={{ fontSize:12, color: (t.roi||0)>0?GREEN:MUTED, fontFamily:MONO }}>{(t.roi||0)>0?`$${t.roi}/mo`:"—"}</div>
+
+        {/* Last used */}
+        <div style={{ fontSize:10, color:(t.daysAgo||0)>14?WARN:MUTED }}>
+          {(t.daysAgo||0) === 0 ? "Today" : (t.daysAgo||0) === 1 ? "Yesterday" : `${t.daysAgo}d ago`}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+          <button
+            onClick={() => onRemove(t.id||t.name)}
+            style={{ background:"transparent", border:`1px solid ${BORDER}`, color:MUTED, padding:"4px 10px", borderRadius:4, fontSize:10, cursor:"pointer", fontFamily:MONO, transition:"all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor="#ff4444"; e.currentTarget.style.color="#ff4444"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor=BORDER; e.currentTarget.style.color=MUTED; }}
+          >remove</button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {/* Summary bar */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
+        {[
+          { label:"TOTAL TOOLS",     value:`${analyzedTools.length}`,      sub:"in your stack",               color:TEXT  },
+          { label:"MONTHLY BURN",    value:`$${totalSpend}/mo`,             sub:`$${totalSpend*12}/yr`,         color:WARN  },
+          { label:"OVERLAP WASTE",   value: overlapCost>0?`$${overlapCost}/mo`:"None", sub: overlapDetails.length>0?`${overlapDetails.length} conflict${overlapDetails.length>1?"s":""}` : "stack clean", color:overlapCost>0?WARN:GREEN },
+          { label:"STACK HEALTH",    value:`${healthScore}%`,               sub:"efficiency score",            color:healthColor },
+        ].map(s => (
+          <div key={s.label} style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:8, padding:"14px 18px" }}>
+            <div style={{ fontSize:9, color:MUTED, letterSpacing:2, marginBottom:6, fontFamily:MONO }}>{s.label}</div>
+            <div style={{ fontSize:20, fontWeight:800, color:s.color, fontFamily:MONO }}>{s.value}</div>
+            <div style={{ fontSize:9, color:MUTED, marginTop:4 }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overlap banner */}
+      {overlapDetails.length > 0 && (
+        <div style={{ background:`${WARN}0a`, border:`1px solid ${WARN}30`, borderRadius:8, padding:"12px 18px", marginBottom:16 }}>
+          <div style={{ fontSize:10, color:WARN, fontFamily:MONO, letterSpacing:1.5, fontWeight:700, marginBottom:8 }}>⚠ OVERLAP CONFLICTS DETECTED</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {overlapDetails.map((od,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, fontSize:11 }}>
+                <span style={{ color:WARN, fontFamily:MONO, fontWeight:600 }}>{od.label}:</span>
+                <span style={{ color:MUTED }}>{od.tools.join(" + ")} are doing the same job</span>
+                <span style={{ color:WARN, fontFamily:MONO, marginLeft:"auto" }}>~${Math.round(od.cost*0.5)}/mo wasted</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:0 }}>
+        {/* Filters */}
+        <div style={{ display:"flex", gap:4 }}>
+          {filters.map(f => {
+            const counts = { ALL: analyzedTools.length, ACTIVE: analyzedTools.filter(t=>!t.overlap&&(t.daysAgo||0)<=20).length, OVERLAP: analyzedTools.filter(t=>t.overlap).length, INACTIVE: analyzedTools.filter(t=>(t.daysAgo||0)>20).length };
+            const active = filter === f;
+            return (
+              <button key={f} onClick={() => setFilter(f)} style={{
+                background: active ? ACID : "transparent",
+                color: active ? BG : MUTED,
+                border: `1px solid ${active ? ACID : BORDER}`,
+                padding:"5px 12px", borderRadius:4, fontSize:10, letterSpacing:1.5,
+                cursor:"pointer", fontFamily:MONO, fontWeight: active?700:400,
+                display:"flex", alignItems:"center", gap:6,
+              }}>
+                {f}
+                <span style={{ fontSize:9, opacity:0.7 }}>{counts[f]}</span>
+              </button>
+            );
+          })}
+        </div>
+        {/* Group toggle */}
+        <button onClick={() => setGroupBy(g=>!g)} style={{ background:"transparent", border:`1px solid ${groupBy?ACID:BORDER}`, color:groupBy?ACID:MUTED, padding:"5px 14px", borderRadius:4, fontSize:10, letterSpacing:1.5, cursor:"pointer", fontFamily:MONO }}>
+          {groupBy ? "GROUPED ✓" : "GROUP BY CATEGORY"}
+        </button>
+      </div>
+
+      {/* Table */}
+      <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:8, overflow:"hidden", marginTop:10 }}>
+        {/* Column headers */}
+        <div style={{ display:"grid", gridTemplateColumns:"2fr 100px 120px 90px 90px 90px 90px 80px", padding:"10px 16px", borderBottom:`1px solid ${BORDER}`, background:PANEL_2 }}>
+          {[
+            { label:"TOOL",      col:"name"   },
+            { label:"CATEGORY",  col:null      },
+            { label:"STATUS",    col:null      },
+            { label:"MONTHLY",   col:"cost"   },
+            { label:"ANNUAL",    col:null      },
+            { label:"ROI/MO",    col:"roi"    },
+            { label:"LAST USED", col:"daysAgo"},
+            { label:"",          col:null      },
+          ].map(({label,col}) => (
+            <div key={label} onClick={() => col && toggleSort(col)} style={{ fontSize:9, color: sortBy===col?ACID:MUTED, letterSpacing:2, fontFamily:MONO, cursor:col?"pointer":"default", display:"flex", alignItems:"center", userSelect:"none" }}>
+              {label}{col && <SortIcon col={col}/>}
+            </div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {sorted.length === 0 ? (
+          <div style={{ padding:"40px 24px", textAlign:"center", color:MUTED, fontSize:12 }}>
+            No tools match this filter.
+            <span onClick={onAdd} style={{ color:ACID, cursor:"pointer", marginLeft:8 }}>+ Add one</span>
+          </div>
+        ) : groupBy ? (
+          categories.map(cat => {
+            const catTools = sorted.filter(t => t.cat === cat);
+            if (!catTools.length) return null;
+            const catSpend = catTools.reduce((s,t) => s+t.cost, 0);
+            return (
+              <div key={cat}>
+                <div style={{ padding:"8px 16px", background:`${ACID}06`, borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontSize:9, color:ACID, letterSpacing:2, fontFamily:MONO, fontWeight:700 }}>{cat.toUpperCase()}</span>
+                  <span style={{ fontSize:9, color:MUTED, fontFamily:MONO }}>${catSpend}/mo · {catTools.length} tool{catTools.length>1?"s":""}</span>
+                </div>
+                {catTools.map(renderRow)}
+              </div>
+            );
+          })
+        ) : sorted.map(renderRow)}
+
+        {/* Footer totals */}
+        {sorted.length > 0 && (
+          <div style={{ display:"grid", gridTemplateColumns:"2fr 100px 120px 90px 90px 90px 90px 80px", padding:"12px 16px", borderTop:`1px solid ${BORDER}`, background:PANEL_2 }}>
+            <div style={{ fontSize:10, color:MUTED, fontFamily:MONO, gridColumn:"1/3" }}>{sorted.length} tool{sorted.length!==1?"s":""} shown</div>
+            <div/>
+            <div style={{ fontSize:12, fontWeight:700, color:WARN, fontFamily:MONO }}>${sorted.reduce((s,t)=>s+t.cost,0)}/mo</div>
+            <div style={{ fontSize:11, color:MUTED, fontFamily:MONO }}>${sorted.reduce((s,t)=>s+t.cost,0)*12}/yr</div>
+            <div style={{ fontSize:12, color:GREEN, fontFamily:MONO }}>{sorted.reduce((s,t)=>s+(t.roi||0),0)>0?`$${sorted.reduce((s,t)=>s+(t.roi||0),0)}/mo`:"—"}</div>
+            <div/>
+            <div/>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN ──────────────────────────────────────────────────────
 export default function HektiqDashboard() {
   const [activeNav, setActiveNav]   = useState("DASHBOARD");
@@ -817,14 +1042,24 @@ export default function HektiqDashboard() {
         {/* Header */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
           <div>
-            <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:MONO }}>{new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER</div>
-            <div style={{ fontSize:22, fontWeight:700, color:TEXT, letterSpacing:-0.5 }}>AI Stack Dashboard</div>
+            <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:MONO }}>
+              {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
+            </div>
+            <div style={{ fontSize:22, fontWeight:700, color:TEXT, letterSpacing:-0.5 }}>
+              {activeNav === "STACK" ? "Your Stack" : "AI Stack Dashboard"}
+            </div>
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <button onClick={() => alert("Auto-import coming soon — connect your billing accounts directly.")} style={{ background:"transparent", color:MUTED, border:`1px solid ${BORDER}`, padding:"8px 16px", fontFamily:SANS, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5 }}>IMPORT TOOL</button>
             <button onClick={()=>setShowAddTool(true)} style={{ background:ACID, color:BG, border:"none", padding:"8px 18px", fontFamily:SANS, fontWeight:700, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5, boxShadow:`0 0 16px ${ACID}44` }}>+ ADD TOOL</button>
           </div>
         </div>
+
+        {/* ── STACK TAB ── */}
+        {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} />}
+
+        {/* ── DASHBOARD CONTENT ── */}
+        {activeNav !== "STACK" && <>
 
         {/* ── HERO: Stack Health + Archetype ── */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14, marginBottom:14 }}>
@@ -1204,6 +1439,8 @@ export default function HektiqDashboard() {
             ))}
           </div>
         </div>
+
+        </>}
       </div>
 
       <style>{`
