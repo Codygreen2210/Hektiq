@@ -726,7 +726,7 @@ export default function HektiqLanding() {
     if (!email.includes("@")) return;
     setLoading(true);
     try {
-      await fetch("https://formspree.io/f/REPLACE_WITH_YOUR_ID", {
+      await fetch("https://formspree.io/f/mdabbjvn", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ email }),
@@ -777,7 +777,7 @@ export default function HektiqLanding() {
       </nav>
 
       {/* ── HERO ── */}
-      <section id="hero-section" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "120px 24px 80px", position: "relative", overflow: "hidden" }}>
+      <section id="hero-section" style={{ minHeight: mobile ? "auto" : "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: mobile ? "88px 20px 60px" : "120px 24px 80px", position: "relative", overflow: "hidden" }}>
 
         {/* Background grid */}
         <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${BORDER} 1px, transparent 1px), linear-gradient(90deg, ${BORDER} 1px, transparent 1px)`, backgroundSize: "60px 60px", opacity: 0.3 }} />
@@ -793,7 +793,7 @@ export default function HektiqLanding() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ fontSize: mobile ? "20px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.25, letterSpacing: mobile ? "0px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
+          <h1 style={{ fontSize: mobile ? "32px" : "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.25, letterSpacing: mobile ? "-0.5px" : "-0.02em", color: TEXT, margin: "0 0 20px", fontFamily: DISPLAY }}>
             Your AI tools are costing you{" "}
             <span style={{ color: ACID, textShadow: `0 0 40px ${ACID}33` }}>more than you think.</span>
           </h1>
