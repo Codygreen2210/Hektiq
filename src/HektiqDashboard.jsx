@@ -177,16 +177,30 @@ function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
 
   return (
     <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-        <div>
-          <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>TOOL RELATIONSHIP GRAPH</div>
-          <div style={{ fontSize:11, color:"#3a4448" }}>Hover a node to highlight its connections</div>
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+          <div>
+            <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>TOOL RELATIONSHIP GRAPH</div>
+            <div style={{ fontSize:12, color:TEXT, fontWeight:600, marginBottom:2 }}>See where your tools overlap and where they work together</div>
+            <div style={{ fontSize:11, color:"#3a4448" }}>Overlap = tools doing the same job · Workflow = tools that complement each other</div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6, fontSize:9, fontFamily:MONO, flexShrink:0, marginLeft:16 }}>
+            <span style={{ color:ACID }}>── workflow connection</span>
+            <span style={{ color:WARN }}>╌╌ overlap conflict</span>
+            <span style={{ color:"#3a4448" }}>◉ inactive / dead weight</span>
+          </div>
         </div>
-        <div style={{ display:"flex", gap:16, fontSize:9, fontFamily:MONO }}>
-          <span style={{ color:ACID }}>── workflow</span>
-          <span style={{ color:WARN }}>╌ overlap</span>
-          <span style={{ color:"#3a4448" }}>◉ dead weight</span>
-        </div>
+        {activeEdges.filter(e=>e.type==="overlap").length > 0 && (
+          <div style={{ background:`${WARN}0d`, border:`1px solid ${WARN}30`, borderRadius:6, padding:"8px 14px", display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ color:WARN, fontSize:13 }}>⚠</span>
+            <div>
+              <span style={{ fontSize:11, color:WARN, fontWeight:600 }}>
+                {activeEdges.filter(e=>e.type==="overlap").length} overlap conflict{activeEdges.filter(e=>e.type==="overlap").length > 1 ? "s" : ""} detected
+              </span>
+              <span style={{ fontSize:11, color:MUTED }}> — these tools are doing the same job. You may be paying twice.</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow:"visible" }}>
@@ -214,9 +228,9 @@ function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
             <line key={i}
               x1={a.x} y1={a.y} x2={b.x} y2={b.y}
               stroke={isOverlap ? WARN : ACID}
-              strokeWidth={active ? (isOverlap ? 1.5 : 1) : 0.3}
-              strokeDasharray={isOverlap ? "5 4" : "none"}
-              opacity={active ? (isOverlap ? 0.7 : 0.3) : 0.06}
+              strokeWidth={active ? (isOverlap ? 2.5 : 1) : 0.3}
+              strokeDasharray={isOverlap ? "6 3" : "none"}
+              opacity={active ? (isOverlap ? 0.9 : 0.3) : 0.06}
               style={{ transition:"all 0.2s" }}
             />
           );
@@ -299,14 +313,15 @@ function RelationshipGraph({ userTools, dynamicNodes, overlapIds }) {
       {userTools?.length > 0 && (
       <div style={{ display:"flex", gap:20, marginTop:8, paddingTop:12, borderTop:`1px solid ${BORDER}` }}>
         {[
-          { label:"Workflow connections", value: activeEdges.filter(e=>e.type==="workflow").length.toString(), color:ACID },
-          { label:"Overlap conflicts",    value: activeEdges.filter(e=>e.type==="overlap").length.toString(),  color:WARN },
-          { label:"Inactive nodes",       value: Object.values(activeNodes).filter(n=>n.dead).length.toString(), color:MUTED },
-          { label:"Redundancy cost",      value: userTools?.filter(t=>overlapIds?.has(t.id||t.name)).reduce((s,t)=>s+t.cost,0) > 0 ? `$${userTools.filter(t=>overlapIds?.has(t.id||t.name)).reduce((s,t)=>s+t.cost,0)}/mo` : "None", color:WARN },
+          { label:"Workflow connections", value: activeEdges.filter(e=>e.type==="workflow").length.toString(), color:ACID, sub:"tools working together" },
+          { label:"Overlap conflicts",    value: activeEdges.filter(e=>e.type==="overlap").length.toString(),  color:WARN, sub: activeEdges.filter(e=>e.type==="overlap").length > 0 ? "same job, double cost" : "none detected" },
+          { label:"Inactive nodes",       value: Object.values(activeNodes).filter(n=>n.dead).length.toString(), color:MUTED, sub:"dead weight in stack" },
+          { label:"Redundancy cost",      value: userTools?.filter(t=>overlapIds?.has(t.id||t.name)).reduce((s,t)=>s+t.cost,0) > 0 ? `$${userTools.filter(t=>overlapIds?.has(t.id||t.name)).reduce((s,t)=>s+t.cost,0)}/mo` : "None", color:WARN, sub:"wasted every month" },
         ].map(s => (
           <div key={s.label}>
-            <div style={{ fontSize:9, color:MUTED, fontFamily:MONO, marginBottom:3 }}>{s.label}</div>
-            <div style={{ fontSize:13, fontWeight:700, color:s.color, fontFamily:MONO }}>{s.value}</div>
+            <div style={{ fontSize:9, color:MUTED, fontFamily:MONO, marginBottom:2 }}>{s.label}</div>
+            <div style={{ fontSize:14, fontWeight:700, color:s.color, fontFamily:MONO }}>{s.value}</div>
+            <div style={{ fontSize:9, color:"#3a4448", marginTop:2 }}>{s.sub}</div>
           </div>
         ))}
       </div>
