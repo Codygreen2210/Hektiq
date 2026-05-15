@@ -1189,6 +1189,187 @@ function StackAdvisor({ analyzedTools=[], overlapDetails=[], deadTools=[], total
   </div>
  );
 }
+function BenchmarksTab({ analyzedTools, totalSpend, healthScore, overlapDetails, deadTools }) {
+ const toolNames = analyzedTools.map(t => t.name.toLowerCase());
+ const toolCount = analyzedTools.length;
+
+ // ── PEER DATA (representative indie hacker benchmarks) ────────
+ const AVG_SPEND     = 191;
+ const AVG_TOOLS     = 6.4;
+ const AVG_HEALTH    = 61;
+ const AVG_OVERLAPS  = 1.8;
+ const TOP_SPEND     = 85;
+ const TOP_TOOLS     = 4;
+ const TOP_HEALTH    = 88;
+
+ // ── USER RANKINGS ─────────────────────────────────────────────
+ const spendPct    = totalSpend === 0 ? 100 : Math.max(1, Math.min(99, Math.round(100 - (totalSpend / (AVG_SPEND * 2)) * 100)));
+ const toolPct     = toolCount  === 0 ? 100 : Math.max(1, Math.min(99, Math.round(100 - (toolCount  / (AVG_TOOLS  * 2)) * 100)));
+ const healthPct   = Math.max(1, Math.min(99, Math.round((healthScore / 100) * 99)));
+ const overlapPct  = overlapDetails.length === 0 ? 95 : Math.max(1, Math.min(99, Math.round(100 - (overlapDetails.length / 4) * 80)));
+ const overallRank = Math.round((spendPct + toolPct + healthPct + overlapPct) / 4);
+
+ // ── TOOL ADOPTION DATA ────────────────────────────────────────
+ const topTools = [
+  { name:"Claude API",     pct:91, cat:"AI Core"  },
+  { name:"Cursor",         pct:84, cat:"AI Code"  },
+  { name:"Vercel",         pct:78, cat:"Hosting"  },
+  { name:"Supabase",       pct:71, cat:"Database" },
+  { name:"OpenRouter",     pct:63, cat:"AI Core"  },
+  { name:"GitHub Copilot", pct:58, cat:"AI Code"  },
+  { name:"PostHog",        pct:54, cat:"Analytics"},
+  { name:"Resend",         pct:49, cat:"Email"    },
+  { name:"Stripe",         pct:47, cat:"Payments" },
+  { name:"ChatGPT",        pct:44, cat:"AI Chat"  },
+ ];
+
+ // ── ARCHETYPE MATCH ───────────────────────────────────────────
+ const archetypes = [
+  { name:"The Lean Operator",   color:GREEN,  traits:["≤4 tools","no overlaps","<$80/mo"],      match: toolCount<=4 && overlapDetails.length===0 && totalSpend<80  },
+  { name:"The Solo Hacker",     color:ACID,   traits:["5–7 tools","1–2 overlaps","$80–180/mo"], match: toolCount>=5 && toolCount<=7 && totalSpend<=180              },
+  { name:"The Power Builder",   color:BLUE,   traits:["8+ tools","high ROI focus",">$150/mo"],  match: toolCount>=8 && totalSpend>150                               },
+  { name:"The Experimenter",    color:WARN,   traits:["high tool churn","overlaps present","varied spend"], match: overlapDetails.length>=2 || deadTools.length>=2   },
+ ];
+ const matched = archetypes.find(a => a.match) || archetypes[1];
+
+ // ── CATEGORY SPEND COMPARISON ─────────────────────────────────
+ const categoryAverages = [
+  { cat:"AI Core",   avg:35, label:"AI / LLM APIs"       },
+  { cat:"AI Code",   avg:22, label:"AI Coding Tools"      },
+  { cat:"Hosting",   avg:28, label:"Hosting & Deployment" },
+  { cat:"Database",  avg:24, label:"Database & Auth"      },
+  { cat:"Analytics", avg:18, label:"Analytics & Tracking" },
+ ];
+
+ const rankColor = (pct) => pct >= 75 ? GREEN : pct >= 50 ? ACID : pct >= 25 ? WARN : "#ff4444";
+ const rankLabel = (pct) => pct >= 75 ? "TOP TIER" : pct >= 50 ? "ABOVE AVG" : pct >= 25 ? "AVERAGE" : "BELOW AVG";
+
+ return (
+  <div>
+   {/* Overall rank hero */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"28px 32px", marginBottom:14, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+    <div>
+     <div style={{ fontSize:9, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:8 }}>OVERALL EFFICIENCY RANK</div>
+     <div style={{ fontSize:13, color:"#3a4448", marginBottom:6 }}>vs. indie hackers & solo founders</div>
+     <div style={{ display:"flex", alignItems:"baseline", gap:12 }}>
+      <div style={{ fontSize:56, fontWeight:800, color:rankColor(overallRank), fontFamily:M, lineHeight:1 }}>#{overallRank}</div>
+      <div>
+       <div style={{ fontSize:13, color:rankColor(overallRank), fontWeight:700 }}>{rankLabel(overallRank)}</div>
+       <div style={{ fontSize:11, color:MUTED }}>percentile ranking</div>
+      </div>
+     </div>
+    </div>
+    <div style={{ textAlign:"right" }}>
+     <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:8 }}>YOUR ARCHETYPE</div>
+     <div style={{ fontSize:16, fontWeight:800, color:matched.color, fontFamily:"'Syne',sans-serif", marginBottom:6 }}>{matched.name}</div>
+     <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+      {matched.traits.map(t => (
+       <div key={t} style={{ fontSize:10, color:MUTED, background:PANEL_2, border:`1px solid ${BO}`, padding:"2px 10px", borderRadius:3, textAlign:"center" }}>{t}</div>
+      ))}
+     </div>
+    </div>
+   </div>
+
+   {/* Rank breakdown grid */}
+   <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:14 }}>
+    {[
+     { label:"SPEND EFFICIENCY",  value:`Top ${100-spendPct}%`,  pct:spendPct,   sub:`$${totalSpend}/mo vs $${AVG_SPEND} avg`      },
+     { label:"STACK SIZE",        value:`Top ${100-toolPct}%`,   pct:toolPct,    sub:`${toolCount} tools vs ${AVG_TOOLS} avg`       },
+     { label:"HEALTH SCORE",      value:`Top ${100-healthPct}%`, pct:healthPct,  sub:`${healthScore}% vs ${AVG_HEALTH}% avg`        },
+     { label:"OVERLAP CONTROL",   value:`Top ${100-overlapPct}%`,pct:overlapPct, sub:`${overlapDetails.length} conflicts vs ${AVG_OVERLAPS} avg` },
+    ].map(s => (
+     <div key={s.label} style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:8, padding:"16px" }}>
+      <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:8 }}>{s.label}</div>
+      <div style={{ fontSize:20, fontWeight:800, color:rankColor(s.pct), fontFamily:M, marginBottom:4 }}>{s.value}</div>
+      <div style={{ height:3, background:"#1a2022", borderRadius:2, marginBottom:6 }}>
+       <div style={{ width:`${s.pct}%`, height:"100%", background:`linear-gradient(90deg,${rankColor(s.pct)}88,${rankColor(s.pct)})`, borderRadius:2, transition:"width 1s" }}/>
+      </div>
+      <div style={{ fontSize:10, color:MUTED }}>{s.sub}</div>
+     </div>
+    ))}
+   </div>
+
+   {/* You vs average vs top */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px", marginBottom:14 }}>
+    <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:16 }}>HOW YOU COMPARE</div>
+    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+     {[
+      { label:"Monthly spend",  yours:totalSpend,   avg:AVG_SPEND,  top:TOP_SPEND,  prefix:"$", suffix:"/mo" },
+      { label:"Tools in stack", yours:toolCount,    avg:AVG_TOOLS,  top:TOP_TOOLS,  prefix:"",  suffix:" tools" },
+      { label:"Health score",   yours:healthScore,  avg:AVG_HEALTH, top:TOP_HEALTH, prefix:"",  suffix:"%" },
+     ].map(row => {
+      const max = Math.max(row.yours, row.avg, row.top) * 1.2 || 1;
+      return (
+       <div key={row.label}>
+        <div style={{ fontSize:11, color:MUTED, marginBottom:8 }}>{row.label}</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+         {[
+          { label:"You",     value:row.yours, color:ACID  },
+          { label:"Average", value:row.avg,   color:MUTED },
+          { label:"Top 10%", value:row.top,   color:GREEN },
+         ].map(bar => (
+          <div key={bar.label} style={{ display:"flex", alignItems:"center", gap:10 }}>
+           <div style={{ width:52, fontSize:9, color:bar.color, fontFamily:M, letterSpacing:1 }}>{bar.label}</div>
+           <div style={{ flex:1, height:6, background:"#1a2022", borderRadius:3 }}>
+            <div style={{ width:`${(bar.value/max)*100}%`, height:"100%", background:bar.color, borderRadius:3, transition:"width 1s", opacity:0.85 }}/>
+           </div>
+           <div style={{ width:60, fontSize:11, color:bar.color, fontFamily:M, textAlign:"right" }}>{row.prefix}{bar.value}{row.suffix}</div>
+          </div>
+         ))}
+        </div>
+       </div>
+      );
+     })}
+    </div>
+   </div>
+
+   {/* Tool adoption */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px", marginBottom:14 }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+     <div>
+      <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:4 }}>TOP TOOLS AMONG PROFITABLE BUILDERS</div>
+      <div style={{ fontSize:11, color:"#3a4448" }}>Tools highlighted in green are in your current stack</div>
+     </div>
+    </div>
+    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+     {topTools.map(t => {
+      const inStack = toolNames.some(n => n.includes(t.name.toLowerCase().split(" ")[0]));
+      return (
+       <div key={t.name} style={{ display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:120, fontSize:11, color:inStack?GREEN:MUTED, fontWeight:inStack?600:400, display:"flex", alignItems:"center", gap:6 }}>
+         {inStack && <span style={{ color:GREEN, fontSize:9 }}>✓</span>}
+         {t.name}
+        </div>
+        <div style={{ flex:1, height:4, background:"#1a2022", borderRadius:2 }}>
+         <div style={{ width:`${t.pct}%`, height:"100%", background:inStack?`linear-gradient(90deg,${GREEN}88,${GREEN})`:`linear-gradient(90deg,${ACID_S}44,${ACID}55)`, borderRadius:2 }}/>
+        </div>
+        <div style={{ width:32, fontSize:10, color:inStack?GREEN:ACID, fontFamily:M, textAlign:"right" }}>{t.pct}%</div>
+        <div style={{ width:60, fontSize:9, color:MUTED, fontFamily:M }}>{t.cat}</div>
+       </div>
+      );
+     })}
+    </div>
+   </div>
+
+   {/* All archetypes */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px" }}>
+    <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:16 }}>BUILDER ARCHETYPES</div>
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10 }}>
+     {archetypes.map(a => (
+      <div key={a.name} style={{ background:PANEL_2, border:`1px solid ${a===matched?a.color+55:BO}`, borderRadius:8, padding:"16px", position:"relative", overflow:"hidden" }}>
+       {a===matched && <div style={{ position:"absolute", top:8, right:8, fontSize:8, color:a.color, fontFamily:M, letterSpacing:1.5, background:`${a.color}15`, padding:"2px 8px", borderRadius:3 }}>YOUR MATCH</div>}
+       <div style={{ fontSize:13, fontWeight:700, color:a.color, marginBottom:8 }}>{a.name}</div>
+       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+        {a.traits.map(t => <div key={t} style={{ fontSize:10, color:MUTED }}>· {t}</div>)}
+       </div>
+      </div>
+     ))}
+    </div>
+   </div>
+  </div>
+ );
+}
+
 export default function HektiqDashboard() {
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
@@ -1380,10 +1561,10 @@ export default function HektiqDashboard() {
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
      <div>
       <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:M }}>
-       {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : activeNav === "INSIGHTS" ? "AI INTELLIGENCE · RECOMMENDATION ENGINE" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
+       {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : activeNav === "INSIGHTS" ? "AI INTELLIGENCE · RECOMMENDATION ENGINE" : activeNav === "BENCHMARKS" ? "COMMUNITY DATA · EFFICIENCY RANKINGS" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
       </div>
       <div style={{ fontSize:22, fontWeight:700, color:TEXT, letterSpacing:-0.5 }}>
-       {activeNav === "STACK" ? "Your Stack" : activeNav === "INSIGHTS" ? "Insights" : "AI Stack Dashboard"}
+       {activeNav === "STACK" ? "Your Stack" : activeNav === "INSIGHTS" ? "Insights" : activeNav === "BENCHMARKS" ? "Benchmarks" : "AI Stack Dashboard"}
       </div>
      </div>
      <div style={{ display:"flex", gap:10 }}>
@@ -1393,7 +1574,8 @@ export default function HektiqDashboard() {
     </div>
     {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} severityColor={severityColor} />}
     {activeNav === "INSIGHTS" && <InsightsTab analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} />}
-    {activeNav !== "STACK" && activeNav !== "INSIGHTS" && <>
+    {activeNav === "BENCHMARKS" && <BenchmarksTab analyzedTools={analyzedTools} totalSpend={totalSpend} healthScore={healthScore} overlapDetails={overlapDetails} deadTools={deadTools} />}
+    {activeNav !== "STACK" && activeNav !== "INSIGHTS" && activeNav !== "BENCHMARKS" && <>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14, marginBottom:14 }}>
      <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"22px 26px", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${ACID}88,transparent)`, animation:"scanline 3s ease-in-out infinite" }}/>
