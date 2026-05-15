@@ -1286,21 +1286,19 @@ function StackAdvisor({ analyzedTools=[], overlapDetails=[], deadTools=[], total
 
     try {
       const history = [...messages, { role:"user", content:userMsg }];
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/advisor", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1000,
-          system: systemPrompt,
+          systemPrompt,
           messages: history.map(m => ({ role:m.role, content:m.content })),
         }),
       });
       const data = await res.json();
-      const reply = data.content?.find(b => b.type==="text")?.text || "Something went wrong. Try again.";
-      setMessages(prev => [...prev, { role:"assistant", content:reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role:"assistant", content:"Unable to reach the advisor. Check your connection and try again." }]);
+      if (data.error) throw new Error(data.error);
+      setMessages(prev => [...prev, { role:"assistant", content: data.text }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role:"assistant", content:`Error: ${err.message || "Unable to reach the advisor. Try again."}` }]);
     }
     setLoading(false);
   };
@@ -1725,8 +1723,7 @@ export default function HektiqDashboard() {
                     navigator.share({ title: "My Hektiq Stack", text });
                   } else {
                     navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
-                  }
-                }}
+                   }}
                 style={{ background:`${PURPLE}15`, border:`1px solid ${PURPLE}40`, color:PURPLE, padding:"7px 18px", borderRadius:4, fontSize:10, letterSpacing:1.5, cursor:"pointer", fontFamily:SANS, fontWeight:600, width:"100%" }}>
                 SHARE ARCHETYPE ↗
               </button>
@@ -1842,6 +1839,123 @@ export default function HektiqDashboard() {
             </div>
           );
         })()}
+
+< truncated lines 1844-2028 >
+                </div>
+              </div>
+            ))}
+
+            <div style={{ paddingTop:10, borderTop:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:10, color:MUTED, letterSpacing:1.5, fontFamily:MONO }}>WEEKLY DIGEST</div>
+                <div style={{ fontSize:9, color:"#252d30", marginTop:2 }}>Every Monday · Email</div>
+              </div>
+              <div onClick={()=>setDigestOn(d=>!d)} style={{ width:36, height:20, borderRadius:10, cursor:"pointer", background:digestOn?ACID:"#1d2326", position:"relative", transition:"background 0.2s", flexShrink:0, boxShadow:digestOn?`0 0 10px ${ACID}44`:"none" }}>
+                <div style={{ position:"absolute", top:3, left:digestOn?18:3, width:14, height:14, borderRadius:"50%", background:digestOn?BG:MUTED, transition:"left 0.2s" }}/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── STACK HEALTH TIMELINE ── */}
+        {stackTimeline.length > 0 && (
+          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div>
+                <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>STACK HEALTH TIMELINE</div>
+                <div style={{ fontSize:11, color:"#3a4448" }}>Track how your stack evolves over time</div>
+              </div>
+              <div style={{ fontSize:9, color:ACID, fontFamily:MONO, letterSpacing:1.5 }}>LIVE</div>
+            </div>
+            <div style={{ position:"relative" }}>
+              {/* Vertical line */}
+              <div style={{ position:"absolute", left:15, top:8, bottom:8, width:1, background:`${BORDER}`, zIndex:0 }}/>
+              <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+                {stackTimeline.map((event, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:16, paddingBottom:16, position:"relative", zIndex:1 }}>
+                    <div style={{ width:30, height:30, borderRadius:"50%", background:PANEL_2, border:`1px solid ${event.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:event.color, flexShrink:0, zIndex:2 }}>{event.icon}</div>
+                    <div style={{ flex:1, paddingTop:5 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:2 }}>
+                        <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>{event.label}</div>
+                        <div style={{ fontSize:9, color:MUTED, fontFamily:MONO }}>{event.when}</div>
+                      </div>
+                      <div style={{ fontSize:10, color:MUTED }}>{event.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TOOL RELATIONSHIP GRAPH ── */}
+        <div style={{ marginBottom:14 }}>
+          <RelationshipGraph userTools={analyzedTools} dynamicNodes={dynamicNodes} overlapIds={overlapIds}/>
+        </div>
+
+        {/* ── STACK SIMULATION ── */}
+        <div style={{ marginBottom:14 }}>
+          {analyzedTools.length > 0 && <StackSimulation totalSpend={totalSpend} analyzedTools={analyzedTools}/>}
+        </div>
+
+        {/* ── COMMUNITY BENCHMARKS ── */}
+        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px 24px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO }}>COMMUNITY BENCHMARKS</div>
+            <div style={{ fontSize:10, color:MUTED }}>vs. <span style={{ color:TEXT }}>indie hackers</span></div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
+            {[
+              { label:"You spend more than",         value:"66% of similar builders", color:WARN  },
+              { label:"Your tool count is",           value:"Above average",            color:WARN  },
+              { label:"Stack efficiency rank",        value:"Top 42%",                 color:BLUE  },
+              { label:"Profitable builders use",      value:"4 tools or fewer",         color:GREEN },
+            ].map(b => (
+              <div key={b.label} style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:7, padding:"12px 14px" }}>
+                <div style={{ fontSize:10, color:MUTED, marginBottom:4 }}>{b.label}</div>
+                <div style={{ fontSize:14, fontWeight:700, color:b.color }}>{b.value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:9, color:MUTED, letterSpacing:2, marginBottom:10, fontFamily:MONO }}>TOP TOOLS AMONG PROFITABLE INDIE HACKERS</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+            {benchmarks.map(b => (
+              <div key={b.label} style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ flex:1, fontSize:11, color:MUTED }}>{b.label}</div>
+                <div style={{ width:220 }}>
+                  <div style={{ height:3, background:"#1a2022", borderRadius:2 }}>
+                    <div style={{ width:`${b.pct}%`, height:"100%", background:`linear-gradient(90deg,${ACID_S},${ACID})`, borderRadius:2 }}/>
+                  </div>
+                </div>
+                <div style={{ width:32, textAlign:"right", fontSize:10, color:ACID, fontFamily:MONO }}>{b.pct}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        </>}
+      </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: ${BG}; }
+        ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 2px; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes scanline { 0%{opacity:0;transform:scaleX(0.3)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.3)} }
+        @media (max-width: 768px) {
+          .hektiq-main { padding: 16px !important; }
+        }
+      `}</style>
+
+      {/* ── ADD TOOL MODAL ── */}
+      {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
+
+    </div>
+  );
+}
+
 
         {/* ── CHARTS ROW ── */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 255px", gap:14, marginBottom:14 }}>
@@ -2029,119 +2143,3 @@ export default function HektiqDashboard() {
                   <div style={{ background:`${GREEN}10`, border:`1px solid ${GREEN}22`, borderRadius:4, padding:"4px 10px", fontSize:10, color:GREEN, fontFamily:MONO, fontWeight:700 }}>save ${rec.savings}/mo</div>
                   <div style={{ background:`${BLUE}10`, border:`1px solid ${BLUE}22`, borderRadius:4, padding:"4px 10px", fontSize:10, color:BLUE, fontFamily:MONO, fontWeight:700 }}>{rec.efficiency} eff</div>
                 </div>
-              </div>
-            ))}
-
-            <div style={{ paddingTop:10, borderTop:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div>
-                <div style={{ fontSize:10, color:MUTED, letterSpacing:1.5, fontFamily:MONO }}>WEEKLY DIGEST</div>
-                <div style={{ fontSize:9, color:"#252d30", marginTop:2 }}>Every Monday · Email</div>
-              </div>
-              <div onClick={()=>setDigestOn(d=>!d)} style={{ width:36, height:20, borderRadius:10, cursor:"pointer", background:digestOn?ACID:"#1d2326", position:"relative", transition:"background 0.2s", flexShrink:0, boxShadow:digestOn?`0 0 10px ${ACID}44`:"none" }}>
-                <div style={{ position:"absolute", top:3, left:digestOn?18:3, width:14, height:14, borderRadius:"50%", background:digestOn?BG:MUTED, transition:"left 0.2s" }}/>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── STACK HEALTH TIMELINE ── */}
-        {stackTimeline.length > 0 && (
-          <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px", marginBottom:14 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <div>
-                <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO, marginBottom:4 }}>STACK HEALTH TIMELINE</div>
-                <div style={{ fontSize:11, color:"#3a4448" }}>Track how your stack evolves over time</div>
-              </div>
-              <div style={{ fontSize:9, color:ACID, fontFamily:MONO, letterSpacing:1.5 }}>LIVE</div>
-            </div>
-            <div style={{ position:"relative" }}>
-              {/* Vertical line */}
-              <div style={{ position:"absolute", left:15, top:8, bottom:8, width:1, background:`${BORDER}`, zIndex:0 }}/>
-              <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-                {stackTimeline.map((event, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:16, paddingBottom:16, position:"relative", zIndex:1 }}>
-                    <div style={{ width:30, height:30, borderRadius:"50%", background:PANEL_2, border:`1px solid ${event.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:event.color, flexShrink:0, zIndex:2 }}>{event.icon}</div>
-                    <div style={{ flex:1, paddingTop:5 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:2 }}>
-                        <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>{event.label}</div>
-                        <div style={{ fontSize:9, color:MUTED, fontFamily:MONO }}>{event.when}</div>
-                      </div>
-                      <div style={{ fontSize:10, color:MUTED }}>{event.sub}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TOOL RELATIONSHIP GRAPH ── */}
-        <div style={{ marginBottom:14 }}>
-          <RelationshipGraph userTools={analyzedTools} dynamicNodes={dynamicNodes} overlapIds={overlapIds}/>
-        </div>
-
-        {/* ── STACK SIMULATION ── */}
-        <div style={{ marginBottom:14 }}>
-          {analyzedTools.length > 0 && <StackSimulation totalSpend={totalSpend} analyzedTools={analyzedTools}/>}
-        </div>
-
-        {/* ── COMMUNITY BENCHMARKS ── */}
-        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px 24px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:MONO }}>COMMUNITY BENCHMARKS</div>
-            <div style={{ fontSize:10, color:MUTED }}>vs. <span style={{ color:TEXT }}>indie hackers</span></div>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
-            {[
-              { label:"You spend more than",         value:"66% of similar builders", color:WARN  },
-              { label:"Your tool count is",           value:"Above average",            color:WARN  },
-              { label:"Stack efficiency rank",        value:"Top 42%",                 color:BLUE  },
-              { label:"Profitable builders use",      value:"4 tools or fewer",         color:GREEN },
-            ].map(b => (
-              <div key={b.label} style={{ background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:7, padding:"12px 14px" }}>
-                <div style={{ fontSize:10, color:MUTED, marginBottom:4 }}>{b.label}</div>
-                <div style={{ fontSize:14, fontWeight:700, color:b.color }}>{b.value}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize:9, color:MUTED, letterSpacing:2, marginBottom:10, fontFamily:MONO }}>TOP TOOLS AMONG PROFITABLE INDIE HACKERS</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {benchmarks.map(b => (
-              <div key={b.label} style={{ display:"flex", alignItems:"center", gap:14 }}>
-                <div style={{ flex:1, fontSize:11, color:MUTED }}>{b.label}</div>
-                <div style={{ width:220 }}>
-                  <div style={{ height:3, background:"#1a2022", borderRadius:2 }}>
-                    <div style={{ width:`${b.pct}%`, height:"100%", background:`linear-gradient(90deg,${ACID_S},${ACID})`, borderRadius:2 }}/>
-                  </div>
-                </div>
-                <div style={{ width:32, textAlign:"right", fontSize:10, color:ACID, fontFamily:MONO }}>{b.pct}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        </>}
-      </div>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: ${BG}; }
-        ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 2px; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        @keyframes scanline { 0%{opacity:0;transform:scaleX(0.3)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.3)} }
-        @media (max-width: 768px) {
-          .hektiq-main { padding: 16px !important; }
-        }
-      `}</style>
-
-      {/* ── ADD TOOL MODAL ── */}
-      {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
-
-    </div>
-  );
-}
-
-
-
