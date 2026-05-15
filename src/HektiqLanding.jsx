@@ -412,22 +412,10 @@ const INFRA_TOOLS = TOOL_PLANS.filter(t => t.category === "tools");
 
 function StackCalculator({ mobile }) {
   const [tab, setTab]                 = useState("agent");
-  const [selected, setSelected]       = useState({
-    "Claude API": true,
-    "ChatGPT": true,
-    "Cursor": true,
-    "GitHub Copilot": true,
-    "Vercel": true,
-  });
-  const [planChoice, setPlanChoice]   = useState({
-    "Claude API": "Pay-as-go ~$20",
-    "ChatGPT": "Plus",
-    "Cursor": "Pro",
-    "GitHub Copilot": "Individual",
-    "Vercel": "Pro",
-  });
+  const [selected, setSelected]       = useState({});
+  const [planChoice, setPlanChoice]   = useState({});
   const [customCosts, setCustomCosts] = useState({});
-  const [showResults, setShowResults] = useState(true);
+  const [showResults, setShowResults] = useState(false);
   const [calcEmail, setCalcEmail]     = useState("");
   const [calcSubmitted, setCalcSubmitted] = useState(false);
   const [calcLoading, setCalcLoading] = useState(false);
@@ -490,13 +478,9 @@ function StackCalculator({ mobile }) {
           <h2 style={{ fontSize: mobile ? 24 : 34, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, marginBottom: 12 }}>
             What's your AI stack costing you?
           </h2>
-          <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6, marginBottom: 14 }}>
+          <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
             Select your tools and plan. We'll calculate your monthly burn, overlap waste, and stack health score instantly.
           </p>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: `${ACID}10`, border: `1px solid ${ACID}25`, borderRadius: 20, padding: "5px 14px" }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: ACID, display: "inline-block" }} />
-            <span style={{ fontSize: 10, color: ACID, letterSpacing: 1.5, fontFamily: MONO }}>DEMO STACK LOADED — edit to match yours</span>
-          </div>
         </div>
 
         {/* Tabs */}
@@ -781,7 +765,7 @@ export default function HektiqLanding() {
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           {!mobile && (
-            <button style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 14px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap" }}>Sign in</button>
+            <button onClick={() => window.location.href = "/dashboard"} style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 14px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap" }}>Sign in</button>
           )}
           <button
             onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
