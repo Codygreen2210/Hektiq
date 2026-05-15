@@ -1251,13 +1251,28 @@ function BenchmarksTab({ analyzedTools, totalSpend, healthScore, overlapDetails,
     <div>
      <div style={{ fontSize:9, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:8 }}>OVERALL EFFICIENCY RANK</div>
      <div style={{ fontSize:13, color:"#3a4448", marginBottom:6 }}>vs. indie hackers & solo founders</div>
-     <div style={{ display:"flex", alignItems:"baseline", gap:12 }}>
+     <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:16 }}>
       <div style={{ fontSize:56, fontWeight:800, color:rankColor(overallRank), fontFamily:M, lineHeight:1 }}>#{overallRank}</div>
       <div>
        <div style={{ fontSize:13, color:rankColor(overallRank), fontWeight:700 }}>{rankLabel(overallRank)}</div>
        <div style={{ fontSize:11, color:MUTED }}>percentile ranking</div>
       </div>
      </div>
+     <button
+      onClick={() => {
+       const text = `My AI stack just ranked #${overallRank} (${rankLabel(overallRank)}) on @HektiqMedia\n\n$${totalSpend}/mo · ${analyzedTools.length} tools · ${healthScore}% health score\n\nCheck yours free → hektiq.com`;
+       if (navigator.share) {
+        navigator.share({ title:"My Hektiq Stack Rank", text });
+       } else {
+        navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard — paste it anywhere!"));
+       }
+      }}
+      style={{ display:"flex", alignItems:"center", gap:8, background:`${ACID}15`, border:`1px solid ${ACID}40`, color:ACID, padding:"9px 18px", borderRadius:6, fontSize:11, cursor:"pointer", fontFamily:M, letterSpacing:1.5, fontWeight:700, transition:"all 0.15s" }}
+      onMouseEnter={e => { e.currentTarget.style.background=`${ACID}25`; e.currentTarget.style.boxShadow=`0 0 14px ${ACID}33`; }}
+      onMouseLeave={e => { e.currentTarget.style.background=`${ACID}15`; e.currentTarget.style.boxShadow="none"; }}
+     >
+      <span style={{ fontSize:13 }}>↗</span> SHARE MY RANK
+     </button>
     </div>
     <div style={{ textAlign:"right" }}>
      <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:8 }}>YOUR ARCHETYPE</div>
