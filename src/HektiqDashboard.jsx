@@ -1227,12 +1227,170 @@ function InsightsTab({ analyzedTools, overlapDetails, deadTools, totalSpend, ove
           ))}
         </div>
       )}
+
+      {/* ── AI STACK ADVISOR ── */}
+      <StackAdvisor analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} healthScore={healthScore} recs={recs} />
     </div>
   );
 }
 
-// ── MAIN ──────────────────────────────────────────────────────
-export default function HektiqDashboard() {
+// ── STACK ADVISOR AGENT ───────────────────────────────────────
+function StackAdvisor({ analyzedTools, overlapDetails, deadTools, totalSpend, healthScore, recs }) {
+  const [open, setOpen]       = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput]     = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef             = useRef(null);
+
+  useEffect(() => {
+    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior:"smooth" });
+  }, [messages, loading]);
+
+  const systemPrompt = `You are Hektiq's AI Stack Advisor — a sharp, concise expert on developer tooling, SaaS spend optimization, and AI stack architecture.
+
+The user's current stack:
+${analyzedTools.length === 0 ? "No tools added yet." : analyzedTools.map(t => `- ${t.name} ($${t.cost}/mo, category: ${t.cat}${t.overlap ? ", OVERLAP DETECTED" : ""}${(t.daysAgo||0)>20 ? `, INACTIVE ${t.daysAgo}d` : ""})`).join("\n")}
+
+Stack summary:
+- Total monthly spend: $${totalSpend}/mo
+- Stack health score: ${healthScore}%
+- Overlap conflicts: ${overlapDetails.length > 0 ? overlapDetails.map(o => `${o.tools.join(" + ")} (${o.label})`).join(", ") : "none"}
+- Inactive tools: ${deadTools.length > 0 ? deadTools.map(t=>t.name).join(", ") : "none"}
+- Active recommendations: ${recs.length > 0 ? recs.map(r => r.title).join("; ") : "none"}
+
+Your job:
+- Answer questions about their specific stack — why something is flagged, whether to keep or cut a tool, what to replace it with
+- Be direct and opinionated. Don't hedge excessively.
+- Keep responses concise — 2–4 sentences for simple questions, slightly longer for complex ones
+- Use specific numbers and tool names from their stack
+- If they ask about a tool not in their stack, answer generally but note it's not in their current setup
+- Never recommend adding tools unless they ask — focus on optimizing what they have`;
+
+  const SUGGESTED = [
+    "Why is my health score this low?",
+    "Should I keep both Claude API and ChatGPT?",
+    "What's the biggest waste in my stack?",
+    "What should I cut first?",
+  ];
+
+  const send = async (text) => {
+    const userMsg = text || input.trim();
+    if (!userMsg) return;
+    setInput("");
+    setMessages(prev => [...prev, { role:"user", content:userMsg }]);
+    setLoading(true);
+
+    try {
+      const history = [...messages, { role:"user", content:userMsg }];
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system: systemPrompt,
+          messages: history.map(m => ({ role:m.role, content:m.content })),
+        }),
+      });
+      const data = await res.json();
+      const reply = data.content?.find(b => b.type==="text")?.text || "Something went wrong. Try again.";
+      setMessages(prev => [...prev, { role:"assistant", content:reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role:"assistant", content:"Unable to reach the advisor. Check your connection and try again." }]);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ marginTop:20 }}>
+      {/* Toggle bar */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ background:PANEL, border:`1px solid ${open?ACID:BORDER}`, borderRadius:open?"10px 10px 0 0":10, padding:"14px 20px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", transition:"border-color 0.2s", boxShadow:open?`0 0 20px ${ACID}18`:"none" }}
+      >
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:32, height:32, borderRadius:8, background:`${ACID}15`, border:`1px solid ${ACID}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>◈</div>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:TEXT }}>AI Stack Advisor</div>
+            <div style={{ fontSize:10, color:MUTED }}>Ask questions about your assessments and recommendations</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:ACID, animation:"blink 2s infinite" }}/>
+            <span style={{ fontSize:9, color:ACID, fontFamily:MONO, letterSpacing:1.5 }}>ONLINE</span>
+          </div>
+          <span style={{ color:MUTED, fontSize:16, transition:"transform 0.2s", display:"inline-block", transform:open?"rotate(180deg)":"none" }}>⌃</span>
+        </div>
+      </div>
+
+      {/* Chat panel */}
+      {open && (
+        <div style={{ background:PANEL, border:`1px solid ${ACID}`, borderTop:"none", borderRadius:"0 0 10px 10px", display:"flex", flexDirection:"column" }}>
+
+          {/* Messages */}
+          <div style={{ height:320, overflowY:"auto", padding:"16px 20px", display:"flex", flexDirection:"column", gap:12 }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign:"center", paddingTop:20 }}>
+                <div style={{ fontSize:22, marginBottom:8 }}>◈</div>
+                <div style={{ fontSize:12, color:TEXT, fontWeight:600, marginBottom:4 }}>Stack Advisor ready</div>
+                <div style={{ fontSize:11, color:MUTED, marginBottom:20 }}>I know your full stack. Ask me anything.</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
+                  {SUGGESTED.map(s => (
+                    <button key={s} onClick={() => send(s)} style={{ background:PANEL_2, border:`1px solid ${BORDER}`, color:MUTED, padding:"7px 14px", borderRadius:20, fontSize:11, cursor:"pointer", fontFamily:SANS, transition:"all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor=ACID; e.currentTarget.style.color=ACID; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=BORDER; e.currentTarget.style.color=MUTED; }}
+                    >{s}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} style={{ display:"flex", justifyContent:m.role==="user"?"flex-end":"flex-start", gap:8, alignItems:"flex-start" }}>
+                {m.role === "assistant" && (
+                  <div style={{ width:24, height:24, borderRadius:6, background:`${ACID}15`, border:`1px solid ${ACID}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:ACID, flexShrink:0, marginTop:2 }}>◈</div>
+                )}
+                <div style={{
+                  maxWidth:"75%", padding:"10px 14px", borderRadius: m.role==="user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                  background: m.role==="user" ? `${ACID}15` : PANEL_2,
+                  border: `1px solid ${m.role==="user" ? `${ACID}30` : BORDER}`,
+                  fontSize:12, color:TEXT, lineHeight:1.65, whiteSpace:"pre-wrap",
+                }}>{m.content}</div>
+              </div>
+            ))}
+            {loading && (
+              <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                <div style={{ width:24, height:24, borderRadius:6, background:`${ACID}15`, border:`1px solid ${ACID}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:ACID, flexShrink:0, marginTop:2 }}>◈</div>
+                <div style={{ background:PANEL_2, border:`1px solid ${BORDER}`, padding:"10px 16px", borderRadius:"12px 12px 12px 2px", display:"flex", gap:5, alignItems:"center" }}>
+                  {[0,1,2].map(i => <span key={i} style={{ width:5, height:5, borderRadius:"50%", background:ACID, display:"inline-block", animation:`blink 1.2s ${i*0.2}s infinite` }}/>)}
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef}/>
+          </div>
+
+          {/* Input bar */}
+          <div style={{ padding:"12px 16px", borderTop:`1px solid ${BORDER}`, display:"flex", gap:10 }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key==="Enter" && !e.shiftKey && send()}
+              placeholder="Ask about your stack, a specific rec, or any tool…"
+              style={{ flex:1, background:PANEL_2, border:`1px solid ${BORDER}`, borderRadius:8, padding:"10px 14px", color:TEXT, fontSize:12, fontFamily:SANS, outline:"none" }}
+              onFocus={e => e.target.style.borderColor=ACID}
+              onBlur={e => e.target.style.borderColor=BORDER}
+            />
+            <button
+              onClick={() => send()}
+              disabled={!input.trim() || loading}
+              style={{ background:input.trim()&&!loading?ACID:"#1a2326", color:input.trim()&&!loading?BG:MUTED, border:"none", borderRadius:8, padding:"10px 18px", fontSize:11, fontWeight:700, cursor:input.trim()&&!loading?"pointer":"default", fontFamily:SANS, letterSpacing:1, transition:"all 0.15s", boxShadow:input.trim()&&!loading?`0 0 14px ${ACID}44`:"none" }}
+            >SEND</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
   const [activeNav, setActiveNav]   = useState("DASHBOARD");
   const [hoveredTool, setHoveredTool] = useState(null);
   const [digestOn, setDigestOn]     = useState(true);
