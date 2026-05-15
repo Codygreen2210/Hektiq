@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import { Analytics } from '@vercel/analytics/react'
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import HektiqLanding from './HektiqLanding.jsx'
 import HektiqDashboard from './HektiqDashboard.jsx'
 
@@ -24,7 +24,7 @@ export default function App() {
             <HektiqDashboard />
           </ProtectedRoute>
         } />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={null} />
       </Routes>
     </BrowserRouter>
   )
