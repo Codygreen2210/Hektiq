@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, LineChart, Line,
@@ -1016,7 +1016,7 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
 }
 
 // ── INSIGHTS TAB ──────────────────────────────────────────────
-function InsightsTab({ analyzedTools, overlapDetails, deadTools, totalSpend, overlapCost, healthScore }) {
+function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalSpend=0, overlapCost=0, healthScore=0 }) {
 
   // ── REPLACEMENT RECOMMENDATIONS DATABASE ─────────────────────
   const REPLACEMENTS = {
@@ -1235,36 +1235,40 @@ function InsightsTab({ analyzedTools, overlapDetails, deadTools, totalSpend, ove
 }
 
 // ── STACK ADVISOR AGENT ───────────────────────────────────────
-function StackAdvisor({ analyzedTools, overlapDetails, deadTools, totalSpend, healthScore, recs }) {
-  const [open, setOpen]       = useState(false);
+function StackAdvisor({ analyzedTools=[], overlapDetails=[], deadTools=[], totalSpend=0, healthScore=0, recs=[] }) {
+  const [open, setOpen]         = useState(false);
   const [messages, setMessages] = useState([]);
-  const [input, setInput]     = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef             = useRef(null);
+  const [input, setInput]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const bottomRef               = useRef(null);
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior:"smooth" });
   }, [messages, loading]);
 
-  const systemPrompt = `You are Hektiq's AI Stack Advisor — a sharp, concise expert on developer tooling, SaaS spend optimization, and AI stack architecture.
-
-The user's current stack:
-${analyzedTools.length === 0 ? "No tools added yet." : analyzedTools.map(t => `- ${t.name} ($${t.cost}/mo, category: ${t.cat}${t.overlap ? ", OVERLAP DETECTED" : ""}${(t.daysAgo||0)>20 ? `, INACTIVE ${t.daysAgo}d` : ""})`).join("\n")}
-
-Stack summary:
-- Total monthly spend: $${totalSpend}/mo
-- Stack health score: ${healthScore}%
-- Overlap conflicts: ${overlapDetails.length > 0 ? overlapDetails.map(o => `${o.tools.join(" + ")} (${o.label})`).join(", ") : "none"}
-- Inactive tools: ${deadTools.length > 0 ? deadTools.map(t=>t.name).join(", ") : "none"}
-- Active recommendations: ${recs.length > 0 ? recs.map(r => r.title).join("; ") : "none"}
-
-Your job:
-- Answer questions about their specific stack — why something is flagged, whether to keep or cut a tool, what to replace it with
-- Be direct and opinionated. Don't hedge excessively.
-- Keep responses concise — 2–4 sentences for simple questions, slightly longer for complex ones
-- Use specific numbers and tool names from their stack
-- If they ask about a tool not in their stack, answer generally but note it's not in their current setup
-- Never recommend adding tools unless they ask — focus on optimizing what they have`;
+  const systemPrompt = [
+    "You are Hektiq's AI Stack Advisor — a sharp, concise expert on developer tooling, SaaS spend optimization, and AI stack architecture.",
+    "",
+    "The user's current stack:",
+    analyzedTools.length === 0
+      ? "No tools added yet."
+      : analyzedTools.map(t => `- ${t.name} ($${t.cost}/mo, category: ${t.cat}${t.overlap ? ", OVERLAP DETECTED" : ""}${(t.daysAgo||0)>20 ? `, INACTIVE ${t.daysAgo}d` : ""})`).join("\n"),
+    "",
+    `Stack summary:`,
+    `- Total monthly spend: $${totalSpend}/mo`,
+    `- Stack health score: ${healthScore}%`,
+    `- Overlap conflicts: ${overlapDetails.length > 0 ? overlapDetails.map(o => `${o.tools.join(" + ")} (${o.label})`).join(", ") : "none"}`,
+    `- Inactive tools: ${deadTools.length > 0 ? deadTools.map(t=>t.name).join(", ") : "none"}`,
+    `- Active recommendations: ${recs.length > 0 ? recs.map(r => r.title).join("; ") : "none"}`,
+    "",
+    "Your job:",
+    "- Answer questions about their specific stack — why something is flagged, whether to keep or cut a tool, what to replace it with",
+    "- Be direct and opinionated. Don't hedge excessively.",
+    "- Keep responses concise — 2–4 sentences for simple questions, slightly longer for complex ones",
+    "- Use specific numbers and tool names from their stack",
+    "- If they ask about a tool not in their stack, answer generally but note it's not in their current setup",
+    "- Never recommend adding tools unless they ask — focus on optimizing what they have",
+  ].join("\n");
 
   const SUGGESTED = [
     "Why is my health score this low?",
