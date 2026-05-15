@@ -1015,6 +1015,222 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
   );
 }
 
+// ── INSIGHTS TAB ──────────────────────────────────────────────
+function InsightsTab({ analyzedTools, overlapDetails, deadTools, totalSpend, overlapCost, healthScore }) {
+
+  // ── REPLACEMENT RECOMMENDATIONS DATABASE ─────────────────────
+  const REPLACEMENTS = {
+    "AI Chat": {
+      single: [
+        { replace:["ChatGPT"], with:"Claude API", saving: t => t.cost, reason:"Claude API is cheaper per token for most workloads and avoids Plus subscription costs." },
+        { replace:["Perplexity"], with:"Claude API + web_search tool", saving: t => Math.round(t.cost*0.6), reason:"Perplexity's search capability can be replicated via Claude with web search at a fraction of the cost." },
+      ],
+      multi: [
+        { detect:["Claude API","ChatGPT"],    with:"OpenRouter",  saving: costs => Math.round(costs*0.45), reason:"OpenRouter routes between Claude, GPT-4, and Gemini dynamically. One subscription, best model per task, ~45% cheaper." },
+        { detect:["Claude API","Anthropic API"], with:"Claude API only", saving: costs => Math.round(costs*0.5), reason:"Claude API and Anthropic API are the same service. You're paying twice for identical access." },
+        { detect:["ChatGPT","Perplexity"],    with:"ChatGPT + web browsing", saving: costs => Math.round(costs*0.5), reason:"ChatGPT Plus includes web search. Perplexity is redundant if you're already paying for ChatGPT." },
+      ],
+    },
+    "AI Code": {
+      multi: [
+        { detect:["Cursor","GitHub Copilot"], with:"Cursor only",  saving: costs => Math.round(costs*0.4), reason:"Cursor includes its own completion engine. Running GitHub Copilot alongside is redundant — same functionality, double the cost." },
+        { detect:["Cursor","Replit"],         with:"Cursor only",  saving: costs => Math.round(costs*0.5), reason:"Cursor handles local dev. Replit adds cost without adding workflow value for most solo builders." },
+        { detect:["Cursor","Lovable"],        with:"Cursor + v0",  saving: costs => Math.round(costs*0.3), reason:"Lovable and Cursor overlap heavily on AI-assisted code generation. v0 by Vercel is free for UI scaffolding." },
+      ],
+    },
+    "Hosting": {
+      multi: [
+        { detect:["Vercel","Netlify"],   with:"Vercel only", saving: costs => Math.round(costs*0.5), reason:"Vercel and Netlify are functionally identical for most builders. Consolidate to one." },
+        { detect:["Vercel","Railway"],   with:"Vercel + Railway", saving: () => 0, reason:"This is a valid split: Vercel for frontend, Railway for backend services. No redundancy detected." },
+      ],
+    },
+    "Analytics": {
+      multi: [
+        { detect:["PostHog","Mixpanel"],   with:"PostHog only",  saving: costs => Math.round(costs*0.6), reason:"PostHog covers product analytics, session replay, and feature flags. Mixpanel is redundant for most solo builders." },
+        { detect:["PostHog","Amplitude"],  with:"PostHog only",  saving: costs => Math.round(costs*0.6), reason:"PostHog and Amplitude overlap heavily. PostHog's free tier handles most indie hacker needs." },
+      ],
+    },
+    "Automation": {
+      multi: [
+        { detect:["Zapier","Make"],  with:"Make only",  saving: costs => Math.round(costs*0.5), reason:"Make (formerly Integromat) is ~60% cheaper than Zapier for equivalent automation complexity." },
+        { detect:["Zapier","n8n"],   with:"n8n (self-hosted)", saving: costs => Math.round(costs*0.8), reason:"n8n self-hosted on Railway or Fly.io eliminates automation costs entirely for most workflows." },
+      ],
+    },
+  };
+
+  // ── GENERATE LIVE RECOMMENDATIONS ────────────────────────────
+  const toolNames  = analyzedTools.map(t => t.name);
+  const recs = [];
+
+  // Overlap-based consolidation recs
+  overlapDetails.forEach(od => {
+    const catRules = REPLACEMENTS[od.label];
+    if (!catRules) return;
+
+    // Check multi-tool rules
+    (catRules.multi || []).forEach(rule => {
+      const matched = rule.detect.filter(d => toolNames.some(n => n.toLowerCase().includes(d.toLowerCase())));
+      if (matched.length === rule.detect.length) {
+        const matchedTools = analyzedTools.filter(t => rule.detect.some(d => t.name.toLowerCase().includes(d.toLowerCase())));
+        const totalCost = matchedTools.reduce((s,t) => s+t.cost, 0);
+        const saving = rule.saving(totalCost);
+        if (saving > 0) recs.push({
+          id: `multi_${rule.detect.join("_")}`,
+          type: "consolidate",
+          priority: saving >= 50 ? "high" : saving >= 20 ? "medium" : "low",
+          title: `Replace ${rule.detect.join(" + ")} with ${rule.with}`,
+          saving,
+          currentCost: totalCost,
+          reason: rule.reason,
+          tools: rule.detect,
+          replaceWith: rule.with,
+          tag: "CONSOLIDATE",
+          tagColor: WARN,
+        });
+      }
+    });
+  });
+
+  // Dead tool recs
+  deadTools.forEach(t => {
+    recs.push({
+      id: `dead_${t.name}`,
+      type: "pause",
+      priority: "medium",
+      title: `Pause ${t.name}`,
+      saving: t.cost,
+      currentCost: t.cost,
+      reason: `${t.name} hasn't been used in ${t.daysAgo||21}+ days. Pausing saves $${t.cost}/mo ($${t.cost*12}/yr) with zero workflow impact.`,
+      tools: [t.name],
+      replaceWith: null,
+      tag: "PAUSE",
+      tagColor: MUTED,
+    });
+  });
+
+  // Missing tooling recs
+  const hasObservability = toolNames.some(n => ["posthog","mixpanel","sentry","datadog","amplitude"].some(o => n.toLowerCase().includes(o)));
+  const hasEmail         = toolNames.some(n => ["resend","mailgun","sendgrid","postmark"].some(o => n.toLowerCase().includes(o)));
+  const hasAuth          = toolNames.some(n => ["clerk","auth0","supabase","firebase"].some(o => n.toLowerCase().includes(o)));
+  const hasAI            = analyzedTools.some(t => ["AI Core","AI Chat","AI Code"].includes(t.cat));
+
+  if (!hasObservability && analyzedTools.length >= 3) recs.push({
+    id: "add_observability", type: "add", priority: "high",
+    title: "Add observability to your stack",
+    saving: 0, currentCost: 0,
+    reason: "No error tracking or analytics detected. PostHog free tier handles product analytics + session replay + feature flags for most indie products.",
+    tools: [], replaceWith: "PostHog (free tier)",
+    tag: "ADD", tagColor: ACID,
+  });
+
+  if (!hasEmail && hasAI && analyzedTools.length >= 3) recs.push({
+    id: "add_email", type: "add", priority: "low",
+    title: "Add a transactional email provider",
+    saving: 0, currentCost: 0,
+    reason: "No email provider detected. Resend offers 3,000 free emails/mo and is the current default for most indie stacks.",
+    tools: [], replaceWith: "Resend (free tier)",
+    tag: "ADD", tagColor: ACID,
+  });
+
+  // Stack too expensive vs ROI
+  const totalROI = analyzedTools.reduce((s,t) => s+(t.roi||0), 0);
+  if (totalSpend > 150 && totalROI === 0) recs.push({
+    id: "roi_warning", type: "optimize", priority: "high",
+    title: "High spend with no attributed revenue",
+    saving: Math.round(totalSpend * 0.3),
+    currentCost: totalSpend,
+    reason: `You're spending $${totalSpend}/mo with $0 revenue attributed. Tag tools to projects or cut the lowest-value tools to bring spend down by ~30%.`,
+    tools: [], replaceWith: null,
+    tag: "OPTIMIZE", tagColor: WARN,
+  });
+
+  // Sort: high → medium → low, then by saving desc
+  const priorityOrder = { high:0, medium:1, low:2 };
+  recs.sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority] || b.saving - a.saving);
+
+  const totalSavings = recs.reduce((s,r) => s+(r.saving||0), 0);
+
+  return (
+    <div>
+      {/* Header summary */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:20 }}>
+        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px" }}>
+          <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:MONO, marginBottom:6 }}>RECOMMENDATIONS</div>
+          <div style={{ fontSize:28, fontWeight:800, color:TEXT, fontFamily:MONO }}>{recs.length}</div>
+          <div style={{ fontSize:10, color:MUTED, marginTop:4 }}>{recs.filter(r=>r.priority==="high").length} high priority</div>
+        </div>
+        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px" }}>
+          <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:MONO, marginBottom:6 }}>TOTAL SAVINGS AVAILABLE</div>
+          <div style={{ fontSize:28, fontWeight:800, color:totalSavings>0?GREEN:MUTED, fontFamily:MONO }}>${totalSavings}/mo</div>
+          <div style={{ fontSize:10, color:MUTED, marginTop:4 }}>${totalSavings*12}/yr if actioned</div>
+        </div>
+        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px" }}>
+          <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:MONO, marginBottom:6 }}>OPTIMIZED SPEND</div>
+          <div style={{ fontSize:28, fontWeight:800, color:ACID, fontFamily:MONO }}>${Math.max(0, totalSpend - totalSavings)}/mo</div>
+          <div style={{ fontSize:10, color:MUTED, marginTop:4 }}>after all actions applied</div>
+        </div>
+      </div>
+
+      {/* Rec cards */}
+      {recs.length === 0 ? (
+        <div style={{ background:PANEL, border:`1px solid ${BORDER}`, borderRadius:10, padding:"48px 24px", textAlign:"center" }}>
+          <div style={{ fontSize:28, marginBottom:12 }}>◆</div>
+          <div style={{ fontSize:15, fontWeight:700, color:TEXT, marginBottom:8 }}>Your stack is fully optimized</div>
+          <div style={{ fontSize:12, color:MUTED }}>No overlaps, no dead weight, no missing critical tooling. Nice work.</div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {recs.map(rec => (
+            <div key={rec.id} style={{
+              background:PANEL, border:`1px solid ${rec.priority==="high"?`${WARN}35`:BORDER}`,
+              borderRadius:10, padding:"20px 24px",
+              borderLeft:`3px solid ${rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:BORDER}`,
+            }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, flex:1 }}>
+                  <span style={{ fontSize:9, color:rec.tagColor, background:`${rec.tagColor}12`, border:`1px solid ${rec.tagColor}30`, padding:"3px 9px", borderRadius:3, letterSpacing:2, fontFamily:MONO, fontWeight:700, flexShrink:0 }}>{rec.tag}</span>
+                  <div style={{ fontSize:13, fontWeight:700, color:TEXT }}>{rec.title}</div>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0, marginLeft:16 }}>
+                  {rec.saving > 0 && (
+                    <div style={{ background:`${GREEN}10`, border:`1px solid ${GREEN}25`, borderRadius:6, padding:"6px 14px", textAlign:"center" }}>
+                      <div style={{ fontSize:14, fontWeight:800, color:GREEN, fontFamily:MONO }}>−${rec.saving}/mo</div>
+                      <div style={{ fontSize:9, color:GREEN, opacity:0.7 }}>−${rec.saving*12}/yr</div>
+                    </div>
+                  )}
+                  <span style={{ fontSize:9, color:rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:MUTED, fontFamily:MONO, letterSpacing:1.5, border:`1px solid ${rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:BORDER}40`, padding:"4px 10px", borderRadius:3 }}>{rec.priority.toUpperCase()}</span>
+                </div>
+              </div>
+
+              <div style={{ fontSize:12, color:MUTED, lineHeight:1.7, marginBottom:12 }}>{rec.reason}</div>
+
+              <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+                {rec.tools.length > 0 && (
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    {rec.tools.map(t => (
+                      <span key={t} style={{ fontSize:10, color:MUTED, background:PANEL_2, border:`1px solid ${BORDER}`, padding:"3px 10px", borderRadius:4, fontFamily:MONO }}>{t}</span>
+                    ))}
+                    {rec.replaceWith && <>
+                      <span style={{ fontSize:11, color:MUTED }}>→</span>
+                      <span style={{ fontSize:10, color:ACID, background:`${ACID}10`, border:`1px solid ${ACID}25`, padding:"3px 10px", borderRadius:4, fontFamily:MONO }}>{rec.replaceWith}</span>
+                    </>}
+                  </div>
+                )}
+                {rec.type === "add" && rec.replaceWith && (
+                  <span style={{ fontSize:10, color:ACID, background:`${ACID}10`, border:`1px solid ${ACID}25`, padding:"3px 10px", borderRadius:4, fontFamily:MONO }}>→ {rec.replaceWith}</span>
+                )}
+                {rec.currentCost > 0 && (
+                  <span style={{ fontSize:10, color:MUTED, marginLeft:"auto", fontFamily:MONO }}>current: ${rec.currentCost}/mo</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── MAIN ──────────────────────────────────────────────────────
 export default function HektiqDashboard() {
   const [activeNav, setActiveNav]   = useState("DASHBOARD");
@@ -1251,10 +1467,10 @@ export default function HektiqDashboard() {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
           <div>
             <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:MONO }}>
-              {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
+              {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : activeNav === "INSIGHTS" ? "AI INTELLIGENCE · RECOMMENDATION ENGINE" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
             </div>
             <div style={{ fontSize:22, fontWeight:700, color:TEXT, letterSpacing:-0.5 }}>
-              {activeNav === "STACK" ? "Your Stack" : "AI Stack Dashboard"}
+              {activeNav === "STACK" ? "Your Stack" : activeNav === "INSIGHTS" ? "Insights" : "AI Stack Dashboard"}
             </div>
           </div>
           <div style={{ display:"flex", gap:10 }}>
@@ -1266,8 +1482,10 @@ export default function HektiqDashboard() {
         {/* ── STACK TAB ── */}
         {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} severityColor={severityColor} />}
 
+        {activeNav === "INSIGHTS" && <InsightsTab analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} />}
+
         {/* ── DASHBOARD CONTENT ── */}
-        {activeNav !== "STACK" && <>
+        {activeNav !== "STACK" && activeNav !== "INSIGHTS" && <>
 
         {/* ── HERO: Stack Health + Archetype ── */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14, marginBottom:14 }}>
