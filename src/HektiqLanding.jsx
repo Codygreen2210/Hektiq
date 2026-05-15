@@ -752,7 +752,7 @@ export default function HektiqLanding() {
         {/* Nav links — hidden on mobile */}
         {!mobile && (
           <div style={{ display: "flex", gap: 28, fontSize: 12 }}>
-            {["Features", "Pricing", "Benchmarks", "Blog"].map(l => (
+            {["Features", "Pricing", "Benchmarks"].map(l => (
               <span key={l}
                 onClick={() => document.getElementById(l.toLowerCase())?.scrollIntoView({ behavior: "smooth" })}
                 style={{ cursor: "pointer", letterSpacing: 1, color: WARN, transition: "opacity 0.15s" }}
@@ -760,6 +760,12 @@ export default function HektiqLanding() {
                 onMouseLeave={e => e.target.style.opacity = "1"}
               >{l}</span>
             ))}
+            <span
+              onClick={() => window.location.href = "/blog"}
+              style={{ cursor: "pointer", letterSpacing: 1, color: WARN, transition: "opacity 0.15s" }}
+              onMouseEnter={e => e.target.style.opacity = "0.7"}
+              onMouseLeave={e => e.target.style.opacity = "1"}
+            >Blog</span>
           </div>
         )}
 
