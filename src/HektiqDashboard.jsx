@@ -13,8 +13,8 @@ const GREEN   = "#4ade80";
 const BLUE    = "#60a5fa";
 const PURPLE  = "#b388ff";
 const MONO = "'IBM Plex Mono', monospace";
-const M=MONO,SA=SANS,BO=BORDER;
 const SANS = "'Space Grotesk', sans-serif";
+const M=MONO,SA=SANS,BO=BORDER;
 const tools = [
  { id:"claude",     name:"Claude API",     cat:"AI Core",  cost:84,  trend:"up",     icon:"◆", overlap:false, daysAgo:2,  active:true,  roi:420, project:"TrendPulseAI" },
  { id:"chatgpt",    name:"ChatGPT Plus",   cat:"AI Core",  cost:20,  trend:"stable", icon:"◉", overlap:true,  daysAgo:14, active:true,  roi:0,   project:"—"           },
@@ -579,7 +579,8 @@ const ScoreTip = ({ active, payload, label }) => {
    <div style={{ color:ACID, fontSize:13 }}>{payload[0].value}</div>
   </div>
  );
-};function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalSpend, overlapCost, healthScore, healthColor, onRemove, onAdd, severityColor }) {
+};
+function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalSpend, overlapCost, healthScore, healthColor, onRemove, onAdd, severityColor }) {
  const [filter, setFilter]     = useState("ALL");
  const [sortBy, setSortBy]     = useState("cost");
  const [sortDir, setSortDir]   = useState("desc");
@@ -1187,7 +1188,8 @@ function StackAdvisor({ analyzedTools=[], overlapDetails=[], deadTools=[], total
    )}
   </div>
  );
-     }export default function HektiqDashboard() {
+}
+export default function HektiqDashboard() {
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
  const [digestOn, setDigestOn]     = useState(true);
@@ -1832,4 +1834,4 @@ function StackAdvisor({ analyzedTools=[], overlapDetails=[], deadTools=[], total
    {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
   </div>
  );
-    }
+}
