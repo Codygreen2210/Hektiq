@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, } from "recharts";
 const BG      = "#070909";
 const PANEL   = "#101314";
@@ -1385,6 +1386,148 @@ function BenchmarksTab({ analyzedTools, totalSpend, healthScore, overlapDetails,
  );
 }
 
+function SettingsTab({ analyzedTools, onUpdateTools, onClearStack }) {
+ const { signOut } = useClerk();
+ const { user } = useUser();
+ const [editingRoi, setEditingRoi] = useState(null);
+ const [roiVal, setRoiVal] = useState("");
+ const [notifs, setNotifs] = useState({ overlap:true, inactive:true, spend:true, weekly:true });
+ const [cleared, setCleared] = useState(false);
+
+ const saveRoi = (toolId) => {
+  const val = parseInt(roiVal) || 0;
+  onUpdateTools(prev => prev.map(t => (t.id||t.name) === toolId ? { ...t, roi:val } : t));
+  setEditingRoi(null);
+  setRoiVal("");
+ };
+
+ const handleClear = () => {
+  if (window.confirm("Clear your entire stack? This cannot be undone.")) {
+   onClearStack();
+   setCleared(true);
+   setTimeout(() => setCleared(false), 3000);
+  }
+ };
+
+ return (
+  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+   {/* Account */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px" }}>
+    <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:16 }}>ACCOUNT</div>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+     <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+      <div style={{ width:44, height:44, borderRadius:"50%", background:`${ACID}20`, border:`1px solid ${ACID}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:ACID, fontWeight:700 }}>
+       {user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || "B"}
+      </div>
+      <div>
+       <div style={{ fontSize:13, fontWeight:600, color:TEXT }}>{user?.firstName ? `${user.firstName} ${user.lastName||""}`.trim() : "Builder"}</div>
+       <div style={{ fontSize:11, color:MUTED, marginTop:2 }}>{user?.emailAddresses?.[0]?.emailAddress || "—"}</div>
+      </div>
+     </div>
+     <div style={{ fontSize:9, color:ACID, background:`${ACID}12`, border:`1px solid ${ACID}25`, padding:"4px 12px", borderRadius:3, fontFamily:M, letterSpacing:1.5 }}>EARLY ACCESS</div>
+    </div>
+    <button
+     onClick={() => signOut()}
+     style={{ width:"100%", background:"transparent", border:`1px solid #ff444440`, color:"#ff4444", padding:"10px", borderRadius:6, fontSize:12, cursor:"pointer", fontFamily:M, letterSpacing:1.5, transition:"all 0.15s" }}
+     onMouseEnter={e => { e.currentTarget.style.background="#ff444415"; e.currentTarget.style.borderColor="#ff4444"; }}
+     onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="#ff444440"; }}
+    >SIGN OUT</button>
+   </div>
+
+   {/* ROI Attribution */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px" }}>
+    <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:6 }}>ROI ATTRIBUTION</div>
+    <div style={{ fontSize:11, color:"#3a4448", marginBottom:16 }}>Tag each tool with estimated monthly revenue it helps generate. This improves your health score and spend justification.</div>
+    {analyzedTools.length === 0 ? (
+     <div style={{ fontSize:12, color:MUTED, textAlign:"center", padding:"20px 0" }}>No tools in stack yet.</div>
+    ) : (
+     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      {analyzedTools.map(t => (
+       <div key={t.id||t.name} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:PANEL_2, border:`1px solid ${BO}`, borderRadius:7 }}>
+        <div style={{ flex:1 }}>
+         <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>{t.name}</div>
+         <div style={{ fontSize:10, color:MUTED }}>${t.cost}/mo cost</div>
+        </div>
+        {editingRoi === (t.id||t.name) ? (
+         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          <span style={{ fontSize:11, color:MUTED }}>$</span>
+          <input
+           value={roiVal}
+           onChange={e => setRoiVal(e.target.value.replace(/\D/g,""))}
+           onKeyDown={e => e.key==="Enter" && saveRoi(t.id||t.name)}
+           placeholder="0"
+           autoFocus
+           style={{ width:70, background:"#1a2326", border:`1px solid ${ACID}`, borderRadius:4, padding:"5px 8px", color:TEXT, fontSize:12, fontFamily:M, outline:"none" }}
+          />
+          <span style={{ fontSize:10, color:MUTED }}>/mo</span>
+          <button onClick={() => saveRoi(t.id||t.name)} style={{ background:ACID, color:BG, border:"none", borderRadius:4, padding:"5px 10px", fontSize:10, cursor:"pointer", fontWeight:700 }}>✓</button>
+          <button onClick={() => setEditingRoi(null)} style={{ background:"transparent", color:MUTED, border:`1px solid ${BO}`, borderRadius:4, padding:"5px 8px", fontSize:10, cursor:"pointer" }}>✕</button>
+         </div>
+        ) : (
+         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:(t.roi||0)>0?GREEN:MUTED, fontFamily:M }}>{(t.roi||0)>0?`$${t.roi}/mo`:"—"}</div>
+          <button
+           onClick={() => { setEditingRoi(t.id||t.name); setRoiVal(t.roi?.toString()||""); }}
+           style={{ background:"transparent", border:`1px solid ${BO}`, color:MUTED, padding:"4px 10px", borderRadius:4, fontSize:10, cursor:"pointer", fontFamily:M, transition:"all 0.15s" }}
+           onMouseEnter={e => { e.currentTarget.style.borderColor=ACID; e.currentTarget.style.color=ACID; }}
+           onMouseLeave={e => { e.currentTarget.style.borderColor=BO; e.currentTarget.style.color=MUTED; }}
+          >TAG ROI</button>
+         </div>
+        )}
+       </div>
+      ))}
+     </div>
+    )}
+   </div>
+
+   {/* Notifications */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px" }}>
+    <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:16 }}>NOTIFICATION PREFERENCES</div>
+    <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+     {[
+      { key:"overlap",  label:"Overlap conflict alerts",    sub:"Notify when tools doing the same job are detected"   },
+      { key:"inactive", label:"Inactive tool alerts",       sub:"Notify when a tool hasn't been used in 14+ days"     },
+      { key:"spend",    label:"Spend spike alerts",         sub:"Notify when monthly spend increases significantly"   },
+      { key:"weekly",   label:"Weekly digest email",        sub:"Summary of stack health every Monday"                },
+     ].map(n => (
+      <div key={n.key} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+       <div>
+        <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>{n.label}</div>
+        <div style={{ fontSize:10, color:MUTED, marginTop:2 }}>{n.sub}</div>
+       </div>
+       <div
+        onClick={() => setNotifs(prev => ({ ...prev, [n.key]:!prev[n.key] }))}
+        style={{ width:36, height:20, borderRadius:10, cursor:"pointer", background:notifs[n.key]?ACID:"#1d2326", position:"relative", transition:"background 0.2s", flexShrink:0, boxShadow:notifs[n.key]?`0 0 10px ${ACID}44`:"none" }}
+       >
+        <div style={{ position:"absolute", top:3, left:notifs[n.key]?18:3, width:14, height:14, borderRadius:"50%", background:notifs[n.key]?BG:MUTED, transition:"left 0.2s" }}/>
+       </div>
+      </div>
+     ))}
+    </div>
+   </div>
+
+   {/* Danger zone */}
+   <div style={{ background:PANEL, border:`1px solid #ff444430`, borderRadius:10, padding:"20px 24px" }}>
+    <div style={{ fontSize:10, color:"#ff4444", letterSpacing:2.5, fontFamily:M, marginBottom:16 }}>DANGER ZONE</div>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+     <div>
+      <div style={{ fontSize:12, fontWeight:600, color:TEXT }}>Clear stack data</div>
+      <div style={{ fontSize:10, color:MUTED, marginTop:2 }}>Remove all tools and reset your dashboard</div>
+     </div>
+     <button
+      onClick={handleClear}
+      style={{ background:"transparent", border:`1px solid #ff444440`, color:"#ff4444", padding:"8px 16px", borderRadius:5, fontSize:11, cursor:"pointer", fontFamily:M, letterSpacing:1, transition:"all 0.15s" }}
+      onMouseEnter={e => { e.currentTarget.style.background="#ff444415"; }}
+      onMouseLeave={e => { e.currentTarget.style.background="transparent"; }}
+     >{cleared ? "✓ CLEARED" : "CLEAR STACK"}</button>
+    </div>
+   </div>
+
+  </div>
+ );
+}
+
 export default function HektiqDashboard() {
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
@@ -1407,6 +1550,7 @@ export default function HektiqDashboard() {
   return [...prev, newTool];
  });
  const handleRemoveTool = (id)      => setUserTools(prev => prev.filter(t => (t.id||t.name) !== id));
+ const handleClearStack = ()        => setUserTools([]);
  const OVERLAP_GROUPS = [
   { label:"AI Chat",        members:["Claude API","ChatGPT","Perplexity","Anthropic API","OpenAI API"] },
   { label:"AI Code",        members:["Cursor","GitHub Copilot","Replit","Bolt","Lovable","Codeium"] },
@@ -1576,10 +1720,10 @@ export default function HektiqDashboard() {
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
      <div>
       <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:M }}>
-       {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : activeNav === "INSIGHTS" ? "AI INTELLIGENCE · RECOMMENDATION ENGINE" : activeNav === "BENCHMARKS" ? "COMMUNITY DATA · EFFICIENCY RANKINGS" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
+       {activeNav === "STACK" ? "TOOL MANAGEMENT · STACK CONTROL" : activeNav === "INSIGHTS" ? "AI INTELLIGENCE · RECOMMENDATION ENGINE" : activeNav === "BENCHMARKS" ? "COMMUNITY DATA · EFFICIENCY RANKINGS" : activeNav === "SETTINGS" ? "ACCOUNT · PREFERENCES" : `${new Date().toLocaleString("en-US",{month:"long",year:"numeric"}).toUpperCase()} · BUILDER CONTROL CENTER`}
       </div>
       <div style={{ fontSize:22, fontWeight:700, color:TEXT, letterSpacing:-0.5 }}>
-       {activeNav === "STACK" ? "Your Stack" : activeNav === "INSIGHTS" ? "Insights" : activeNav === "BENCHMARKS" ? "Benchmarks" : "AI Stack Dashboard"}
+       {activeNav === "STACK" ? "Your Stack" : activeNav === "INSIGHTS" ? "Insights" : activeNav === "BENCHMARKS" ? "Benchmarks" : activeNav === "SETTINGS" ? "Settings" : "AI Stack Dashboard"}
       </div>
      </div>
      <div style={{ display:"flex", gap:10 }}>
@@ -1590,6 +1734,7 @@ export default function HektiqDashboard() {
     {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} severityColor={severityColor} />}
     {activeNav === "INSIGHTS" && <InsightsTab analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} />}
     {activeNav === "BENCHMARKS" && <BenchmarksTab analyzedTools={analyzedTools} totalSpend={totalSpend} healthScore={healthScore} overlapDetails={overlapDetails} deadTools={deadTools} />}
+    {activeNav === "SETTINGS" && <SettingsTab analyzedTools={analyzedTools} onUpdateTools={setUserTools} onClearStack={handleClearStack} />}
     {activeNav !== "STACK" && activeNav !== "INSIGHTS" && activeNav !== "BENCHMARKS" && <>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14, marginBottom:14 }}>
      <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"22px 26px", position:"relative", overflow:"hidden" }}>
