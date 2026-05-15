@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hektiq Blog — AI Stack Intelligence for Builders</title>
+  <meta name="description" content="Guides, teardowns, and stack audits for indie hackers and founders who want to stop overpaying for AI tools."/>
+  <meta property="og:title" content="Hektiq Blog — AI Stack Intelligence for Builders"/>
+  <meta property="og:description" content="Guides, teardowns, and stack audits for indie hackers and founders who want to stop overpaying for AI tools."/>
+  <meta property="og:url" content="https://hektiq.com/blog"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://hektiq.com/blog"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #070909;
+      --panel: #101314;
+      --border: #1d2326;
+      --acid: #d7ff3f;
+      --text: #f3f5f7;
+      --muted: #7b848c;
+      --warn: #ff7a45;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 48px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+    .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--acid); letter-spacing: -0.5px; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 13px; color: var(--muted); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { background: var(--acid); color: var(--bg); padding: 8px 18px; border-radius: 5px; font-size: 12px; font-weight: 700; letter-spacing: 1px; font-family: 'Syne', sans-serif; transition: opacity 0.2s; }
+    .nav-cta:hover { opacity: 0.85; }
+    header { padding: 80px 48px 60px; max-width: 1100px; margin: 0 auto; }
+    .header-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--acid); letter-spacing: 3px; margin-bottom: 16px; }
+    h1 { font-family: 'Syne', sans-serif; font-size: clamp(36px, 5vw, 60px); font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px; }
+    .header-sub { font-size: 16px; color: var(--muted); max-width: 480px; }
+    .posts { max-width: 1100px; margin: 0 auto; padding: 0 48px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .post-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 28px; transition: border-color 0.2s, transform 0.2s; cursor: pointer; }
+    .post-card:hover { border-color: var(--acid); transform: translateY(-2px); }
+    .post-tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--acid); margin-bottom: 12px; }
+    .post-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; line-height: 1.3; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .post-excerpt { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+    .post-meta { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+    .post-read { color: var(--acid); }
+    footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; }
+    .footer-text { font-size: 12px; color: var(--muted); }
+    @media (max-width: 600px) {
+      nav, header, .posts, footer { padding-left: 20px; padding-right: 20px; }
+      header { padding-top: 48px; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">Hektiq</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/blog" style="color:var(--text)">Blog</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/dashboard" class="nav-cta">Get Early Access</a>
+    </div>
+  </nav>
+
+  <header>
+    <div class="header-tag">HEKTIQ BLOG</div>
+    <h1>AI stack intelligence<br/>for serious builders.</h1>
+    <p class="header-sub">Teardowns, stack audits, and guides for indie hackers and founders who want to stop overpaying for AI tools.</p>
+  </header>
+
+  <div class="posts">
+    <a href="/blog/cursor-vs-github-copilot">
+      <div class="post-card">
+        <div class="post-tag">TOOL COMPARISON</div>
+        <div class="post-title">Cursor vs GitHub Copilot — Do You Actually Need Both?</div>
+        <div class="post-excerpt">Most builders paying for both are wasting $10–$19/mo. Here's exactly where they overlap and which one wins for solo developers.</div>
+        <div class="post-meta">
+          <span>May 2026 · 5 min read</span>
+          <span class="post-read">Read →</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="/blog/claude-api-vs-chatgpt-plus">
+      <div class="post-card">
+        <div class="post-tag">COST BREAKDOWN</div>
+        <div class="post-title">Claude API vs ChatGPT Plus — Which Is Actually Cheaper for Builders?</div>
+        <div class="post-excerpt">A real cost comparison for indie hackers. Spoiler: the answer depends entirely on how you use them — and most builders are picking wrong.</div>
+        <div class="post-meta">
+          <span>May 2026 · 6 min read</span>
+          <span class="post-read">Read →</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="/blog/best-ai-stack-indie-hackers-2026">
+      <div class="post-card">
+        <div class="post-tag">STACK GUIDE</div>
+        <div class="post-title">The Best AI Stack for Indie Hackers in 2026 (Under $100/mo)</div>
+        <div class="post-excerpt">After auditing hundreds of builder stacks, here's what the most efficient solo founders are actually running — and what they cut to get there.</div>
+        <div class="post-meta">
+          <span>May 2026 · 8 min read</span>
+          <span class="post-read">Read →</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <footer>
+    <span class="footer-text">© 2026 Hektiq — AI Stack Operating System</span>
+    <a href="/dashboard" style="font-size:12px; color:var(--acid); font-family:'IBM Plex Mono',monospace; letter-spacing:1px;">GET EARLY ACCESS →</a>
+  </footer>
+</body>
+</html>
