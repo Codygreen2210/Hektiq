@@ -1,7 +1,11 @@
 {
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/blog", "destination": "/blog/index.html" },
-    { "source": "/blog/(.*)", "destination": "/blog/$1/index.html" },
+    { "source": "/blog/cursor-vs-github-copilot", "destination": "/blog/cursor-vs-github-copilot/index.html" },
+    { "source": "/blog/claude-api-vs-chatgpt-plus", "destination": "/blog/claude-api-vs-chatgpt-plus/index.html" },
+    { "source": "/blog/best-ai-stack-indie-hackers-2026", "destination": "/blog/best-ai-stack-indie-hackers-2026/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
