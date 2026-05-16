@@ -2304,7 +2304,7 @@ export default function HektiqDashboard() {
     }
    `}</style>
    {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
-   {showGithubImport && <GitHubImportModal onClose={() => setShowGithubImport(false)} onImport={(tools) => tools.forEach(t => handleAddTool(t))} />
+   {showGithubImport && <GitHubImportModal onClose={() => setShowGithubImport(false)} onImport={(tools) => tools.forEach(t => handleAddTool(t))} />}
   </div>
  );
 }
