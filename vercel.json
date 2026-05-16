@@ -6,6 +6,7 @@
     { "source": "/blog/cursor-vs-github-copilot", "destination": "/blog/blog-cursor-vs-copilot.html" },
     { "source": "/blog/claude-api-vs-chatgpt-plus", "destination": "/blog/blog-claude-vs-chatgpt.html" },
     { "source": "/blog/best-ai-stack-indie-hackers-2026", "destination": "/blog/blog-best-ai-stack.html" },
+    { "source": "/tools/ai-stack-calculator", "destination": "/tools/ai-stack-calculator/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
