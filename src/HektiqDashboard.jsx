@@ -1386,13 +1386,15 @@ function BenchmarksTab({ analyzedTools, totalSpend, healthScore, overlapDetails,
  );
 }
 
-function SettingsTab({ analyzedTools, onUpdateTools, onClearStack }) {
+function SettingsTab({ analyzedTools, onUpdateTools, onClearStack, adminKey, onSaveAdminKey, spendAlert, onSaveSpendAlert }) {
  const { signOut } = useClerk();
  const { user } = useUser();
- const [editingRoi, setEditingRoi] = useState(null);
- const [roiVal, setRoiVal] = useState("");
- const [notifs, setNotifs] = useState({ overlap:true, inactive:true, spend:true, weekly:true });
- const [cleared, setCleared] = useState(false);
+ const [editingRoi, setEditingRoi]     = useState(null);
+ const [roiVal, setRoiVal]             = useState("");
+ const [notifs, setNotifs]             = useState({ overlap:true, inactive:true, spend:true, weekly:true });
+ const [cleared, setCleared]           = useState(false);
+ const [localAdminKey, setLocalAdminKey] = useState(adminKey || "");
+ const [localSpendAlert, setLocalSpendAlert] = useState(spendAlert?.toString() || "");
 
  const saveRoi = (toolId) => {
   const val = parseInt(roiVal) || 0;
@@ -1433,6 +1435,52 @@ function SettingsTab({ analyzedTools, onUpdateTools, onClearStack }) {
      onMouseEnter={e => { e.currentTarget.style.background="#ff444415"; e.currentTarget.style.borderColor="#ff4444"; }}
      onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="#ff444440"; }}
     >SIGN OUT</button>
+   </div>
+
+   {/* API Usage Tracking */}
+   <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px" }}>
+    <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:6 }}>ANTHROPIC API USAGE TRACKING</div>
+    <div style={{ fontSize:11, color:"#3a4448", marginBottom:16, lineHeight:1.6 }}>
+     Connect your Anthropic Admin API key to track real-time token usage and spending. Generate one at <span style={{ color:ACID }}>console.anthropic.com → API Keys → Admin Keys</span>.
+    </div>
+    <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+     <input
+      type="password"
+      value={localAdminKey}
+      onChange={e => setLocalAdminKey(e.target.value)}
+      placeholder="sk-ant-admin..."
+      style={{ flex:1, background:PANEL_2, border:`1px solid ${BO}`, borderRadius:6, padding:"10px 14px", color:TEXT, fontSize:12, fontFamily:M, outline:"none" }}
+      onFocus={e => e.target.style.borderColor=ACID}
+      onBlur={e => e.target.style.borderColor=BO}
+     />
+     <button
+      onClick={() => { onSaveAdminKey(localAdminKey); }}
+      disabled={!localAdminKey}
+      style={{ background:localAdminKey?ACID:PANEL_2, color:localAdminKey?BG:MUTED, border:`1px solid ${localAdminKey?ACID:BO}`, borderRadius:6, padding:"10px 16px", fontSize:11, fontWeight:700, cursor:localAdminKey?"pointer":"default", fontFamily:M, letterSpacing:1, transition:"all 0.15s" }}
+     >CONNECT</button>
+    </div>
+    <div style={{ marginBottom:16 }}>
+     <div style={{ fontSize:10, color:MUTED, marginBottom:8 }}>Monthly spend alert — get warned when projected spend exceeds this amount</div>
+     <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+      <span style={{ fontSize:12, color:MUTED }}>$</span>
+      <input
+       type="number"
+       value={localSpendAlert}
+       onChange={e => setLocalSpendAlert(e.target.value)}
+       placeholder="e.g. 50"
+       style={{ width:100, background:PANEL_2, border:`1px solid ${BO}`, borderRadius:6, padding:"8px 12px", color:TEXT, fontSize:12, fontFamily:M, outline:"none" }}
+       onFocus={e => e.target.style.borderColor=ACID}
+       onBlur={e => e.target.style.borderColor=BO}
+      />
+      <span style={{ fontSize:11, color:MUTED }}>/mo</span>
+      <button
+       onClick={() => onSaveSpendAlert(localSpendAlert)}
+       style={{ background:"transparent", border:`1px solid ${BO}`, color:MUTED, padding:"8px 14px", borderRadius:5, fontSize:10, cursor:"pointer", fontFamily:M, transition:"all 0.15s" }}
+       onMouseEnter={e => { e.currentTarget.style.borderColor=ACID; e.currentTarget.style.color=ACID; }}
+       onMouseLeave={e => { e.currentTarget.style.borderColor=BO; e.currentTarget.style.color=MUTED; }}
+      >SET ALERT</button>
+     </div>
+    </div>
    </div>
 
    {/* ROI Attribution */}
@@ -1664,6 +1712,11 @@ export default function HektiqDashboard() {
  const [showAddTool, setShowAddTool] = useState(false);
  const [showGithubImport, setShowGithubImport] = useState(false);
  const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
+ const [adminKey, setAdminKey]     = useState(() => localStorage.getItem("hektiq_admin_key") || "");
+ const [apiUsage, setApiUsage]     = useState(null);
+ const [apiUsageLoading, setApiUsageLoading] = useState(false);
+ const [apiUsageError, setApiUsageError]   = useState("");
+ const [spendAlert, setSpendAlert] = useState(() => parseInt(localStorage.getItem("hektiq_spend_alert")) || 0);
  const [userTools, setUserTools] = useState(() => {
   try {
    const saved = localStorage.getItem("hektiq_tools");
@@ -1674,6 +1727,27 @@ export default function HektiqDashboard() {
   try { localStorage.setItem("hektiq_tools", JSON.stringify(userTools)); }
   catch {}
  }, [userTools]);
+ const fetchApiUsage = async (key) => {
+  const k = key || adminKey;
+  if (!k) return;
+  setApiUsageLoading(true);
+  setApiUsageError("");
+  try {
+   const res = await fetch("/api/anthropic-usage", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ adminKey: k }),
+   });
+   const data = await res.json();
+   if (!res.ok) throw new Error(data.error || "Failed to fetch usage");
+   setApiUsage(data);
+   localStorage.setItem("hektiq_admin_key", k);
+  } catch(err) {
+   setApiUsageError(err.message);
+  }
+  setApiUsageLoading(false);
+ };
+
  const handleAddTool    = (newTool) => setUserTools(prev => {
   const exists = prev.some(t => t.name.toLowerCase() === newTool.name.toLowerCase());
   if (exists) { alert(`"${newTool.name}" is already in your stack.`); return prev; }
@@ -1864,7 +1938,7 @@ export default function HektiqDashboard() {
     {activeNav === "STACK" && <StackTab analyzedTools={analyzedTools} overlapIds={overlapIds} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} healthColor={healthColor} onRemove={handleRemoveTool} onAdd={()=>setShowAddTool(true)} severityColor={severityColor} />}
     {activeNav === "INSIGHTS" && <InsightsTab analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} overlapCost={overlapCost} healthScore={healthScore} />}
     {activeNav === "BENCHMARKS" && <BenchmarksTab analyzedTools={analyzedTools} totalSpend={totalSpend} healthScore={healthScore} overlapDetails={overlapDetails} deadTools={deadTools} />}
-    {activeNav === "SETTINGS" && <SettingsTab analyzedTools={analyzedTools} onUpdateTools={setUserTools} onClearStack={handleClearStack} />}
+    {activeNav === "SETTINGS" && <SettingsTab analyzedTools={analyzedTools} onUpdateTools={setUserTools} onClearStack={handleClearStack} adminKey={adminKey} onSaveAdminKey={(k) => { setAdminKey(k); fetchApiUsage(k); }} spendAlert={spendAlert} onSaveSpendAlert={(v) => { const n=parseInt(v)||0; setSpendAlert(n); localStorage.setItem("hektiq_spend_alert", n); }} />}
     {activeNav !== "STACK" && activeNav !== "INSIGHTS" && activeNav !== "BENCHMARKS" && <>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14, marginBottom:14 }}>
      <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"22px 26px", position:"relative", overflow:"hidden" }}>
@@ -2250,6 +2324,97 @@ export default function HektiqDashboard() {
       </div>
      </div>
     )}
+        {/* ── API USAGE TRACKER ── */}
+        {adminKey && (
+         <div style={{ marginBottom:14 }}>
+          {apiUsageLoading && (
+           <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px", display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:ACID, animation:"blink 1s infinite" }}/>
+            <span style={{ fontSize:12, color:MUTED }}>Fetching API usage data...</span>
+           </div>
+          )}
+          {apiUsageError && (
+           <div style={{ background:`${WARN}08`, border:`1px solid ${WARN}30`, borderRadius:10, padding:"16px 20px", display:"flex", gap:10, alignItems:"center" }}>
+            <span style={{ color:WARN }}>⚠</span>
+            <span style={{ fontSize:12, color:WARN }}>{apiUsageError}</span>
+            <button onClick={() => fetchApiUsage()} style={{ marginLeft:"auto", background:"transparent", border:`1px solid ${WARN}40`, color:WARN, padding:"4px 12px", borderRadius:4, fontSize:10, cursor:"pointer", fontFamily:M }}>RETRY</button>
+           </div>
+          )}
+          {apiUsage && !apiUsageLoading && (
+           <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px 24px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+             <div>
+              <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M, marginBottom:4 }}>ANTHROPIC API USAGE · LAST 30 DAYS</div>
+              <div style={{ fontSize:11, color:"#3a4448" }}>Real-time spend from your Admin API key</div>
+             </div>
+             <button onClick={() => fetchApiUsage()} style={{ background:"transparent", border:`1px solid ${BO}`, color:MUTED, padding:"5px 12px", borderRadius:4, fontSize:9, cursor:"pointer", fontFamily:M, letterSpacing:1 }}>↻ REFRESH</button>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:16 }}>
+             {[
+              { label:"THIS MONTH",   value:`$${apiUsage.thisMonthCost}`,    sub:"actual spend",          color:WARN },
+              { label:"PROJECTED",    value:`$${apiUsage.projectedMonthly}`, sub:"end of month estimate", color:apiUsage.projectedMonthly>(spendAlert||999)?"#ff4444":ACID },
+              { label:"DAILY AVG",    value:`$${apiUsage.avgDailySpend}`,    sub:"last 7 days",           color:TEXT },
+              { label:"30-DAY TOTAL", value:`$${apiUsage.totalCost}`,        sub:`${(apiUsage.totalInputTokens/1000).toFixed(0)}K input tokens`, color:MUTED },
+             ].map(s => (
+              <div key={s.label} style={{ background:PANEL_2, border:`1px solid ${BO}`, borderRadius:7, padding:"12px 14px" }}>
+               <div style={{ fontSize:9, color:MUTED, fontFamily:M, letterSpacing:1.5, marginBottom:6 }}>{s.label}</div>
+               <div style={{ fontSize:18, fontWeight:800, color:s.color, fontFamily:M }}>{s.value}</div>
+               <div style={{ fontSize:9, color:MUTED, marginTop:3 }}>{s.sub}</div>
+              </div>
+             ))}
+            </div>
+            {spendAlert > 0 && apiUsage.projectedMonthly > spendAlert && (
+             <div style={{ background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:8, padding:"10px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"center" }}>
+              <span style={{ color:"#ff4444", fontSize:14 }}>🚨</span>
+              <div>
+               <div style={{ fontSize:12, fontWeight:700, color:"#ff4444" }}>Spend alert — on pace to exceed ${spendAlert}/mo</div>
+               <div style={{ fontSize:11, color:MUTED }}>Projected ${apiUsage.projectedMonthly} vs your ${spendAlert} limit.</div>
+              </div>
+             </div>
+            )}
+            <div style={{ marginBottom:12 }}>
+             <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:10 }}>DAILY SPEND — LAST 30 DAYS</div>
+             <div style={{ display:"flex", alignItems:"flex-end", gap:2, height:60 }}>
+              {apiUsage.timeline.map((day, i) => {
+               const maxCost = Math.max(...apiUsage.timeline.map(d => d.cost), 0.01);
+               const height = Math.max(2, (day.cost / maxCost) * 60);
+               const isToday = i === apiUsage.timeline.length - 1;
+               return (
+                <div key={day.date} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center" }} title={`${day.label}: $${day.cost}`}>
+                 <div style={{ width:"100%", height:`${height}px`, background:isToday?ACID:day.cost>0?`${ACID}55`:"#1a2022", borderRadius:"2px 2px 0 0", minHeight:2 }}/>
+                </div>
+               );
+              })}
+             </div>
+             <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+              <span style={{ fontSize:9, color:MUTED, fontFamily:M }}>{apiUsage.timeline[0]?.label}</span>
+              <span style={{ fontSize:9, color:ACID, fontFamily:M }}>Today</span>
+             </div>
+            </div>
+            {apiUsage.modelBreakdown.length > 0 && (
+             <div>
+              <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:8 }}>SPEND BY MODEL</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+               {apiUsage.modelBreakdown.slice(0,4).map(m => {
+                const pct = apiUsage.totalCost > 0 ? (m.cost / apiUsage.totalCost) * 100 : 0;
+                return (
+                 <div key={m.model} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:130, fontSize:10, color:MUTED, fontFamily:M, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.model}</div>
+                  <div style={{ flex:1, height:4, background:"#1a2022", borderRadius:2 }}>
+                   <div style={{ width:`${pct}%`, height:"100%", background:`linear-gradient(90deg,${ACID}66,${ACID})`, borderRadius:2 }}/>
+                  </div>
+                  <div style={{ width:48, textAlign:"right", fontSize:10, color:ACID, fontFamily:M }}>${m.cost}</div>
+                 </div>
+                );
+               })}
+              </div>
+             </div>
+            )}
+           </div>
+          )}
+         </div>
+        )}
+
     <div style={{ marginBottom:14 }}>
      <RelationshipGraph userTools={analyzedTools} dynamicNodes={dynamicNodes} overlapIds={overlapIds}/>
     </div>
