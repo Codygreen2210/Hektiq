@@ -1528,11 +1528,141 @@ function SettingsTab({ analyzedTools, onUpdateTools, onClearStack }) {
  );
 }
 
+function GitHubImportModal({ onClose, onImport }) {
+ const [url, setUrl]         = useState("");
+ const [loading, setLoading] = useState(false);
+ const [result, setResult]   = useState(null);
+ const [error, setError]     = useState("");
+ const [selected, setSelected] = useState({});
+
+ const handleImport = async () => {
+  if (!url.includes("github.com")) { setError("Please enter a valid GitHub repository URL"); return; }
+  setLoading(true);
+  setError("");
+  try {
+   const res = await fetch("/api/github-import", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ repoUrl: url }),
+   });
+   const data = await res.json();
+   if (!res.ok) throw new Error(data.error || "Import failed");
+   setResult(data);
+   // Select all detected tools by default
+   const sel = {};
+   data.tools.forEach(t => { sel[t.name] = true; });
+   setSelected(sel);
+  } catch (err) {
+   setError(err.message);
+  }
+  setLoading(false);
+ };
+
+ const handleConfirm = () => {
+  const toAdd = result.tools.filter(t => selected[t.name]).map(t => ({
+   id: Date.now().toString() + Math.random(),
+   name: t.name,
+   cat: t.cat,
+   icon: "◆",
+   cost: t.cost,
+   plan: "Detected",
+   project: "—",
+   billingCycle: "monthly",
+   trend: "stable",
+   overlap: false,
+   daysAgo: 0,
+   active: true,
+   roi: 0,
+  }));
+  onImport(toAdd);
+  onClose();
+ };
+
+ return (
+  <div style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={onClose}>
+   <div onClick={e => e.stopPropagation()} style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:12, width:"100%", maxWidth:520, maxHeight:"85vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:`0 0 60px rgba(0,0,0,0.6)` }}>
+
+    {/* Header */}
+    <div style={{ padding:"18px 22px", borderBottom:`1px solid ${BO}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+     <div>
+      <div style={{ fontSize:14, fontWeight:700, color:TEXT }}>Import from GitHub</div>
+      <div style={{ fontSize:10, color:MUTED, fontFamily:M, marginTop:2 }}>AUTO-DETECT TOOLS FROM PACKAGE.JSON</div>
+     </div>
+     <div onClick={onClose} style={{ cursor:"pointer", color:MUTED, fontSize:18, lineHeight:1, padding:4 }}>✕</div>
+    </div>
+
+    <div style={{ padding:"20px 22px", overflowY:"auto" }}>
+     {!result ? (
+      <>
+       <div style={{ fontSize:12, color:MUTED, marginBottom:16, lineHeight:1.6 }}>
+        Paste a public GitHub repo URL and we'll scan <code style={{ background:PANEL_2, padding:"1px 6px", borderRadius:3, color:ACID, fontSize:11 }}>package.json</code> to auto-detect your tools and add them to your stack.
+       </div>
+       <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        <input
+         value={url}
+         onChange={e => setUrl(e.target.value)}
+         onKeyDown={e => e.key==="Enter" && handleImport()}
+         placeholder="https://github.com/username/repo"
+         autoFocus
+         style={{ flex:1, background:PANEL_2, border:`1px solid ${loading?ACID:BO}`, borderRadius:7, padding:"10px 14px", color:TEXT, fontSize:13, fontFamily:SA, outline:"none", transition:"border-color 0.2s" }}
+        />
+        <button
+         onClick={handleImport}
+         disabled={loading || !url}
+         style={{ background:url&&!loading?ACID:PANEL_2, color:url&&!loading?BG:MUTED, border:`1px solid ${url&&!loading?ACID:BO}`, borderRadius:7, padding:"10px 18px", fontSize:12, fontWeight:700, cursor:url&&!loading?"pointer":"default", fontFamily:SA, letterSpacing:1, transition:"all 0.15s", whiteSpace:"nowrap" }}
+        >{loading ? "Scanning..." : "Import →"}</button>
+       </div>
+       {error && <div style={{ fontSize:12, color:WARN, background:`${WARN}10`, border:`1px solid ${WARN}25`, borderRadius:6, padding:"10px 14px" }}>{error}</div>}
+       <div style={{ fontSize:11, color:MUTED, marginTop:12 }}>
+        Works with public repos only. Scans <code style={{ color:ACID, fontSize:10 }}>dependencies</code> and <code style={{ color:ACID, fontSize:10 }}>devDependencies</code>.
+       </div>
+      </>
+     ) : (
+      <>
+       <div style={{ background:`${GREEN}10`, border:`1px solid ${GREEN}25`, borderRadius:8, padding:"12px 16px", marginBottom:16, display:"flex", gap:10, alignItems:"center" }}>
+        <span style={{ color:GREEN, fontSize:16 }}>◆</span>
+        <div>
+         <div style={{ fontSize:12, fontWeight:600, color:GREEN }}>Found {result.toolsFound} tool{result.toolsFound!==1?"s":""} in {result.repo}</div>
+         <div style={{ fontSize:11, color:MUTED, marginTop:2 }}>Select which ones to add to your stack</div>
+        </div>
+       </div>
+       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+        {result.tools.map(t => (
+         <div key={t.name}
+          onClick={() => setSelected(prev => ({ ...prev, [t.name]:!prev[t.name] }))}
+          style={{ display:"flex", alignItems:"center", gap:12, background:selected[t.name]?`${ACID}08`:PANEL_2, border:`1px solid ${selected[t.name]?ACID+"44":BO}`, borderRadius:8, padding:"12px 14px", cursor:"pointer", transition:"all 0.15s" }}
+         >
+          <div style={{ width:18, height:18, borderRadius:"50%", background:selected[t.name]?ACID:PANEL, border:`1px solid ${selected[t.name]?ACID:BO}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, color:BG, fontWeight:900, flexShrink:0 }}>{selected[t.name]?"✓":""}</div>
+          <div style={{ flex:1 }}>
+           <div style={{ fontSize:12, fontWeight:600, color:selected[t.name]?TEXT:MUTED }}>{t.name}</div>
+           <div style={{ fontSize:10, color:MUTED, marginTop:2 }}>Detected from <code style={{ color:ACID, fontSize:9 }}>{t.detectedFrom}</code> · {t.cat}</div>
+          </div>
+          <div style={{ fontSize:12, color:t.cost>0?WARN:GREEN, fontFamily:M, fontWeight:700 }}>{t.cost>0?`$${t.cost}/mo`:"Free"}</div>
+         </div>
+        ))}
+       </div>
+       <div style={{ display:"flex", gap:10 }}>
+        <button onClick={() => { setResult(null); setUrl(""); }} style={{ flex:1, background:"transparent", border:`1px solid ${BO}`, color:MUTED, padding:"11px", borderRadius:7, fontSize:12, cursor:"pointer", fontFamily:SA }}>← Back</button>
+        <button
+         onClick={handleConfirm}
+         disabled={Object.values(selected).filter(Boolean).length === 0}
+         style={{ flex:2, background:ACID, color:BG, border:"none", borderRadius:7, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:SA, letterSpacing:1, boxShadow:`0 0 16px ${ACID}44` }}
+        >Add {Object.values(selected).filter(Boolean).length} Tool{Object.values(selected).filter(Boolean).length!==1?"s":""} to Stack →</button>
+       </div>
+      </>
+     )}
+    </div>
+   </div>
+  </div>
+ );
+}
+
 export default function HektiqDashboard() {
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
  const [digestOn, setDigestOn]     = useState(true);
  const [showAddTool, setShowAddTool] = useState(false);
+ const [showGithubImport, setShowGithubImport] = useState(false);
  const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
  const [userTools, setUserTools] = useState(() => {
   try {
@@ -1727,7 +1857,7 @@ export default function HektiqDashboard() {
       </div>
      </div>
      <div style={{ display:"flex", gap:10 }}>
-      <button onClick={() => alert("Auto-import coming soon — connect your billing accounts directly.")} style={{ background:"transparent", color:MUTED, border:`1px solid ${BO}`, padding:"8px 16px", fontFamily:SA, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5 }}>IMPORT TOOL</button>
+      <button onClick={() => setShowGithubImport(true)} style={{ background:"transparent", color:MUTED, border:`1px solid ${BO}`, padding:"8px 16px", fontFamily:SA, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5 }}>IMPORT TOOL</button>
       <button onClick={()=>setShowAddTool(true)} style={{ background:ACID, color:BG, border:"none", padding:"8px 18px", fontFamily:SA, fontWeight:700, fontSize:11, letterSpacing:1.5, cursor:"pointer", borderRadius:5, boxShadow:`0 0 16px ${ACID}44` }}>+ ADD TOOL</button>
      </div>
     </div>
@@ -2174,6 +2304,7 @@ export default function HektiqDashboard() {
     }
    `}</style>
    {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
+   {showGithubImport && <GitHubImportModal onClose={() => setShowGithubImport(false)} onImport={(tools) => tools.forEach(t => handleAddTool(t))} />
   </div>
  );
 }
