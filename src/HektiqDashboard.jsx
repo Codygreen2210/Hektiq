@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useClerk, useUser } from "@clerk/clerk-react";
+import { createClient } from "@supabase/supabase-js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, } from "recharts";
+
+const supabase = createClient(
+ import.meta.env.VITE_SUPABASE_URL,
+ import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 const BG      = "#070909";
 const PANEL   = "#101314";
 const PANEL_2 = "#15191b";
@@ -1717,16 +1723,44 @@ export default function HektiqDashboard() {
  const [apiUsageLoading, setApiUsageLoading] = useState(false);
  const [apiUsageError, setApiUsageError]   = useState("");
  const [spendAlert, setSpendAlert] = useState(() => parseInt(localStorage.getItem("hektiq_spend_alert")) || 0);
- const [userTools, setUserTools] = useState(() => {
-  try {
-   const saved = localStorage.getItem("hektiq_tools");
-   return saved ? JSON.parse(saved) : tools;
-  } catch { return tools; }
- });
+ const { user } = useUser();
+ const [userTools, setUserTools] = useState([]);
+ const [toolsLoading, setToolsLoading] = useState(true);
+
+ // Load tools from Supabase on mount
  useEffect(() => {
-  try { localStorage.setItem("hektiq_tools", JSON.stringify(userTools)); }
-  catch {}
- }, [userTools]);
+  if (!user) return;
+  const loadTools = async () => {
+   setToolsLoading(true);
+   try {
+    const { data, error } = await supabase
+     .from("user_tools")
+     .select("tools")
+     .eq("user_id", user.id)
+     .single();
+    if (data?.tools) {
+     setUserTools(data.tools);
+    } else {
+     // First time user — start with demo tools
+     setUserTools(tools);
+    }
+   } catch {}
+   setToolsLoading(false);
+  };
+  loadTools();
+ }, [user]);
+
+ // Save tools to Supabase whenever they change
+ useEffect(() => {
+  if (!user || toolsLoading) return;
+  const saveTools = async () => {
+   await supabase
+    .from("user_tools")
+    .upsert({ user_id: user.id, tools: userTools, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  };
+  const timer = setTimeout(saveTools, 500); // debounce 500ms
+  return () => clearTimeout(timer);
+ }, [userTools, user, toolsLoading]);
  const fetchApiUsage = async (key) => {
   const k = key || adminKey;
   if (!k) return;
