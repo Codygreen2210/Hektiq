@@ -1711,6 +1711,48 @@ function GitHubImportModal({ onClose, onImport }) {
  );
 }
 
+function PaywallScreen({ onUpgrade, loading }) {
+ return (
+  <div style={{ minHeight:"100vh", background:BG, display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:SA }}>
+   <div style={{ maxWidth:480, width:"100%", textAlign:"center" }}>
+    <div style={{ fontSize:10, color:ACID, letterSpacing:3, fontFamily:M, marginBottom:16 }}>HEKTIQ PRO</div>
+    <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:36, fontWeight:800, letterSpacing:-1, marginBottom:16, color:TEXT }}>Your AI stack is costing you more than you think.</h1>
+    <p style={{ fontSize:14, color:MUTED, lineHeight:1.7, marginBottom:32 }}>Get the full dashboard — overlap detection, AI advisor, benchmarks, usage tracking, and GitHub auto-import. Everything you need to optimize your stack.</p>
+
+    <div style={{ background:PANEL, border:`1px solid ${ACID}40`, borderRadius:12, padding:"28px 32px", marginBottom:24, boxShadow:`0 0 40px ${ACID}15` }}>
+     <div style={{ fontSize:11, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:8 }}>PRO PLAN</div>
+     <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:4, marginBottom:20 }}>
+      <span style={{ fontSize:48, fontWeight:800, color:ACID, fontFamily:M }}>$19</span>
+      <span style={{ fontSize:14, color:MUTED }}>/month</span>
+     </div>
+     <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24, textAlign:"left" }}>
+      {[
+       "Full AI stack dashboard",
+       "Overlap & waste detection",
+       "AI Stack Advisor",
+       "Real-time API usage tracking",
+       "GitHub auto-import",
+       "Benchmarks vs other builders",
+       "Stack health score",
+       "Cancel anytime",
+      ].map(f => (
+       <div key={f} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:TEXT }}>
+        <span style={{ color:ACID, fontSize:11 }}>◆</span>{f}
+       </div>
+      ))}
+     </div>
+     <button
+      onClick={onUpgrade}
+      disabled={loading}
+      style={{ width:"100%", background:loading?"#1a2326":ACID, color:loading?MUTED:BG, border:"none", borderRadius:8, padding:"14px", fontSize:14, fontWeight:800, cursor:loading?"default":"pointer", fontFamily:"'Syne',sans-serif", letterSpacing:0.5, boxShadow:loading?"none":`0 0 24px ${ACID}44`, transition:"all 0.2s" }}
+     >{loading ? "Loading..." : "Start Pro — $19/mo →"}</button>
+    </div>
+    <p style={{ fontSize:11, color:MUTED }}>Secure checkout via Stripe · Cancel anytime · No contracts</p>
+   </div>
+  </div>
+ );
+}
+
 export default function HektiqDashboard() {
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
@@ -1723,8 +1765,65 @@ export default function HektiqDashboard() {
  const [apiUsageLoading, setApiUsageLoading] = useState(false);
  const [apiUsageError, setApiUsageError]   = useState("");
  const [spendAlert, setSpendAlert] = useState(() => parseInt(localStorage.getItem("hektiq_spend_alert")) || 0);
- const { user } = useUser();
- const [userTools, setUserTools] = useState([]);
+ const [isPro, setIsPro]           = useState(false);
+ const [subLoading, setSubLoading] = useState(true);
+ const [upgradeLoading, setUpgradeLoading] = useState(false);
+ // Check subscription on load
+ useEffect(() => {
+  if (!user) return;
+  const checkSub = async () => {
+   setSubLoading(true);
+   try {
+    // Check URL for upgrade success
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgraded") === "true") {
+     setIsPro(true);
+     setSubLoading(false);
+     window.history.replaceState({}, "", "/dashboard");
+     return;
+    }
+    const res = await fetch("/api/verify-subscription", {
+     method:"POST",
+     headers:{ "Content-Type":"application/json" },
+     body: JSON.stringify({ userId: user.id }),
+    });
+    const data = await res.json();
+    setIsPro(data.active);
+   } catch { setIsPro(false); }
+   setSubLoading(false);
+  };
+  checkSub();
+ }, [user]);
+
+ const handleUpgrade = async () => {
+  if (!user) return;
+  setUpgradeLoading(true);
+  try {
+   const res = await fetch("/api/create-checkout", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ userId: user.id, email: user.emailAddresses?.[0]?.emailAddress }),
+   });
+   const data = await res.json();
+   if (data.url) window.location.href = data.url;
+   else throw new Error(data.error);
+  } catch (err) {
+   alert("Something went wrong. Please try again.");
+  }
+  setUpgradeLoading(false);
+ };
+
+ // Show paywall if not subscribed
+ if (subLoading) return (
+  <div style={{ minHeight:"100vh", background:BG, display:"flex", alignItems:"center", justifyContent:"center" }}>
+   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+    <div style={{ width:8, height:8, borderRadius:"50%", background:ACID, animation:"blink 1s infinite" }}/>
+    <div style={{ fontSize:11, color:MUTED, fontFamily:M, letterSpacing:2 }}>LOADING...</div>
+   </div>
+  </div>
+ );
+
+ if (!isPro) return <PaywallScreen onUpgrade={handleUpgrade} loading={upgradeLoading} />;
  const [toolsLoading, setToolsLoading] = useState(true);
 
  // Load tools from Supabase on mount
