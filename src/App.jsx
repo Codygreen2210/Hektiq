@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import HektiqLanding from './HektiqLanding.jsx'
-import HektiqDashboard from './HektiqDashboard.jsx'
+import HektiqDashboard, { ErrorBoundary } from './HektiqDashboard.jsx'
 
 function ProtectedRoute({ children }) {
   return (
@@ -21,7 +21,9 @@ export default function App() {
         <Route path="/" element={<HektiqLanding />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <HektiqDashboard />
+            <ErrorBoundary>
+              <HektiqDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         } />
         <Route path="*" element={null} />
