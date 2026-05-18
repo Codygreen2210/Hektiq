@@ -1774,7 +1774,7 @@ export default function HektiqDashboard() {
    setSubLoading(false);
    return;
   }
-  const checkSub = async () => {
+  const checkSub = async (retries = 0) => {
    setSubLoading(true);
    try {
     const res = await fetch("/api/verify-subscription", {
@@ -1784,15 +1784,25 @@ export default function HektiqDashboard() {
     });
     const data = await res.json();
     console.log("Subscription check:", data);
+    if (!data.active && retries < 3) {
+     // Retry up to 3 times with 2s delay — Stripe webhook may not have fired yet
+     setTimeout(() => checkSub(retries + 1), 2000);
+     return;
+    }
     setIsPro(data.active);
-    // Clean up URL if coming from Stripe
     if (window.location.search.includes("upgraded")) {
      window.history.replaceState({}, "", "/dashboard");
     }
    } catch { setIsPro(false); }
    setSubLoading(false);
   };
-  checkSub();
+  // If coming from Stripe, wait 2s before first check
+  const fromStripe = window.location.search.includes("upgraded");
+  if (fromStripe) {
+   setTimeout(() => checkSub(), 2000);
+  } else {
+   checkSub();
+  }
  }, [user]);
 
  const handleUpgrade = async () => {
