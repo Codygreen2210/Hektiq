@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { createClient } from "@supabase/supabase-js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, } from "recharts";
@@ -16,8 +16,6 @@ class ErrorBoundary extends React.Component {
   return this.props.children;
  }
 }
-
-import React from "react";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
