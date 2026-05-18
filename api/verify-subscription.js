@@ -6,74 +6,30 @@ export default async function handler(req) {
   }
 
   try {
-    const { userId, email } = await req.json();
-    if (!userId && !email) return new Response(JSON.stringify({ active: false }), { status: 200 });
+    const { email } = await req.json();
+    if (!email) return new Response(JSON.stringify({ active: false }), { status: 200 });
 
     const authHeader = { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` };
 
-    // Method 1: Search subscriptions directly by metadata user_id
+    // Get all active subscriptions and match by customer email
     const subRes = await fetch(
-      `https://api.stripe.com/v1/subscriptions?limit=10&status=active`,
+      `https://api.stripe.com/v1/subscriptions?limit=100&status=active`,
       { headers: authHeader }
     );
     const subData = await subRes.json();
 
     for (const sub of subData.data || []) {
-      const metaUserId = sub.metadata?.user_id;
-      if (metaUserId === userId) {
+      const custRes = await fetch(
+        `https://api.stripe.com/v1/customers/${sub.customer}`,
+        { headers: authHeader }
+      );
+      const cust = await custRes.json();
+      if (cust.email && cust.email.toLowerCase() === email.toLowerCase()) {
         return new Response(JSON.stringify({
           active: true,
           plan: "pro",
           periodEnd: sub.current_period_end,
         }), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
-    }
-
-    // Method 2: Search by customer email
-    if (email) {
-      const custRes = await fetch(
-        `https://api.stripe.com/v1/customers/search?query=email:'${email}'&limit=5`,
-        { headers: authHeader }
-      );
-      const custData = await custRes.json();
-
-      for (const customer of custData.data || []) {
-        const custSubRes = await fetch(
-          `https://api.stripe.com/v1/subscriptions?customer=${customer.id}&status=active&limit=5`,
-          { headers: authHeader }
-        );
-        const custSubData = await custSubRes.json();
-        if (custSubData.data?.length > 0) {
-          return new Response(JSON.stringify({
-            active: true,
-            plan: "pro",
-            periodEnd: custSubData.data[0].current_period_end,
-          }), { status: 200, headers: { "Content-Type": "application/json" } });
-        }
-      }
-    }
-
-    // Method 3: Check checkout sessions by client_reference_id
-    const sessionRes = await fetch(
-      `https://api.stripe.com/v1/checkout/sessions?client_reference_id=${userId}&limit=10`,
-      { headers: authHeader }
-    );
-    const sessionData = await sessionRes.json();
-
-    for (const session of sessionData.data || []) {
-      if (session.subscription && session.payment_status === "paid") {
-        const checkSubRes = await fetch(
-          `https://api.stripe.com/v1/subscriptions/${session.subscription}`,
-          { headers: authHeader }
-        );
-        const checkSub = await checkSubRes.json();
-        if (checkSub.status === "active" || checkSub.status === "trialing") {
-          return new Response(JSON.stringify({
-            active: true,
-            plan: "pro",
-            periodEnd: checkSub.current_period_end,
-          }), { status: 200, headers: { "Content-Type": "application/json" } });
-        }
       }
     }
 
@@ -86,4 +42,3 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ active: false, error: err.message }), { status: 200 });
   }
 }
-
