@@ -834,7 +834,6 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
     const hostingTools     = analyzedTools.filter(t => t.cat === "Hosting");
     const vendorLock       = hostingTools.length >= 1 && analyzedTools.length >= 4;
     const risks = [
-     !hasObservability && analyzedTools.length >= 3 && { severity:"high",   icon:"◎", title:"No observability tooling detected", body:"You have no error tracking or analytics. You're flying blind — issues won't be caught until users complain.", action:"Consider: PostHog, Sentry, or Mixpanel" },
      singleAIRisk && aiProviders.length > 0 && { severity:"medium", icon:"◈", title:"Single AI provider dependency", body:`All AI routing depends on ${aiProviders[0].name}. A pricing change or outage directly impacts your product.`, action:"Consider: OpenRouter as an abstraction layer" },
      !hasBackup && analyzedTools.some(t=>t.cat==="Database") && { severity:"medium", icon:"▦", title:"No backup storage detected", body:"Your database has no detected backup provider. Data loss risk is unmitigated.", action:"Consider: Backblaze B2 or Cloudflare R2" },
      vendorLock && { severity:"low",    icon:"◉", title:"Infrastructure concentration risk", body:`${hostingTools.map(t=>t.name).join(" + ")} hosts critical services. Downtime cascades across your stack.`, action:"Review: failover strategy for critical paths" },
@@ -2603,7 +2602,7 @@ export default function HektiqDashboard() {
     @keyframes scanline { 0%{opacity:0;transform:scaleX(0.3)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.3)} }
     @media (max-width: 768px) {
      .hektiq-sidebar { display: none !important; }
-     .hektiq-main { padding: 12px !important; padding-bottom: 80px !important; }
+     .hektiq-main { padding: 12px !important; padding-bottom: 100px !important; }
      .hektiq-bottom-nav { display: flex !important; }
      .hektiq-grid { grid-template-columns: 1fr !important; }
      .hektiq-grid-2 { grid-template-columns: 1fr 1fr !important; }
@@ -2611,7 +2610,7 @@ export default function HektiqDashboard() {
    `}</style>
 
    {/* Mobile bottom nav */}
-   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, padding:"6px 0 8px" }}>
+   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, paddingTop:"6px", paddingBottom:"max(8px, env(safe-area-inset-bottom))" }}>
     {navItems.map(({label,icon}) => {
      const active = activeNav===label;
      const shortLabel = { DASHBOARD:"HOME", STACK:"STACK", INSIGHTS:"INSIGHTS", BENCHMARKS:"RANKS", SETTINGS:"SETTINGS" }[label] || label;
