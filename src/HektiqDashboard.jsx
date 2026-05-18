@@ -1780,7 +1780,7 @@ export default function HektiqDashboard() {
     const res = await fetch("/api/verify-subscription", {
      method:"POST",
      headers:{ "Content-Type":"application/json" },
-     body: JSON.stringify({ userId: user.id }),
+     body: JSON.stringify({ userId: user.id, email: user.emailAddresses?.[0]?.emailAddress }),
     });
     const data = await res.json();
     console.log("Subscription check:", data);
