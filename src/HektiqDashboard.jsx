@@ -1770,39 +1770,21 @@ export default function HektiqDashboard() {
  const [upgradeLoading, setUpgradeLoading] = useState(false);
  // Check subscription on load
  useEffect(() => {
-  if (!user) {
-   setSubLoading(false);
-   return;
-  }
-  const checkSub = async (retries = 0) => {
+  if (!user) { setSubLoading(false); return; }
+  const checkSub = async () => {
    setSubLoading(true);
    try {
     const res = await fetch("/api/verify-subscription", {
      method:"POST",
      headers:{ "Content-Type":"application/json" },
-     body: JSON.stringify({ userId: user.id, email: user.emailAddresses?.[0]?.emailAddress }),
+     body: JSON.stringify({ email: user.emailAddresses?.[0]?.emailAddress }),
     });
     const data = await res.json();
-    console.log("Subscription check:", data);
-    if (!data.active && retries < 3) {
-     // Retry up to 3 times with 2s delay — Stripe webhook may not have fired yet
-     setTimeout(() => checkSub(retries + 1), 2000);
-     return;
-    }
     setIsPro(data.active);
-    if (window.location.search.includes("upgraded")) {
-     window.history.replaceState({}, "", "/dashboard");
-    }
    } catch { setIsPro(false); }
    setSubLoading(false);
   };
-  // If coming from Stripe, wait 2s before first check
-  const fromStripe = window.location.search.includes("upgraded");
-  if (fromStripe) {
-   setTimeout(() => checkSub(), 2000);
-  } else {
-   checkSub();
-  }
+  checkSub();
  }, [user]);
 
  const handleUpgrade = async () => {
