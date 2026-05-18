@@ -3,10 +3,9 @@ import { useClerk, useUser } from "@clerk/clerk-react";
 import { createClient } from "@supabase/supabase-js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, } from "recharts";
 
-const supabase = createClient(
- import.meta.env.VITE_SUPABASE_URL,
- import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 const BG      = "#070909";
 const PANEL   = "#101314";
 const PANEL_2 = "#15191b";
@@ -1832,6 +1831,7 @@ export default function HektiqDashboard() {
   const loadTools = async () => {
    setToolsLoading(true);
    try {
+    if (!supabase) { setUserTools(tools); setToolsLoading(false); return; }
     const { data, error } = await supabase
      .from("user_tools")
      .select("tools")
@@ -1853,6 +1853,7 @@ export default function HektiqDashboard() {
  useEffect(() => {
   if (!user || toolsLoading) return;
   const saveTools = async () => {
+   if (!supabase) return;
    await supabase
     .from("user_tools")
     .upsert({ user_id: user.id, tools: userTools, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
