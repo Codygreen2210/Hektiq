@@ -1772,27 +1772,11 @@ export default function HektiqDashboard() {
  const [apiUsageLoading, setApiUsageLoading] = useState(false);
  const [apiUsageError, setApiUsageError]   = useState("");
  const [spendAlert, setSpendAlert] = useState(() => parseInt(localStorage.getItem("hektiq_spend_alert")) || 0);
- const [isPro, setIsPro]           = useState(false);
- const [subLoading, setSubLoading] = useState(true);
+ const [isPro, setIsPro]           = useState(true); // Free for all users
+ const [subLoading, setSubLoading] = useState(false);
  const [upgradeLoading, setUpgradeLoading] = useState(false);
- // Check subscription on load
- useEffect(() => {
-  if (!user) { setSubLoading(false); return; }
-  const checkSub = async () => {
-   setSubLoading(true);
-   try {
-    const res = await fetch("/api/verify-subscription", {
-     method:"POST",
-     headers:{ "Content-Type":"application/json" },
-     body: JSON.stringify({ email: user.emailAddresses?.[0]?.emailAddress }),
-    });
-    const data = await res.json();
-    setIsPro(data.active);
-   } catch { setIsPro(false); }
-   setSubLoading(false);
-  };
-  checkSub();
- }, [user]);
+ // Subscription check disabled — free tier for all users
+ // Stripe infrastructure kept intact for future paid features
 
  const handleUpgrade = async () => {
   if (!user) return;
@@ -1851,17 +1835,7 @@ export default function HektiqDashboard() {
   return () => clearTimeout(timer);
  }, [userTools, user, toolsLoading]);
 
- // Show loading/paywall AFTER all hooks
- if (subLoading) return (
-  <div style={{ minHeight:"100vh", background:BG, display:"flex", alignItems:"center", justifyContent:"center" }}>
-   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
-    <div style={{ width:8, height:8, borderRadius:"50%", background:ACID, animation:"blink 1s infinite" }}/>
-    <div style={{ fontSize:11, color:MUTED, fontFamily:M, letterSpacing:2 }}>LOADING...</div>
-   </div>
-  </div>
- );
-
- if (!isPro) return <PaywallScreen onUpgrade={handleUpgrade} loading={upgradeLoading} />;
+ // Paywall disabled — all users get full access
  const fetchApiUsage = async (key) => {
   const k = key || adminKey;
   if (!k) return;
