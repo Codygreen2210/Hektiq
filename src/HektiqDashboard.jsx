@@ -1019,13 +1019,13 @@ function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalS
    ) : (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
      {recs.map(rec => (
-      <div key={rec.id} style={{ background:PANEL, border:`1px solid ${rec.priority==="high"?`${WARN}35`:BORDER}`, borderRadius:10, padding:"20px 24px", borderLeft:`3px solid ${rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:BORDER}`, }}>
-       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+      <div key={rec.id} style={{ background:PANEL, border:`1px solid ${rec.priority==="high"?`${WARN}35`:BORDER}`, borderRadius:10, padding:isMobile?"16px":"20px 24px", borderLeft:`3px solid ${rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:BORDER}`, }}>
+       <div style={{ display:"flex", flexDirection:isMobile?"column":"row", justifyContent:"space-between", alignItems:isMobile?"flex-start":"flex-start", gap:isMobile?10:0, marginBottom:10 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, flex:1 }}>
          <span style={{ fontSize:9, color:rec.tagColor, background:`${rec.tagColor}12`, border:`1px solid ${rec.tagColor}30`, padding:"3px 9px", borderRadius:3, letterSpacing:2, fontFamily:M, fontWeight:700, flexShrink:0 }}>{rec.tag}</span>
-         <div style={{ fontSize:13, fontWeight:700, color:TEXT }}>{rec.title}</div>
+         <div style={{ fontSize:isMobile?13:13, fontWeight:700, color:TEXT, wordBreak:"break-word" }}>{rec.title}</div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0, marginLeft:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0, marginLeft:isMobile?0:16 }}>
          {rec.saving > 0 && (
           <div style={{ background:`${GREEN}10`, border:`1px solid ${GREEN}25`, borderRadius:6, padding:"6px 14px", textAlign:"center" }}>
            <div style={{ fontSize:14, fontWeight:800, color:GREEN, fontFamily:M }}>−${rec.saving}/mo</div>
