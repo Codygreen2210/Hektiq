@@ -113,10 +113,10 @@ const scoreHistory = [
  { month:"May", score:74 },
 ];
 const benchmarks = [
- { label:"Top indie hackers use Claude",     pct:91 },
- { label:"Top indie hackers use Cursor",     pct:84 },
- { label:"Top indie hackers use Vercel",     pct:78 },
- { label:"Top indie hackers use OpenRouter", pct:63 },
+ { label:"Claude API",   pct:91 },
+ { label:"Cursor",       pct:84 },
+ { label:"Vercel",       pct:78 },
+ { label:"OpenRouter",   pct:63 },
 ];
 const healthIssues = [
  { label:"Tool redundancy detected",     severity:"high"   },
@@ -777,7 +777,7 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
       <div style={{ fontSize:11, color:"#3a4448" }}>Tool activity over the last 12 weeks — darker = more active</div>
      </div>
      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, paddingLeft:130 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, paddingLeft:isMobile?80:130 }}>
        {["12w ago","10w","8w","6w","4w","2w","Now"].map((l,i) => (
         <div key={i} style={{ fontSize:8, color:MUTED, fontFamily:M, flex:1, textAlign:"center" }}>{l}</div>
        ))}
@@ -787,10 +787,10 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
        const weeks = Array.from({length:12}, (_,wi) => {
         const weeksAgo = 11 - wi;
         const daysThisWeek = weeksAgo * 7;
-        if (inactive > daysThisWeek + 7) return 0;        // fully inactive
-        if (inactive > daysThisWeek) return 1;             // going inactive
-        if (tool.overlap) return wi > 8 ? 3 : 2;           // overlap tools used moderately
-        return Math.random() > 0.25 ? 3 : 2;               // active tools
+        if (inactive > daysThisWeek + 7) return 0;
+        if (inactive > daysThisWeek) return 1;
+        if (tool.overlap) return wi > 8 ? 3 : 2;
+        return Math.random() > 0.25 ? 3 : 2;
        });
        const activityColor = (level) => {
         if (level === 0) return "#131a1d";
@@ -800,18 +800,18 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
        };
        return (
         <div key={tool.id||tool.name} style={{ display:"flex", alignItems:"center", gap:8 }}>
-         <div style={{ width:122, display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+         <div style={{ width:isMobile?78:122, display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
           <span style={{ fontSize:10, color:tool.overlap?WARN:(inactive>20?MUTED:ACID) }}>{tool.icon||"◆"}</span>
-          <span style={{ fontSize:10, color:(inactive>20)?MUTED:TEXT, fontFamily:M, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:100 }}>{tool.name}</span>
+          <span style={{ fontSize:isMobile?9:10, color:(inactive>20)?MUTED:TEXT, fontFamily:M, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:isMobile?60:100 }}>{tool.name}</span>
          </div>
          <div style={{ display:"flex", gap:2, flex:1 }}>
           {weeks.map((level, wi) => (
-           <div key={wi} style={{ flex:1, aspectRatio:"1", borderRadius:2, background:activityColor(level), minWidth:8, minHeight:8, transition:"background 0.2s" }}
+           <div key={wi} style={{ flex:1, aspectRatio:"1", borderRadius:2, background:activityColor(level), minWidth:isMobile?6:8, minHeight:isMobile?6:8, transition:"background 0.2s" }}
             title={`${tool.name} · ${11-wi} weeks ago · ${level===0?"no activity":level===1?"low":level===2?"moderate":"active"}`}
            />
           ))}
          </div>
-         <div style={{ width:50, textAlign:"right", fontSize:9, color:inactive>20?WARN:MUTED, fontFamily:M, flexShrink:0 }}>
+         <div style={{ width:isMobile?42:50, textAlign:"right", fontSize:9, color:inactive>20?WARN:MUTED, fontFamily:M, flexShrink:0 }}>
           {inactive > 20 ? `${inactive}d idle` : inactive === 0 ? "today" : `${inactive}d ago`}
          </div>
         </div>
@@ -969,14 +969,6 @@ function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalS
  const hasEmail         = toolNames.some(n => ["resend","mailgun","sendgrid","postmark"].some(o => n.toLowerCase().includes(o)));
  const hasAuth          = toolNames.some(n => ["clerk","auth0","supabase","firebase"].some(o => n.toLowerCase().includes(o)));
  const hasAI            = analyzedTools.some(t => ["AI Core","AI Chat","AI Code"].includes(t.cat));
- if (!hasObservability && analyzedTools.length >= 3) recs.push({
-  id: "add_observability", type: "add", priority: "high",
-  title: "Add observability to your stack",
-  saving: 0, currentCost: 0,
-  reason: "No error tracking or analytics detected. PostHog free tier handles product analytics + session replay + feature flags for most indie products.",
-  tools: [], replaceWith: "PostHog (free tier)",
-  tag: "ADD", tagColor: ACID,
- });
  if (!hasEmail && hasAI && analyzedTools.length >= 3) recs.push({
   id: "add_email", type: "add", priority: "low",
   title: "Add a transactional email provider",
@@ -1017,6 +1009,7 @@ function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalS
      <div style={{ fontSize:10, color:MUTED, marginTop:4 }}>after all actions applied</div>
     </div>
    </div>
+   <StackAdvisor analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} healthScore={healthScore} recs={recs} />
    {recs.length === 0 ? (
     <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"48px 24px", textAlign:"center" }}>
      <div style={{ fontSize:28, marginBottom:12 }}>◆</div>
@@ -1042,7 +1035,7 @@ function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalS
          <span style={{ fontSize:9, color:rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:MUTED, fontFamily:M, letterSpacing:1.5, border:`1px solid ${rec.priority==="high"?WARN:rec.priority==="medium"?BLUE:BORDER}40`, padding:"4px 10px", borderRadius:3 }}>{rec.priority.toUpperCase()}</span>
         </div>
        </div>
-       <div style={{ fontSize:12, color:MUTED, lineHeight:1.7, marginBottom:12 }}>{rec.reason}</div>
+       <div style={{ fontSize:12, color:MUTED, lineHeight:1.7, marginBottom:12, wordBreak:"break-word", overflowWrap:"break-word" }}>{rec.reason}</div>
        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         {rec.tools.length > 0 && (
          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -1066,7 +1059,6 @@ function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalS
      ))}
     </div>
    )}
-   <StackAdvisor analyzedTools={analyzedTools} overlapDetails={overlapDetails} deadTools={deadTools} totalSpend={totalSpend} healthScore={healthScore} recs={recs} />
   </div>
  );
 }
@@ -1371,16 +1363,16 @@ function BenchmarksTab({ analyzedTools, totalSpend, healthScore, overlapDetails,
      {topTools.map(t => {
       const inStack = toolNames.some(n => n.includes(t.name.toLowerCase().split(" ")[0]));
       return (
-       <div key={t.name} style={{ display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:120, fontSize:11, color:inStack?GREEN:MUTED, fontWeight:inStack?600:400, display:"flex", alignItems:"center", gap:6 }}>
+       <div key={t.name} style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ width:isMobile?90:120, fontSize:11, color:inStack?GREEN:MUTED, fontWeight:inStack?600:400, display:"flex", alignItems:"center", gap:4, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
          {inStack && <span style={{ color:GREEN, fontSize:9 }}>✓</span>}
          {t.name}
         </div>
-        <div style={{ flex:1, height:4, background:"#1a2022", borderRadius:2 }}>
+        <div style={{ flex:1, height:4, background:"#1a2022", borderRadius:2, minWidth:0 }}>
          <div style={{ width:`${t.pct}%`, height:"100%", background:inStack?`linear-gradient(90deg,${GREEN}88,${GREEN})`:`linear-gradient(90deg,${ACID_S}44,${ACID}55)`, borderRadius:2 }}/>
         </div>
-        <div style={{ width:32, fontSize:10, color:inStack?GREEN:ACID, fontFamily:M, textAlign:"right" }}>{t.pct}%</div>
-        <div style={{ width:60, fontSize:9, color:MUTED, fontFamily:M }}>{t.cat}</div>
+        <div style={{ width:32, fontSize:10, color:inStack?GREEN:ACID, fontFamily:M, textAlign:"right", flexShrink:0 }}>{t.pct}%</div>
+        {!isMobile && <div style={{ width:60, fontSize:9, color:MUTED, fontFamily:M }}>{t.cat}</div>}
        </div>
       );
      })}
@@ -2587,9 +2579,9 @@ export default function HektiqDashboard() {
      <div style={{ fontSize:9, color:MUTED, letterSpacing:2, marginBottom:10, fontFamily:M }}>TOP TOOLS AMONG PROFITABLE INDIE HACKERS</div>
      <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
       {benchmarks.map(b => (
-       <div key={b.label} style={{ display:"flex", alignItems:"center", gap:14 }}>
-        <div style={{ flex:1, fontSize:11, color:MUTED }}>{b.label}</div>
-        <div style={{ width:220 }}>
+       <div key={b.label} style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div style={{ width:isMobile?80:140, fontSize:11, color:MUTED, flexShrink:0 }}>{b.label}</div>
+        <div style={{ flex:1 }}>
          <div style={{ height:3, background:"#1a2022", borderRadius:2 }}>
           <div style={{ width:`${b.pct}%`, height:"100%", background:`linear-gradient(90deg,${ACID_S},${ACID})`, borderRadius:2 }}/>
          </div>
