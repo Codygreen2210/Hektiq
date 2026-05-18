@@ -2611,13 +2611,14 @@ export default function HektiqDashboard() {
    `}</style>
 
    {/* Mobile bottom nav */}
-   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, padding:"8px 0" }}>
+   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, padding:"6px 0 8px" }}>
     {navItems.map(({label,icon}) => {
      const active = activeNav===label;
+     const shortLabel = { DASHBOARD:"HOME", STACK:"STACK", INSIGHTS:"INSIGHTS", BENCHMARKS:"RANKS", SETTINGS:"SETTINGS" }[label] || label;
      return (
-      <div key={label} onClick={()=>setActiveNav(label)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"6px 4px", cursor:"pointer", color:active?ACID:MUTED }}>
+      <div key={label} onClick={()=>setActiveNav(label)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding:"4px 2px", cursor:"pointer", color:active?ACID:MUTED, minWidth:0 }}>
        <span style={{ fontSize:14 }}>{icon}</span>
-       <span style={{ fontSize:7, letterSpacing:1, fontFamily:M }}>{label}</span>
+       <span style={{ fontSize:6, letterSpacing:0.5, fontFamily:M, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:"100%" }}>{shortLabel}</span>
       </div>
      );
     })}
