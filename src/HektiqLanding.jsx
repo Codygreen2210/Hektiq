@@ -770,9 +770,7 @@ export default function HektiqLanding() {
         )}
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          {!mobile && (
-            <button onClick={() => window.location.href = "/dashboard"} style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 14px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap" }}>Sign in</button>
-          )}
+          <button onClick={() => window.location.href = "/dashboard"} style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 14px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap" }}>Sign in</button>
           <button
             onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
             style={{ background: WARN, color: "#fff", border: "none", padding: mobile ? "7px 12px" : "7px 16px", borderRadius: 5, fontSize: mobile ? 11 : 12, fontWeight: 700, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", boxShadow: `0 0 12px ${WARN}44` }}
