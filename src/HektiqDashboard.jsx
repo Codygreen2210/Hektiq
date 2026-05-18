@@ -2032,7 +2032,8 @@ export default function HektiqDashboard() {
  ].filter(Boolean).slice(0,5);
  return (
   <div style={{ background:BG, minHeight:"100vh", color:TEXT, fontFamily:SA, display:"flex", fontSize:13 }}>
-   <div style={{ width:220, background:PANEL, borderRight:`1px solid ${BORDER}`, display:"flex", flexDirection:"column", padding:"28px 0", flexShrink:0, boxShadow:"4px 0 24px rgba(0,0,0,0.5)" }}>
+   {/* Sidebar - hidden on mobile */}
+   <div style={{ width:220, background:PANEL, borderRight:`1px solid ${BORDER}`, display:"flex", flexDirection:"column", padding:"28px 0", flexShrink:0, boxShadow:"4px 0 24px rgba(0,0,0,0.5)", position:"sticky", top:0, height:"100vh", overflowY:"auto" }} className="hektiq-sidebar">
     <div style={{ padding:"0 24px 36px" }}>
      <div style={{ fontSize:20, fontWeight:800, letterSpacing:6, color:ACID, fontFamily:SA, textShadow:`0 0 20px ${ACID}55` }}>Hektiq</div>
      <div style={{ fontSize:9, color:MUTED, letterSpacing:3, marginTop:3 }}>AI STACK OPERATING SYSTEM</div>
@@ -2608,9 +2609,28 @@ export default function HektiqDashboard() {
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
     @keyframes scanline { 0%{opacity:0;transform:scaleX(0.3)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.3)} }
     @media (max-width: 768px) {
-     .hektiq-main { padding: 16px !important; }
+     .hektiq-sidebar { display: none !important; }
+     .hektiq-main { padding: 16px !important; padding-bottom: 80px !important; }
+     .hektiq-bottom-nav { display: flex !important; }
+     .hektiq-header { flex-direction: column !important; gap: 12px !important; }
+     .hektiq-header-btns { width: 100% !important; }
+     .hektiq-header-btns button { flex: 1 !important; }
     }
    `}</style>
+
+   {/* Mobile bottom nav */}
+   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, padding:"8px 0" }}>
+    {navItems.map(({label,icon}) => {
+     const active = activeNav===label;
+     return (
+      <div key={label} onClick={()=>setActiveNav(label)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"6px 4px", cursor:"pointer", color:active?ACID:MUTED }}>
+       <span style={{ fontSize:14 }}>{icon}</span>
+       <span style={{ fontSize:7, letterSpacing:1, fontFamily:M }}>{label}</span>
+      </div>
+     );
+    })}
+   </div>
+
    {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} onAdd={handleAddTool} />}
    {showGithubImport && <GitHubImportModal onClose={() => setShowGithubImport(false)} onImport={(tools) => tools.forEach(t => handleAddTool(t))} />}
   </div>
