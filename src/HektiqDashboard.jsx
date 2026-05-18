@@ -1821,6 +1821,7 @@ export default function HektiqDashboard() {
  };
 
  const [toolsLoading, setToolsLoading] = useState(true);
+ const [userTools, setUserTools] = useState([]);
 
  // Load tools from Supabase on mount
  useEffect(() => {
