@@ -1770,25 +1770,25 @@ export default function HektiqDashboard() {
  const [upgradeLoading, setUpgradeLoading] = useState(false);
  // Check subscription on load
  useEffect(() => {
-  if (!user) return;
+  if (!user) {
+   setSubLoading(false);
+   return;
+  }
   const checkSub = async () => {
    setSubLoading(true);
    try {
-    // Check URL for upgrade success
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("upgraded") === "true") {
-     setIsPro(true);
-     setSubLoading(false);
-     window.history.replaceState({}, "", "/dashboard");
-     return;
-    }
     const res = await fetch("/api/verify-subscription", {
      method:"POST",
      headers:{ "Content-Type":"application/json" },
      body: JSON.stringify({ userId: user.id }),
     });
     const data = await res.json();
+    console.log("Subscription check:", data);
     setIsPro(data.active);
+    // Clean up URL if coming from Stripe
+    if (window.location.search.includes("upgraded")) {
+     window.history.replaceState({}, "", "/dashboard");
+    }
    } catch { setIsPro(false); }
    setSubLoading(false);
   };
