@@ -20,6 +20,7 @@ class ErrorBoundary extends React.Component {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 const BG      = "#070909";
 const PANEL   = "#101314";
 const PANEL_2 = "#15191b";
@@ -1769,12 +1770,6 @@ function PaywallScreen({ onUpgrade, loading }) {
 export { ErrorBoundary };
 export default function HektiqDashboard() {
  const { user } = useUser();
- const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
- useEffect(() => {
-  const onResize = () => setIsMobile(window.innerWidth < 768);
-  window.addEventListener("resize", onResize);
-  return () => window.removeEventListener("resize", onResize);
- }, []);
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
  const [digestOn, setDigestOn]     = useState(true);
