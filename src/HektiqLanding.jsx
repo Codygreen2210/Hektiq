@@ -772,10 +772,10 @@ export default function HektiqLanding() {
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <button onClick={() => window.location.href = "/dashboard"} style={{ background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "7px 14px", borderRadius: 5, fontSize: 11, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap" }}>Sign in</button>
           <button
-            onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
+            onClick={() => window.location.href = "/dashboard"}
             style={{ background: WARN, color: "#fff", border: "none", padding: mobile ? "7px 12px" : "7px 16px", borderRadius: 5, fontSize: mobile ? 11 : 12, fontWeight: 700, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", boxShadow: `0 0 12px ${WARN}44` }}
           >
-            {mobile ? "Join →" : "Get Early Access"}
+            {mobile ? "Try Free →" : "Try It Free"}
           </button>
         </div>
       </nav>
@@ -807,45 +807,20 @@ export default function HektiqLanding() {
             Find out exactly how much you're wasting — free, in 30 seconds, no signup required.
           </p>
 
-          {/* Primary CTA — scroll to calculator */}
+          {/* Primary CTA */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 32 }}>
             <button
-              onClick={() => document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => window.location.href = "/dashboard"}
               style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 28px" : "16px 36px", borderRadius: 8, fontWeight: 700, fontSize: mobile ? 14 : 16, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 24px ${ACID}44`, letterSpacing: 0.5 }}
             >
-              Calculate My Stack Free →
+              Get Started Free →
             </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ height: 1, width: 40, background: BORDER }} />
-              <span style={{ fontSize: 11, color: MUTED }}>or join the waitlist</span>
-              <div style={{ height: 1, width: 40, background: BORDER }} />
-            </div>
-            {/* Secondary email capture */}
-            {!submitted ? (
-              <div style={{ display: "flex", gap: 0, maxWidth: 400, width: "100%", background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden" }}>
-                <input
-                  id="hero-email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                  placeholder="your@email.com"
-                  style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "12px 16px", color: TEXT, fontSize: 13, fontFamily: BODY, outline: "none" }}
-                />
-                <button onClick={handleSubmit} disabled={loading} style={{ background: PANEL_2, color: MUTED, border: "none", padding: mobile ? "12px 12px" : "12px 18px", fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", flexShrink: 0 }}>
-                  {loading ? "..." : mobile ? "Join →" : "Join Waitlist →"}
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8, padding: "12px 20px" }}>
-                <span style={{ color: GREEN }}>◆</span>
-                <span style={{ color: GREEN, fontSize: 13, fontWeight: 600 }}>You're on the list. We'll reach out soon.</span>
-              </div>
-            )}
+            <span style={{ fontSize: 11, color: MUTED }}>No card required · Full dashboard access</span>
           </div>
 
           {/* Trust line */}
           <div style={{ fontSize: 11, color: MUTED, letterSpacing: 1, fontFamily: MONO }}>
-            <SignupCounter /> builders already on the waitlist · No card required
+            <SignupCounter /> builders already using Hektiq · Free forever
           </div>
 
           {/* Live burn ticker */}
@@ -990,17 +965,16 @@ export default function HektiqLanding() {
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 16 }}>PRICING</div>
             <h2 style={{ fontSize: mobile ? 26 : 36, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, marginBottom: 14 }}>Simple. No surprises.</h2>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: `${WARN}10`, border: `1px solid ${WARN}30`, borderRadius: 20, padding: "5px 16px", marginBottom: 14 }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: WARN, display: "inline-block" }} />
-              <span style={{ fontSize: 10, color: WARN, letterSpacing: 2, fontFamily: MONO }}>LAUNCH PRICING — NOT YET AVAILABLE</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: `${ACID}10`, border: `1px solid ${ACID}30`, borderRadius: 20, padding: "5px 16px", marginBottom: 14 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: ACID, display: "inline-block", animation: "blink 2s infinite" }} />
+              <span style={{ fontSize: 10, color: ACID, letterSpacing: 2, fontFamily: MONO }}>LIVE NOW — FREE TO USE</span>
             </div>
-            <p style={{ fontSize: 14, color: MUTED }}>Join the waitlist now to lock in early access pricing when we launch.</p>
+            <p style={{ fontSize: 14, color: MUTED }}>Full dashboard access, free forever. No card required.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-            {/* Free */}
-            <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "28px 28px", opacity: 0.7 }}>
-              <div style={{ fontSize: 11, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>FREE — AT LAUNCH</div>
+            <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "28px 28px" }}>
+              <div style={{ fontSize: 11, color: MUTED, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>FREE</div>
               <div style={{ fontSize: 40, fontWeight: 800, color: TEXT, fontFamily: MONO, lineHeight: 1, marginBottom: 6 }}>$0</div>
               <div style={{ fontSize: 12, color: MUTED, marginBottom: 28 }}>Forever free, no card required</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
@@ -1011,22 +985,22 @@ export default function HektiqLanding() {
                 ))}
               </div>
               <button
-                onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
-                style={{ width: "100%", background: "transparent", border: `1px solid ${BORDER}`, color: MUTED, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: BODY }}
+                onClick={() => window.location.href = "/dashboard"}
+                style={{ width: "100%", background: "transparent", border: `1px solid ${BORDER}`, color: TEXT, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: BODY }}
               >
-                Join Waitlist
+                Get Started Free →
               </button>
             </div>
 
             {/* Pro */}
             <div style={{ background: PANEL, border: `1px solid ${ACID}40`, borderRadius: 12, padding: "28px 28px", position: "relative", boxShadow: `0 0 40px ${ACID}0a` }}>
-              <div style={{ position: "absolute", top: -1, left: 24, background: ACID, color: BG, fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 6px 6px", letterSpacing: 2 }}>EARLY ACCESS PRICING</div>
-              <div style={{ fontSize: 11, color: ACID, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>PRO — AT LAUNCH</div>
+              <div style={{ position: "absolute", top: -1, left: 24, background: ACID, color: BG, fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 6px 6px", letterSpacing: 2 }}>COMING SOON</div>
+              <div style={{ fontSize: 11, color: ACID, letterSpacing: 2, fontFamily: MONO, marginBottom: 12 }}>PRO</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
                 <div style={{ fontSize: 40, fontWeight: 800, color: TEXT, fontFamily: MONO, lineHeight: 1 }}>$19</div>
                 <div style={{ fontSize: 13, color: MUTED }}>/month</div>
               </div>
-              <div style={{ fontSize: 12, color: MUTED, marginBottom: 28 }}>Waitlist members get first access + locked-in early pricing.</div>
+              <div style={{ fontSize: 12, color: MUTED, marginBottom: 28 }}>Advanced features for power users. Launching soon.</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
                 {[
                   "Everything in Free",
@@ -1048,10 +1022,10 @@ export default function HektiqLanding() {
                 ))}
               </div>
               <button
-                onClick={() => { document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => document.getElementById('hero-email')?.focus(), 600); }}
+                onClick={() => window.location.href = "/dashboard"}
                 style={{ width: "100%", background: ACID, border: "none", color: BG, padding: "11px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 16px ${ACID}44` }}
               >
-                Join Waitlist for Early Access →
+                Get Started Free →
               </button>
             </div>
           </div>
@@ -1061,33 +1035,23 @@ export default function HektiqLanding() {
       {/* ── FINAL CTA ── */}
       <section style={{ padding: "0 48px 120px", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 640, margin: "80px auto 0", textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 20 }}>EARLY ACCESS</div>
+          <div style={{ fontSize: 10, color: ACID, letterSpacing: 3, fontFamily: MONO, marginBottom: 20 }}>LIVE NOW</div>
           <h2 style={{ fontSize: mobile ? 26 : 42, fontWeight: 800, letterSpacing: -1, fontFamily: DISPLAY, lineHeight: 1.15, marginBottom: 20 }}>
-            Launching soon.<br />
-            <span style={{ color: ACID }}>Get early access.</span>
+            It's free.<br />
+            <span style={{ color: ACID }}>Start in 30 seconds.</span>
           </h2>
           <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.7, marginBottom: 36 }}>
-            Hektiq is currently in development. Join the waitlist and you'll be first in when we launch — plus get a free stack audit when we go live.
+            No waitlist. No card. No catch. Sign in and get your full AI stack audit right now.
           </p>
-          {!submitted ? (
-            <div style={{ display: "flex", gap: 0, maxWidth: 420, margin: "0 auto", background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden", boxShadow: `0 0 30px rgba(0,0,0,0.4)` }}>
-              <input
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                placeholder="your@email.com"
-                style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "14px 18px", color: TEXT, fontSize: 14, fontFamily: BODY, outline: "none" }}
-              />
-              <button onClick={handleSubmit} disabled={loading} style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 14px" : "14px 22px", fontWeight: 700, fontSize: mobile ? 12 : 13, cursor: "pointer", fontFamily: BODY, whiteSpace: "nowrap", flexShrink: 0 }}>
-                {loading ? "..." : mobile ? "Join →" : "Join Waitlist →"}
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8, padding: "14px 28px" }}>
-              <span style={{ color: GREEN }}>◆</span>
-              <span style={{ color: GREEN, fontSize: 14, fontWeight: 600 }}>You're on the list. See you soon.</span>
-            </div>
-          )}
+          <button
+            onClick={() => window.location.href = "/dashboard"}
+            style={{ background: ACID, color: BG, border: "none", padding: mobile ? "14px 28px" : "16px 40px", borderRadius: 8, fontWeight: 700, fontSize: mobile ? 14 : 16, cursor: "pointer", fontFamily: BODY, boxShadow: `0 0 24px ${ACID}44`, letterSpacing: 0.5 }}
+          >
+            Get Started Free →
+          </button>
+          <div style={{ marginTop: 16, fontSize: 11, color: MUTED, fontFamily: MONO, letterSpacing: 1 }}>
+            No card required · Takes 30 seconds
+          </div>
         </div>
       </section>
 
