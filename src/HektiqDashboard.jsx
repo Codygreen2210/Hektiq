@@ -1820,17 +1820,6 @@ export default function HektiqDashboard() {
   setUpgradeLoading(false);
  };
 
- // Show paywall if not subscribed
- if (subLoading) return (
-  <div style={{ minHeight:"100vh", background:BG, display:"flex", alignItems:"center", justifyContent:"center" }}>
-   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
-    <div style={{ width:8, height:8, borderRadius:"50%", background:ACID, animation:"blink 1s infinite" }}/>
-    <div style={{ fontSize:11, color:MUTED, fontFamily:M, letterSpacing:2 }}>LOADING...</div>
-   </div>
-  </div>
- );
-
- if (!isPro) return <PaywallScreen onUpgrade={handleUpgrade} loading={upgradeLoading} />;
  const [toolsLoading, setToolsLoading] = useState(true);
 
  // Load tools from Supabase on mount
@@ -1848,7 +1837,6 @@ export default function HektiqDashboard() {
     if (data?.tools) {
      setUserTools(data.tools);
     } else {
-     // First time user — start with demo tools
      setUserTools(tools);
     }
    } catch {}
@@ -1866,9 +1854,21 @@ export default function HektiqDashboard() {
     .from("user_tools")
     .upsert({ user_id: user.id, tools: userTools, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   };
-  const timer = setTimeout(saveTools, 500); // debounce 500ms
+  const timer = setTimeout(saveTools, 500);
   return () => clearTimeout(timer);
  }, [userTools, user, toolsLoading]);
+
+ // Show loading/paywall AFTER all hooks
+ if (subLoading) return (
+  <div style={{ minHeight:"100vh", background:BG, display:"flex", alignItems:"center", justifyContent:"center" }}>
+   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+    <div style={{ width:8, height:8, borderRadius:"50%", background:ACID, animation:"blink 1s infinite" }}/>
+    <div style={{ fontSize:11, color:MUTED, fontFamily:M, letterSpacing:2 }}>LOADING...</div>
+   </div>
+  </div>
+ );
+
+ if (!isPro) return <PaywallScreen onUpgrade={handleUpgrade} loading={upgradeLoading} />;
  const fetchApiUsage = async (key) => {
   const k = key || adminKey;
   if (!k) return;
