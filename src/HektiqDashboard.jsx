@@ -3,6 +3,22 @@ import { useClerk, useUser } from "@clerk/clerk-react";
 import { createClient } from "@supabase/supabase-js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, } from "recharts";
 
+class ErrorBoundary extends React.Component {
+ constructor(props) { super(props); this.state = { error: null }; }
+ static getDerivedStateFromError(err) { return { error: err.message }; }
+ render() {
+  if (this.state.error) return (
+   <div style={{ padding:40, background:"#070909", color:"#f3f5f7", minHeight:"100vh", fontFamily:"monospace" }}>
+    <div style={{ color:"#ff4444", marginBottom:16, fontSize:14 }}>Runtime Error:</div>
+    <pre style={{ color:"#ff7a45", fontSize:12, whiteSpace:"pre-wrap" }}>{this.state.error}</pre>
+   </div>
+  );
+  return this.props.children;
+ }
+}
+
+import React from "react";
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
@@ -1752,6 +1768,7 @@ function PaywallScreen({ onUpgrade, loading }) {
  );
 }
 
+export { ErrorBoundary };
 export default function HektiqDashboard() {
  const { user } = useUser();
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
