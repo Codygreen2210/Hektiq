@@ -352,7 +352,7 @@ function StackSimulation({ totalSpend }) {
      <button onClick={() => setActive(null)} style={{ background:"transparent", border:`1px solid ${BO}`, color:MUTED, padding:"5px 12px", borderRadius:4, fontSize:9, fontFamily:M, cursor:"pointer", letterSpacing:1, }}>RESET</button>
     )}
    </div>
-   <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:16 }}>
+   <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:10, marginBottom:16 }}>
     {simScenarios.map(s => {
      const isActive = active === s.id;
      const sc = tools.filter(t => s.remove.includes(t.id)).reduce((sum,t) => sum + t.cost, 0)
@@ -375,7 +375,7 @@ function StackSimulation({ totalSpend }) {
       ↑ select a scenario above to simulate
      </div>
     ) : (
-     <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:20 }}>
+     <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:20 }}>
       <div>
        <div style={{ fontSize:9, color:MUTED, fontFamily:M, marginBottom:6, letterSpacing:1.5 }}>REMOVING</div>
        {scenario.remove.map(id => {
@@ -674,7 +674,7 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
  };
  return (
   <div>
-   <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
+   <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:12, marginBottom:20 }}>
     {[
      { label:"TOTAL TOOLS",     value:`${analyzedTools.length}`,      sub:"in your stack",               color:TEXT  },
      { label:"MONTHLY BURN",    value:`$${totalSpend}/mo`,             sub:`$${totalSpend*12}/yr`,         color:WARN  },
@@ -1306,7 +1306,7 @@ function BenchmarksTab({ analyzedTools, totalSpend, healthScore, overlapDetails,
    </div>
 
    {/* Rank breakdown grid */}
-   <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:14 }}>
+   <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:12, marginBottom:14 }}>
     {[
      { label:"SPEND EFFICIENCY",  value:`Top ${100-spendPct}%`,  pct:spendPct,   sub:`$${totalSpend}/mo vs $${AVG_SPEND} avg`      },
      { label:"STACK SIZE",        value:`Top ${100-toolPct}%`,   pct:toolPct,    sub:`${toolCount} tools vs ${AVG_TOOLS} avg`       },
@@ -1769,6 +1769,12 @@ function PaywallScreen({ onUpgrade, loading }) {
 export { ErrorBoundary };
 export default function HektiqDashboard() {
  const { user } = useUser();
+ const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+ useEffect(() => {
+  const onResize = () => setIsMobile(window.innerWidth < 768);
+  window.addEventListener("resize", onResize);
+  return () => window.removeEventListener("resize", onResize);
+ }, []);
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
  const [digestOn, setDigestOn]     = useState(true);
@@ -2084,7 +2090,7 @@ export default function HektiqDashboard() {
     {activeNav === "BENCHMARKS" && <BenchmarksTab analyzedTools={analyzedTools} totalSpend={totalSpend} healthScore={healthScore} overlapDetails={overlapDetails} deadTools={deadTools} />}
     {activeNav === "SETTINGS" && <SettingsTab analyzedTools={analyzedTools} onUpdateTools={setUserTools} onClearStack={handleClearStack} adminKey={adminKey} onSaveAdminKey={(k) => { setAdminKey(k); fetchApiUsage(k); }} spendAlert={spendAlert} onSaveSpendAlert={(v) => { const n=parseInt(v)||0; setSpendAlert(n); localStorage.setItem("hektiq_spend_alert", n); }} />}
     {activeNav !== "STACK" && activeNav !== "INSIGHTS" && activeNav !== "BENCHMARKS" && <>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14, marginBottom:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 270px", gap:14, marginBottom:14 }}>
      <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"22px 26px", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${ACID}88,transparent)`, animation:"scanline 3s ease-in-out infinite" }}/>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`${ACID}04`, filter:"blur(40px)", pointerEvents:"none" }}/>
@@ -2160,7 +2166,7 @@ export default function HektiqDashboard() {
       </div>
      </div>
     </div>
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)", gap:12, marginBottom:14 }}>
      {[
       { label:"MONTHLY BURN",      value:totalSpend,           prefix:"$", suffix:"",    sub: totalSpend === 0 ? "no tools added" : `$${totalSpend * 12}/yr projected`,  color:WARN  },
       { label:"ANNUAL FORECAST",   value:yearForecast,         prefix:"$", suffix:"",    sub: analyzedTools.length === 0 ? "add tools to forecast" : "↑ trending upward", color:WARN  },
@@ -2493,7 +2499,7 @@ export default function HektiqDashboard() {
              </div>
              <button onClick={() => fetchApiUsage()} style={{ background:"transparent", border:`1px solid ${BO}`, color:MUTED, padding:"5px 12px", borderRadius:4, fontSize:9, cursor:"pointer", fontFamily:M, letterSpacing:1 }}>↻ REFRESH</button>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:10, marginBottom:16 }}>
              {[
               { label:"THIS MONTH",   value:`$${apiUsage.thisMonthCost}`,    sub:"actual spend",          color:WARN },
               { label:"PROJECTED",    value:`$${apiUsage.projectedMonthly}`, sub:"end of month estimate", color:apiUsage.projectedMonthly>(spendAlert||999)?"#ff4444":ACID },
@@ -2570,7 +2576,7 @@ export default function HektiqDashboard() {
       <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M }}>COMMUNITY BENCHMARKS</div>
       <div style={{ fontSize:10, color:MUTED }}>vs. <span style={{ color:TEXT }}>indie hackers</span></div>
      </div>
-     <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
+     <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:12, marginBottom:16 }}>
       {[
        { label:"You spend more than",         value:"66% of similar builders", color:WARN  },
        { label:"Your tool count is",           value:"Above average",            color:WARN  },
@@ -2610,11 +2616,10 @@ export default function HektiqDashboard() {
     @keyframes scanline { 0%{opacity:0;transform:scaleX(0.3)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.3)} }
     @media (max-width: 768px) {
      .hektiq-sidebar { display: none !important; }
-     .hektiq-main { padding: 16px !important; padding-bottom: 80px !important; }
+     .hektiq-main { padding: 12px !important; padding-bottom: 80px !important; }
      .hektiq-bottom-nav { display: flex !important; }
-     .hektiq-header { flex-direction: column !important; gap: 12px !important; }
-     .hektiq-header-btns { width: 100% !important; }
-     .hektiq-header-btns button { flex: 1 !important; }
+     .hektiq-grid { grid-template-columns: 1fr !important; }
+     .hektiq-grid-2 { grid-template-columns: 1fr 1fr !important; }
     }
    `}</style>
 
