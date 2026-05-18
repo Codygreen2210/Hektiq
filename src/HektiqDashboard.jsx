@@ -2056,7 +2056,7 @@ export default function HektiqDashboard() {
      </div>
     </div>
    </div>
-   <div className="hektiq-main" style={{ flex:1, padding:"28px 28px", overflowY:"auto", overflowX:"hidden", minWidth:0 }}>
+   <div style={{ flex:1, padding:"28px 28px", overflowY:"auto", overflowX:"hidden", minWidth:0 }}>
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
      <div>
       <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:M }}>
@@ -2229,7 +2229,7 @@ export default function HektiqDashboard() {
      if (relevantAlerts.length === 0) return null;
      return (
       <div style={{ marginBottom:14 }}>
-       <div style={{ display:"flex", gap:12 }}>
+       <div style={{ display:"flex", flexDirection:isMobile?"column":"row", gap:12 }}>
         {relevantAlerts.map((a,i) => (
          <div key={i} style={{ flex:1, background:`${WARN}08`, border:`1px solid ${WARN}30`, borderRadius:8, padding:"12px 16px", display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ width:36, height:36, borderRadius:8, background:`${WARN}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
