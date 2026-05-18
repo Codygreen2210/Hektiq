@@ -1753,6 +1753,7 @@ function PaywallScreen({ onUpgrade, loading }) {
 }
 
 export default function HektiqDashboard() {
+ const { user } = useUser();
  const [activeNav, setActiveNav]   = useState("DASHBOARD");
  const [hoveredTool, setHoveredTool] = useState(null);
  const [digestOn, setDigestOn]     = useState(true);
