@@ -2602,7 +2602,7 @@ export default function HektiqDashboard() {
     @keyframes scanline { 0%{opacity:0;transform:scaleX(0.3)} 50%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(0.3)} }
     @media (max-width: 768px) {
      .hektiq-sidebar { display: none !important; }
-     .hektiq-main { padding: 12px !important; padding-bottom: 100px !important; }
+     .hektiq-main { padding: 12px !important; padding-bottom: 120px !important; }
      .hektiq-bottom-nav { display: flex !important; }
      .hektiq-grid { grid-template-columns: 1fr !important; }
      .hektiq-grid-2 { grid-template-columns: 1fr 1fr !important; }
@@ -2610,7 +2610,7 @@ export default function HektiqDashboard() {
    `}</style>
 
    {/* Mobile bottom nav */}
-   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, paddingTop:"6px", paddingBottom:"max(8px, env(safe-area-inset-bottom))" }}>
+   <div className="hektiq-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, background:PANEL, borderTop:`1px solid ${BORDER}`, zIndex:100, paddingTop:"8px", paddingBottom:"calc(12px + env(safe-area-inset-bottom, 0px))", minHeight:60 }}>
     {navItems.map(({label,icon}) => {
      const active = activeNav===label;
      const shortLabel = { DASHBOARD:"HOME", STACK:"STACK", INSIGHTS:"INSIGHTS", BENCHMARKS:"RANKS", SETTINGS:"SETTINGS" }[label] || label;
