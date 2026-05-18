@@ -11,24 +11,22 @@ export default async function handler(req) {
 
     const authHeader = { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` };
 
-    // Get all active subscriptions and match by customer email
-    const subRes = await fetch(
-      `https://api.stripe.com/v1/subscriptions?limit=100&status=active`,
-      { headers: authHeader }
-    );
-    const subData = await subRes.json();
+    // Search customers by email directly
+    const url = `https://api.stripe.com/v1/customers/search?query=email:"${encodeURIComponent(email)}"&limit=5`;
+    const custRes = await fetch(url, { headers: authHeader });
+    const custData = await custRes.json();
 
-    for (const sub of subData.data || []) {
-      const custRes = await fetch(
-        `https://api.stripe.com/v1/customers/${sub.customer}`,
+    for (const customer of (custData.data || [])) {
+      const subRes = await fetch(
+        `https://api.stripe.com/v1/subscriptions?customer=${customer.id}&status=active&limit=5`,
         { headers: authHeader }
       );
-      const cust = await custRes.json();
-      if (cust.email && cust.email.toLowerCase() === email.toLowerCase()) {
+      const subData = await subRes.json();
+      if (subData.data?.length > 0) {
         return new Response(JSON.stringify({
           active: true,
           plan: "pro",
-          periodEnd: sub.current_period_end,
+          periodEnd: subData.data[0].current_period_end,
         }), { status: 200, headers: { "Content-Type": "application/json" } });
       }
     }
