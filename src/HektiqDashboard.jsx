@@ -497,7 +497,7 @@ function AddToolModal({ onClose, onAdd }) {
        ))}
       </div>
       <div style={{ overflowY:"auto", flex:1, padding:"0 22px 16px" }}>
-       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:8 }}>
         {filtered.map(tool => (
          <div key={tool.name} onClick={() => { setPicked(tool); setPlan(tool.plans[0]?.label || ""); setStep(2); }}
           onMouseEnter={e => e.currentTarget.style.borderColor = ACID+"44"}
@@ -1000,7 +1000,7 @@ function InsightsTab({ analyzedTools=[], overlapDetails=[], deadTools=[], totalS
  const totalSavings = recs.reduce((s,r) => s+(r.saving||0), 0);
  return (
   <div>
-   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:20 }}>
+   <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr", gap:12, marginBottom:20 }}>
     <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"16px 20px" }}>
      <div style={{ fontSize:9, color:MUTED, letterSpacing:2, fontFamily:M, marginBottom:6 }}>RECOMMENDATIONS</div>
      <div style={{ fontSize:28, fontWeight:800, color:TEXT, fontFamily:M }}>{recs.length}</div>
@@ -2114,7 +2114,7 @@ export default function HektiqDashboard() {
         <span>0</span><span>CRITICAL</span><span>WARNING</span><span>OPTIMAL</span><span>100</span>
        </div>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:8 }}>
        {analyzedTools.length === 0 ? (
         <div style={{ gridColumn:"1/-1", background:PANEL_2, border:`1px solid ${BO}`, borderRadius:6, padding:"12px", textAlign:"center" }}>
          <div style={{ fontSize:11, color:MUTED }}>Add tools to see health analysis</div>
@@ -2178,7 +2178,7 @@ export default function HektiqDashboard() {
      ))}
     </div>
     {analyzedTools.length > 0 && (
-     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:14 }}>
+     <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr", gap:12, marginBottom:14 }}>
       <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 }}>
        <div style={{ width:40, height:40, borderRadius:8, background:`${WARN}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         <span style={{ color:WARN, fontSize:18 }}>◎</span>
@@ -2262,7 +2262,7 @@ export default function HektiqDashboard() {
       </div>
      );
     })()}
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 255px", gap:14, marginBottom:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 255px", gap:14, marginBottom:14 }}>
      <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"18px 20px 12px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
        <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M }}>SPEND TRAJECTORY</div>
@@ -2332,7 +2332,7 @@ export default function HektiqDashboard() {
       </div>
      </div>
     </div>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 330px", gap:14, marginBottom:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 330px", gap:14, marginBottom:14 }}>
      <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:10, padding:"20px", display:"flex", flexDirection:"column" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
        <div style={{ fontSize:10, color:MUTED, letterSpacing:2.5, fontFamily:M }}>YOUR STACK</div>
@@ -2344,9 +2344,9 @@ export default function HektiqDashboard() {
       <div style={{ display:"flex", padding:"0 10px 7px", borderBottom:`1px solid ${BORDER}`, marginBottom:4, flexShrink:0 }}>
        <div style={{ width:26 }}/>
        <div style={{ flex:1, fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:M }}>TOOL · PROJECT</div>
-       <div style={{ width:55, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:M }}>ROI/MO</div>
+       {!isMobile && <div style={{ width:55, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:M }}>ROI/MO</div>}
        <div style={{ width:50, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:M }}>COST</div>
-       <div style={{ width:65, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:M }}>ANNUAL</div>
+       {!isMobile && <div style={{ width:65, textAlign:"right", fontSize:8, color:"#252d30", letterSpacing:1.5, fontFamily:M }}>ANNUAL</div>}
        <div style={{ width:24 }}/>
       </div>
       <div style={{ overflowY:"auto", maxHeight:280, display:"flex", flexDirection:"column", gap:2 }}>
@@ -2363,22 +2363,22 @@ export default function HektiqDashboard() {
            <div style={{ fontSize:12, color: isDead?MUTED:TEXT, fontWeight:500 }}>{tool.name}</div>
            <div style={{ fontSize:9, color:"#2d3539", fontFamily:M }}>{tool.project}</div>
           </div>
-          <div style={{ width:55, textAlign:"right" }}>
+          {!isMobile && <div style={{ width:55, textAlign:"right" }}>
            <div style={{ fontSize:11, color:roiColor, fontFamily:M, fontWeight:700 }}>
             {tool.roi > 0 ? `$${tool.roi}` : "—"}
            </div>
            {tool.roi > 0 && <div style={{ fontSize:8, color:roiColor, opacity:0.6, fontFamily:M }}>revenue</div>}
-          </div>
+          </div>}
           <div style={{ width:50, textAlign:"right" }}>
            <div style={{ fontSize:12, color:TEXT, fontFamily:M }}>${tool.cost}</div>
            <div style={{ fontSize:9, color: tool.trend==="up"?WARN:tool.trend==="down"?GREEN:"#2d3539" }}>
             {tool.trend==="up"?"▲":tool.trend==="down"?"▼":"—"}
            </div>
           </div>
-          <div style={{ width:65, textAlign:"right" }}>
+          {!isMobile && <div style={{ width:65, textAlign:"right" }}>
            <div style={{ fontSize:11, color:MUTED, fontFamily:M }}>${tool.cost*12}</div>
            {isDead && <div style={{ fontSize:8, color:WARN, fontFamily:M }}>dead wt</div>}
-          </div>
+          </div>}
           <div
            onClick={() => handleRemoveTool(tool.id || tool.name)}
            style={{ width:24, textAlign:"right", color:"#2d3539", fontSize:13, cursor:"pointer", transition:"color 0.15s", paddingLeft:6 }}
