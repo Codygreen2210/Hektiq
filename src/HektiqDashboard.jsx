@@ -2056,7 +2056,7 @@ export default function HektiqDashboard() {
      </div>
     </div>
    </div>
-   <div style={{ flex:1, padding:"28px 28px", overflowY:"auto", overflowX:"hidden", minWidth:0 }}>
+   <div className="hektiq-main" style={{ flex:1, padding:"28px 28px", overflowY:"auto", overflowX:"hidden", minWidth:0 }}>
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
      <div>
       <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:M }}>
