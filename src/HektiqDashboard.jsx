@@ -641,7 +641,7 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
  const renderRow = (t) => {
   const badge = statusBadge(t);
   return (
-   <div key={t.id||t.name} style={{ display:"grid", gridTemplateColumns:"2fr 100px 120px 90px 90px 90px 90px 80px", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${BORDER}`, background: t.overlap ? `${WARN}04` : "transparent", transition:"background 0.15s", }}
+   <div key={t.id||t.name} style={{ display:"grid", gridTemplateColumns:isMobile?"1fr auto auto":"2fr 100px 120px 90px 90px 90px 90px 80px", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${BORDER}`, background: t.overlap ? `${WARN}04` : "transparent", transition:"background 0.15s", }}
     onMouseEnter={e => e.currentTarget.style.background = t.overlap ? `${WARN}08` : `${ACID}04`}
     onMouseLeave={e => e.currentTarget.style.background = t.overlap ? `${WARN}04` : "transparent"}
    >
@@ -721,7 +721,7 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
     </button>
    </div>
    <div style={{ background:PANEL, border:`1px solid ${BO}`, borderRadius:8, overflow:"hidden", marginTop:10 }}>
-    <div style={{ display:"grid", gridTemplateColumns:"2fr 100px 120px 90px 90px 90px 90px 80px", padding:"10px 16px", borderBottom:`1px solid ${BORDER}`, background:PANEL_2 }}>
+    <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr auto auto":"2fr 100px 120px 90px 90px 90px 90px 80px", padding:"10px 16px", borderBottom:`1px solid ${BORDER}`, background:PANEL_2 }}>
      {[
       { label:"TOOL",      col:"name"   },
       { label:"CATEGORY",  col:null      },
@@ -759,7 +759,7 @@ function StackTab({ analyzedTools, overlapIds, overlapDetails, deadTools, totalS
      })
     ) : sorted.map(renderRow)}
     {sorted.length > 0 && (
-     <div style={{ display:"grid", gridTemplateColumns:"2fr 100px 120px 90px 90px 90px 90px 80px", padding:"12px 16px", borderTop:`1px solid ${BORDER}`, background:PANEL_2 }}>
+     <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr auto auto":"2fr 100px 120px 90px 90px 90px 90px 80px", padding:"12px 16px", borderTop:`1px solid ${BORDER}`, background:PANEL_2 }}>
       <div style={{ fontSize:10, color:MUTED, fontFamily:M, gridColumn:"1/3" }}>{sorted.length} tool{sorted.length!==1?"s":""} shown</div>
       <div/>
       <div style={{ fontSize:12, fontWeight:700, color:WARN, fontFamily:M }}>${sorted.reduce((s,t)=>s+t.cost,0)}/mo</div>
@@ -2065,7 +2065,7 @@ export default function HektiqDashboard() {
      </div>
     </div>
    </div>
-   <div style={{ flex:1, padding:"28px 28px", overflowY:"auto" }}>
+   <div style={{ flex:1, padding:"28px 28px", overflowY:"auto", overflowX:"hidden", minWidth:0 }}>
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
      <div>
       <div style={{ fontSize:11, color:MUTED, letterSpacing:3, marginBottom:5, fontFamily:M }}>
