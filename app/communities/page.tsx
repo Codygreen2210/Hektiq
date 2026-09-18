@@ -11,22 +11,27 @@ const communities = [
 
 export default function Communities() {
   return (
-    <main className='min-h-screen bg-[#080F14] text-white'>
-      <header className='border-b border-[#334155] px-16 py-4 flex justify-between items-center'>
-        <Link href='/' className='text-xl font-semibold bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4] bg-clip-text text-transparent' style={{fontFamily:'var(--font-sora)'}}>
+    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+      <header style={{borderBottom:'1px solid #334155', padding:'16px 64px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <Link href='/' style={{fontSize:'1.25rem', fontWeight:'600', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:'var(--font-sora)', textDecoration:'none'}}>
           Hektiq
         </Link>
-        <nav className='flex items-center gap-6'>
-          <Link href='/auth/login' className='text-sm text-slate-300 hover:text-white'>Login</Link>
-          <Link href='/auth/signup' className='rounded-full px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4]'>
+        <nav style={{display:'flex', alignItems:'center', gap:'24px'}}>
+          <Link href='/auth/login' style={{fontSize:'0.875rem', color:'#CBD5E1', textDecoration:'none'}}>Login</Link>
+          <Link href='/auth/signup' style={{borderRadius:'999px', padding:'8px 20px', fontSize:'0.875rem', fontWeight:'500', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
             Join Now
           </Link>
         </nav>
       </header>
-      <div className='px-16 pt-12 pb-24'>
-        <h1 className='text-4xl font-bold text-white' style={{fontFamily:'var(--font-sora)'}}>Communities</h1>
-        <p className='text-slate-400 mt-2'>For everyone building from nothing.</p>
-        <div className='mt-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+      <div style={{maxWidth:'1100px', margin:'0 auto', padding:'48px 32px 96px'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
+          <h1 style={{fontFamily:'var(--font-sora)', fontSize:'2.5rem', fontWeight:'700', color:'white'}}>Communities</h1>
+          <Link href='/create-community' style={{borderRadius:'999px', padding:'8px 20px', fontSize:'0.875rem', fontWeight:'600', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
+            + Create Community
+          </Link>
+        </div>
+        <p style={{color:'#94A3B8', marginBottom:'40px'}}>For everyone building from nothing.</p>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'24px'}}>
           {communities.map((c) => {
             const isPurple = c.accent === 'purple'
             const color = isPurple ? '#8B5CF6' : '#06B6D4'
@@ -37,7 +42,7 @@ export default function Communities() {
               <Link
                 key={c.slug}
                 href={'/c/' + c.slug}
-                className='group block bg-[#0F172A] border border-[#334155] rounded-2xl p-6 transition-all duration-200 ease-out'
+                style={{display:'block', background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'24px', textDecoration:'none', transition:'all 0.2s ease'}}
                 onMouseEnter={e => {
                   const el = e.currentTarget
                   el.style.transform = 'translateY(-4px)'
@@ -53,24 +58,16 @@ export default function Communities() {
                   el.style.boxShadow = 'none'
                 }}
               >
-                <div
-                  className='h-12 w-12 rounded-xl flex items-center justify-center font-semibold text-base mb-4'
-                  style={{
-                    fontFamily: 'var(--font-sora)',
-                    background: isPurple ? 'rgba(139,92,246,0.15)' : 'rgba(6,182,212,0.15)',
-                    border: '1px solid ' + color,
-                    color: color,
-                  }}
-                >
+                <div style={{width:'48px', height:'48px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'600', fontSize:'1rem', marginBottom:'16px', fontFamily:'var(--font-sora)', background: isPurple ? 'rgba(139,92,246,0.15)' : 'rgba(6,182,212,0.15)', border:'1px solid ' + color, color: color}}>
                   {c.letter}
                 </div>
-                <h3 className='text-lg font-bold text-white' style={{fontFamily:'var(--font-sora)'}}>
+                <h3 style={{fontFamily:'var(--font-sora)', fontWeight:'700', fontSize:'1.125rem', color:'white', marginBottom:'6px'}}>
                   {c.name}
                 </h3>
-                <p className='text-sm text-slate-400 group-hover:text-slate-300 mt-1'>
+                <p style={{fontSize:'0.875rem', color:'#94A3B8', marginBottom:'24px'}}>
                   {c.description}
                 </p>
-                <p className='text-xs text-slate-500 mt-6'>
+                <p style={{fontSize:'0.75rem', color:'#64748B'}}>
                   0 members
                 </p>
               </Link>
@@ -78,7 +75,7 @@ export default function Communities() {
           })}
         </div>
       </div>
-      <footer className='border-t border-[#334155] py-6 text-center text-sm text-slate-500'>
+      <footer style={{borderTop:'1px solid #334155', padding:'24px', textAlign:'center', fontSize:'0.875rem', color:'#64748B'}}>
         Hektiq 2026 — For everyone building from nothing
       </footer>
     </main>

@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 
-const communityData: Record<string, { name: string; description: string; accent: string; letter: string }> = {
+const seededCommunities: Record<string, { name: string; description: string; accent: string; letter: string }> = {
   'money-moves': { name: 'Money Moves', description: 'Personal finance, saving, passive income', accent: '#8B5CF6', letter: 'M' },
   'builders': { name: 'Builders', description: 'Startups, side hustles, indie building', accent: '#06B6D4', letter: 'B' },
   'market-moves': { name: 'Market Moves', description: 'Stocks, crypto, options, macro', accent: '#8B5CF6', letter: 'M' },
@@ -12,13 +12,37 @@ const communityData: Record<string, { name: string; description: string; accent:
 
 export default function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const community = communityData[slug]
+  const [community, setCommunity] = useState<any>(seededCommunities[slug] || null)
   const [joined, setJoined] = useState(false)
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    async function fetchPosts() {
+    async function fetchData() {
+      if (!seededCommunities[slug]) {
+        try {
+          const res = await fetch('/api/communities/' + slug)
+          const data = await res.json()
+          if (data.community) {
+            setCommunity({
+              name: data.community.name,
+              description: data.community.description,
+              accent: '#8B5CF6',
+              letter: data.community.icon_emoji || data.community.name.charAt(0).toUpperCase()
+            })
+          } else {
+            setNotFound(true)
+            setLoading(false)
+            return
+          }
+        } catch (e) {
+          setNotFound(true)
+          setLoading(false)
+          return
+        }
+      }
+
       try {
         const res = await fetch('/api/posts?community=' + slug)
         const data = await res.json()
@@ -28,16 +52,24 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
       }
       setLoading(false)
     }
-    fetchPosts()
+    fetchData()
   }, [slug])
 
-  if (!community) {
+  if (notFound) {
     return (
       <main style={{minHeight:'100vh', background:'#080F14', color:'white', display:'flex', alignItems:'center', justifyContent:'center'}}>
         <div style={{textAlign:'center'}}>
           <h1 style={{fontFamily:'var(--font-sora)', fontSize:'2rem', marginBottom:'16px'}}>Community not found</h1>
           <Link href='/communities' style={{color:'#8B5CF6'}}>Browse communities</Link>
         </div>
+      </main>
+    )
+  }
+
+  if (!community) {
+    return (
+      <main style={{minHeight:'100vh', background:'#080F14', color:'white', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <p style={{color:'#64748B'}}>Loading...</p>
       </main>
     )
   }
