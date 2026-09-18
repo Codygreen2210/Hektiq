@@ -1,11 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -14,41 +10,72 @@ export default function Login() {
 
   async function handleLogin() {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    else window.location.href = '/'
+    setError('')
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+      )
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setError(error.message)
+      else window.location.href = '/'
+    } catch (e) {
+      setError('Something went wrong')
+    }
     setLoading(false)
   }
 
   return (
-    <main className="min-h-screen bg-[#0F172A] text-white flex items-center justify-center">
-      <div className="w-full max-w-md p-8 border border-gray-700 rounded">
-        <h1 className="text-2xl font-bold text-blue-400 mb-2">Hektiq</h1>
-        <h2 className="text-xl font-bold mb-6">Login</h2>
-        {error && <p className="text-red-400 mb-4">{error}</p>}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 mb-4 text-white"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 mb-6 text-white"
-        />
+    <main style={{minHeight:'100vh', background:'#080F14', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px'}}>
+      <div style={{width:'100%', maxWidth:'420px', background:'#0F172A', border:'1px solid #334155', borderRadius:'20px', padding:'40px'}}>
+        <Link href='/' style={{fontSize:'1.5rem', fontWeight:'700', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:'var(--font-sora)', textDecoration:'none', display:'block', marginBottom:'8px'}}>
+          Hektiq
+        </Link>
+        <h2 style={{fontFamily:'var(--font-sora)', fontSize:'1.5rem', fontWeight:'700', color:'white', marginBottom:'8px'}}>Welcome back</h2>
+        <p style={{color:'#94A3B8', fontSize:'0.875rem', marginBottom:'32px'}}>Sign in to your account</p>
+
+        {error && (
+          <div style={{background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'8px', padding:'12px', marginBottom:'20px', color:'#FCA5A5', fontSize:'0.875rem'}}>
+            {error}
+          </div>
+        )}
+
+        <div style={{marginBottom:'16px'}}>
+          <label style={{display:'block', color:'#94A3B8', fontSize:'0.75rem', fontWeight:'500', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em'}}>Email</label>
+          <input
+            type='email'
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder='you@example.com'
+            style={{width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'10px', padding:'12px 16px', color:'white', fontSize:'0.875rem', outline:'none', boxSizing:'border-box'}}
+          />
+        </div>
+
+        <div style={{marginBottom:'24px'}}>
+          <label style={{display:'block', color:'#94A3B8', fontSize:'0.75rem', fontWeight:'500', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em'}}>Password</label>
+          <input
+            type='password'
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder='••••••••'
+            style={{width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'10px', padding:'12px 16px', color:'white', fontSize:'0.875rem', outline:'none', boxSizing:'border-box'}}
+          />
+        </div>
+
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full bg-blue-500 hover:bg-blue-600 py-3 rounded font-medium"
+          style={{width:'100%', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', border:'none', borderRadius:'999px', padding:'14px', color:'white', fontSize:'0.875rem', fontWeight:'600', cursor:'pointer', marginBottom:'20px'}}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Signing in...' : 'Sign in'}
         </button>
-        <p className="text-center text-gray-400 mt-4">
-          No account? <a href="/auth/signup" className="text-blue-400">Sign up</a>
+
+        <p style={{textAlign:'center', color:'#64748B', fontSize:'0.875rem'}}>
+          No account?{' '}
+          <Link href='/auth/signup' style={{color:'#8B5CF6', textDecoration:'none', fontWeight:'500'}}>
+            Sign up free
+          </Link>
         </p>
       </div>
     </main>
