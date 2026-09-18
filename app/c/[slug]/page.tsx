@@ -94,11 +94,11 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           ) : (
             <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
               {posts.map((post) => (
-                <div key={post.id} style={{background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'24px', cursor:'pointer'}}>
+                <Link key={post.id} href={'/c/' + slug + '/post/' + post.id} style={{display:'block', background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'24px', textDecoration:'none'}}>
                   <h3 style={{fontFamily:'var(--font-sora)', fontSize:'1.125rem', fontWeight:'700', color:'white', marginBottom:'8px'}}>{post.title}</h3>
                   <p style={{color:'#94A3B8', fontSize:'0.875rem', lineHeight:'1.6', marginBottom:'16px'}}>{post.body.substring(0, 200)}{post.body.length > 200 ? '...' : ''}</p>
                   <p style={{color:'#475569', fontSize:'0.75rem'}}>{new Date(post.created_at).toLocaleDateString()}</p>
-                </div>
+                </Link>
               ))}
             </div>
           )}
