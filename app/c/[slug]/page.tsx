@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useState, use } from 'react'
+import { useState, useEffect, use } from 'react'
 
 const communityData: Record<string, { name: string; description: string; accent: string; letter: string }> = {
   'money-moves': { name: 'Money Moves', description: 'Personal finance, saving, passive income', accent: '#8B5CF6', letter: 'M' },
@@ -14,6 +14,22 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const { slug } = use(params)
   const community = communityData[slug]
   const [joined, setJoined] = useState(false)
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        const res = await fetch('/api/posts?community=' + slug)
+        const data = await res.json()
+        if (data.posts) setPosts(data.posts)
+      } catch (e) {
+        console.error(e)
+      }
+      setLoading(false)
+    }
+    fetchPosts()
+  }, [slug])
 
   if (!community) {
     return (
@@ -61,17 +77,31 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         <div style={{borderTop:'1px solid #334155', paddingTop:'32px'}}>
           <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
             <h2 style={{fontFamily:'var(--font-sora)', fontSize:'1.25rem', fontWeight:'700'}}>Discussions</h2>
-            <Link href='/auth/signup' style={{borderRadius:'999px', padding:'8px 20px', fontSize:'0.875rem', fontWeight:'600', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
+            <Link href={'/c/' + slug + '/new-post'} style={{borderRadius:'999px', padding:'8px 20px', fontSize:'0.875rem', fontWeight:'600', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
               + New Post
             </Link>
           </div>
 
-          <div style={{background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'48px', textAlign:'center'}}>
-            <p style={{color:'#64748B', fontSize:'1rem', marginBottom:'16px'}}>No posts yet. Be the first to start a discussion.</p>
-            <Link href='/auth/signup' style={{color:'#8B5CF6', textDecoration:'none', fontSize:'0.875rem', fontWeight:'500'}}>
-              Sign up to post
-            </Link>
-          </div>
+          {loading ? (
+            <div style={{textAlign:'center', padding:'48px', color:'#64748B'}}>Loading...</div>
+          ) : posts.length === 0 ? (
+            <div style={{background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'48px', textAlign:'center'}}>
+              <p style={{color:'#64748B', fontSize:'1rem', marginBottom:'16px'}}>No posts yet. Be the first to start a discussion.</p>
+              <Link href={'/c/' + slug + '/new-post'} style={{color:'#8B5CF6', textDecoration:'none', fontSize:'0.875rem', fontWeight:'500'}}>
+                Create first post
+              </Link>
+            </div>
+          ) : (
+            <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+              {posts.map((post) => (
+                <div key={post.id} style={{background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'24px', cursor:'pointer'}}>
+                  <h3 style={{fontFamily:'var(--font-sora)', fontSize:'1.125rem', fontWeight:'700', color:'white', marginBottom:'8px'}}>{post.title}</h3>
+                  <p style={{color:'#94A3B8', fontSize:'0.875rem', lineHeight:'1.6', marginBottom:'16px'}}>{post.body.substring(0, 200)}{post.body.length > 200 ? '...' : ''}</p>
+                  <p style={{color:'#475569', fontSize:'0.75rem'}}>{new Date(post.created_at).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
