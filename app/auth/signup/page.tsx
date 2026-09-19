@@ -4,18 +4,20 @@ import Link from 'next/link'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSignup() {
+    if (!username.trim()) return setError('Username is required')
     setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, username })
       })
       const data = await res.json()
       if (data.error) setError(data.error)
@@ -40,6 +42,17 @@ export default function Signup() {
             {error}
           </div>
         )}
+
+        <div style={{marginBottom:'16px'}}>
+          <label style={{display:'block', color:'#94A3B8', fontSize:'0.75rem', fontWeight:'500', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em'}}>Username</label>
+          <input
+            type='text'
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder='yourname'
+            style={{width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'10px', padding:'12px 16px', color:'white', fontSize:'0.875rem', outline:'none', boxSizing:'border-box'}}
+          />
+        </div>
 
         <div style={{marginBottom:'16px'}}>
           <label style={{display:'block', color:'#94A3B8', fontSize:'0.75rem', fontWeight:'500', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em'}}>Email</label>
