@@ -1,7 +1,10 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 export default function Home() {
+  const [user, setUser] = useState<any>(null)
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -12,6 +15,10 @@ export default function Home() {
       { threshold: 0.1 }
     )
     document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el))
+
+    const username = localStorage.getItem('hektiq_username')
+    if (username) setUser({ username })
+
     return () => observer.disconnect()
   }, [])
 
@@ -36,15 +43,22 @@ export default function Home() {
       <header className='header-anim border-b border-[#334155] px-8 py-5 flex justify-between items-center'>
         <span className='text-2xl font-bold gradient-text' style={{fontFamily:'var(--font-sora)'}}>Hektiq</span>
         <nav className='flex items-center gap-8'>
-          <a href='/communities' className='text-gray-400 hover:text-white text-sm'>Communities</a>
-          <a href='/auth/login' className='text-gray-400 hover:text-white text-sm'>Login</a>
-          <a href='/auth/signup' className='gradient-btn text-sm py-2 px-6'>Join Now</a>
+          <Link href='/communities' className='text-gray-400 hover:text-white text-sm'>Communities</Link>
+          {user ? (
+            <Link href={'/profile/' + user.username} className='text-gray-400 hover:text-white text-sm'>
+              {user.username}
+            </Link>
+          ) : (
+            <Link href='/auth/login' className='text-gray-400 hover:text-white text-sm'>Login</Link>
+          )}
+          {!user && (
+            <Link href='/auth/signup' className='gradient-btn text-sm py-2 px-6'>Join Now</Link>
+          )}
         </nav>
       </header>
 
       <div style={{display:'flex', flexDirection:'column', alignItems:'center', width:'100%'}}>
-        
-        <div style={{textAlign:'center', padding:'6rem 2rem 4rem', maxWidth:'720px', width:'100%'}}>
+        <section style={{textAlign:'center', padding:'6rem 2rem 4rem', maxWidth:'720px', width:'100%'}}>
           <h1 className='hero-anim' style={{fontFamily:'var(--font-sora)', fontSize:'3.75rem', fontWeight:'700', lineHeight:'1.2', marginBottom:'2rem'}}>
             Real People.<br/>
             Deeper Discussions.<br/>
@@ -54,12 +68,12 @@ export default function Home() {
             The next generation of online communities. Built for real conversations, not algorithms.
           </p>
           <div className='btn-anim' style={{display:'flex', gap:'1rem', justifyContent:'center'}}>
-            <a href='/auth/signup' className='gradient-btn' style={{fontSize:'1rem', padding:'0.75rem 2rem'}}>Get started</a>
-            <a href='/communities' className='ghost-btn' style={{fontSize:'1rem', padding:'0.75rem 2rem'}}>Explore Communities</a>
+            <Link href='/auth/signup' className='gradient-btn' style={{fontSize:'1rem', padding:'0.75rem 2rem'}}>Get started</Link>
+            <Link href='/communities' className='ghost-btn' style={{fontSize:'1rem', padding:'0.75rem 2rem'}}>Explore Communities</Link>
           </div>
-        </div>
+        </section>
 
-        <div style={{padding:'4rem 2rem 6rem', maxWidth:'1100px', width:'100%'}}>
+        <section style={{padding:'4rem 2rem 6rem', maxWidth:'1100px', width:'100%'}}>
           <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'1.5rem'}}>
             {[
               { title: 'Real Conversations', desc: 'No scripts. No filters. Just honest dialogue.' },
@@ -73,8 +87,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
-
+        </section>
       </div>
 
       <footer className='border-t border-[#334155] px-8 py-10 text-center text-gray-500 text-sm'>
