@@ -1,10 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
+import Header from '../components/Header'
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null)
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -15,20 +14,15 @@ export default function Home() {
       { threshold: 0.1 }
     )
     document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el))
-
-    const username = localStorage.getItem('hektiq_username')
-    if (username) setUser({ username })
-
     return () => observer.disconnect()
   }, [])
 
   return (
-    <main className='bg-[#080F14] text-white'>
+    <main style={{background:'#080F14', color:'white', minHeight:'100vh'}}>
       <style>{`
         @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:translateY(0); } }
         @keyframes glow { 0%,100% { text-shadow:0 0 20px rgba(139,92,246,0.3); } 50% { text-shadow:0 0 40px rgba(6,182,212,0.5); } }
-        .header-anim { animation:fadeDown 0.6s ease forwards; }
         .hero-anim { animation:fadeUp 0.8s ease 0.2s both; }
         .sub-anim { animation:fadeUp 0.8s ease 0.4s both; }
         .btn-anim { animation:fadeUp 0.8s ease 0.6s both; }
@@ -38,24 +32,11 @@ export default function Home() {
         .fade-up:nth-child(2) { transition-delay:0.1s; }
         .fade-up:nth-child(3) { transition-delay:0.2s; }
         .fade-up:nth-child(4) { transition-delay:0.3s; }
+        .gradient-text { background: linear-gradient(to right, #8B5CF6, #06B6D4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .card { background: #0F172A; border: 1px solid #334155; border-radius: 16px; padding: 24px; }
       `}</style>
 
-      <header className='header-anim border-b border-[#334155] px-8 py-5 flex justify-between items-center'>
-        <span className='text-2xl font-bold gradient-text' style={{fontFamily:'var(--font-sora)'}}>Hektiq</span>
-        <nav className='flex items-center gap-8'>
-          <Link href='/communities' className='text-gray-400 hover:text-white text-sm'>Communities</Link>
-          {user ? (
-            <Link href={'/profile/' + user.username} className='text-gray-400 hover:text-white text-sm'>
-              {user.username}
-            </Link>
-          ) : (
-            <Link href='/auth/login' className='text-gray-400 hover:text-white text-sm'>Login</Link>
-          )}
-          {!user && (
-            <Link href='/auth/signup' className='gradient-btn text-sm py-2 px-6'>Join Now</Link>
-          )}
-        </nav>
-      </header>
+      <Header />
 
       <div style={{display:'flex', flexDirection:'column', alignItems:'center', width:'100%'}}>
         <section style={{textAlign:'center', padding:'6rem 2rem 4rem', maxWidth:'720px', width:'100%'}}>
@@ -68,8 +49,12 @@ export default function Home() {
             The next generation of online communities. Built for real conversations, not algorithms.
           </p>
           <div className='btn-anim' style={{display:'flex', gap:'1rem', justifyContent:'center'}}>
-            <Link href='/auth/signup' className='gradient-btn' style={{fontSize:'1rem', padding:'0.75rem 2rem'}}>Get started</Link>
-            <Link href='/communities' className='ghost-btn' style={{fontSize:'1rem', padding:'0.75rem 2rem'}}>Explore Communities</Link>
+            <Link href='/auth/signup' style={{background:'linear-gradient(to right, #8B5CF6, #06B6D4)', border:'none', color:'white', borderRadius:'999px', padding:'12px 28px', fontWeight:'600', textDecoration:'none', fontSize:'1rem'}}>
+              Get started
+            </Link>
+            <Link href='/communities' style={{background:'transparent', border:'1px solid #334155', color:'white', borderRadius:'999px', padding:'12px 28px', fontWeight:'600', textDecoration:'none', fontSize:'1rem'}}>
+              Explore Communities
+            </Link>
           </div>
         </section>
 
@@ -90,8 +75,8 @@ export default function Home() {
         </section>
       </div>
 
-      <footer className='border-t border-[#334155] px-8 py-10 text-center text-gray-500 text-sm'>
-        <p>Hektiq 2026 — For everyone building from nothing</p>
+      <footer style={{borderTop:'1px solid #334155', padding:'40px', textAlign:'center', color:'#64748B', fontSize:'0.875rem'}}>
+        Hektiq 2026 — For everyone building from nothing
       </footer>
     </main>
   )

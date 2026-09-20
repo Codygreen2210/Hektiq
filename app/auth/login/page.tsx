@@ -17,9 +17,28 @@ export default function Login() {
         process.env.NEXT_PUBLIC_SUPABASE_URL as string,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
       )
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setError(error.message)
-      else window.location.href = '/'
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setError(error.message)
+      } else {
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('username')
+          .eq('id', data.user.id)
+          .single()
+
+        console.log('Profile result:', profile, profileError)
+
+        if (profile?.username) {
+          localStorage.setItem('hektiq_username', profile.username)
+          localStorage.setItem('hektiq_user_id', data.user.id)
+        } else {
+          const fallback = data.user.email?.split('@')[0] || 'user'
+          localStorage.setItem('hektiq_username', fallback)
+          localStorage.setItem('hektiq_user_id', data.user.id)
+        }
+        window.location.href = '/'
+      }
     } catch (e) {
       setError('Something went wrong')
     }

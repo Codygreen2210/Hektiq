@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import Header from '../../components/Header'
 
 const seededCommunities = [
   { slug: 'money-moves', letter: 'M', accent: '#8B5CF6', name: 'Money Moves', description: 'Personal finance, saving, passive income' },
@@ -44,17 +45,7 @@ export default function Communities() {
 
   return (
     <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
-      <header style={{borderBottom:'1px solid #334155', padding:'16px 64px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-        <Link href='/' style={{fontSize:'1.25rem', fontWeight:'600', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:'var(--font-sora)', textDecoration:'none'}}>
-          Hektiq
-        </Link>
-        <nav style={{display:'flex', alignItems:'center', gap:'24px'}}>
-          <Link href='/auth/login' style={{fontSize:'0.875rem', color:'#CBD5E1', textDecoration:'none'}}>Login</Link>
-          <Link href='/auth/signup' style={{borderRadius:'999px', padding:'8px 20px', fontSize:'0.875rem', fontWeight:'500', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
-            Join Now
-          </Link>
-        </nav>
-      </header>
+      <Header />
 
       <div style={{maxWidth:'1100px', margin:'0 auto', padding:'48px 32px 96px'}}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
