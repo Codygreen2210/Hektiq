@@ -56,7 +56,7 @@ export default function Search() {
           <>
             {results.communities?.length > 0 && (
               <div style={{marginBottom:'40px'}}>
-                <h2 style={{fontFamily:'var(--font-sora)', fontSize:'1.1rem', fontWeight:'700', marginBottom:'16px', color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.05em', fontSize:'0.75rem'}}>
+                <h2 style={{fontFamily:'var(--font-sora)', fontSize:'0.75rem', fontWeight:'700', marginBottom:'16px', color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.05em'}}>
                   Communities
                 </h2>
                 <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
@@ -77,7 +77,7 @@ export default function Search() {
 
             {results.posts?.length > 0 && (
               <div>
-                <h2 style={{fontFamily:'var(--font-sora)', color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.05em', fontSize:'0.75rem', marginBottom:'16px'}}>
+                <h2 style={{fontFamily:'var(--font-sora)', fontSize:'0.75rem', fontWeight:'700', marginBottom:'16px', color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.05em'}}>
                   Posts
                 </h2>
                 <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
