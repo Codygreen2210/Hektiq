@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true
+      email_confirm: false
     })
 
     if (error) return Response.json({ error: error.message })
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       is_admin: false
     })
 
-    return Response.json({ user: data.user })
+    return Response.json({ user: data.user, message: 'Please check your email to verify your account.' })
   } catch (e) {
     return Response.json({ error: 'Something went wrong' })
   }

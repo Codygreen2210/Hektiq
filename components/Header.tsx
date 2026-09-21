@@ -34,6 +34,9 @@ export default function Header() {
         <Link href='/communities' style={{color:'#94A3B8', textDecoration:'none', fontSize:'0.875rem'}}>
           Communities
         </Link>
+        <Link href='/search' style={{color:'#94A3B8', textDecoration:'none', fontSize:'0.875rem'}}>
+          Search
+        </Link>
         {username ? (
           <>
             <Link href={'/profile/' + username} style={{display:'flex', alignItems:'center', gap:'8px', textDecoration:'none'}}>
