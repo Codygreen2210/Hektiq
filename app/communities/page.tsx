@@ -2,14 +2,8 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Header from '../../components/Header'
-
-const seededCommunities = [
-  { slug: 'money-moves', letter: 'M', accent: '#8B5CF6', name: 'Money Moves', description: 'Personal finance, saving, passive income' },
-  { slug: 'builders', letter: 'B', accent: '#06B6D4', name: 'Builders', description: 'Startups, side hustles, indie building' },
-  { slug: 'market-moves', letter: 'M', accent: '#8B5CF6', name: 'Market Moves', description: 'Stocks, crypto, options, macro' },
-  { slug: 'the-grind', letter: 'G', accent: '#06B6D4', name: 'The Grind', description: 'Career, negotiating, getting ahead' },
-  { slug: 'from-nothing', letter: 'F', accent: '#8B5CF6', name: 'From Nothing', description: 'Rags to riches, motivation, mindset' },
-]
+import { seededCommunities } from '../../lib/communities'
+import { CommunityIcon, ChevronIcon } from '../../components/Icons'
 
 export default function Communities() {
   const [userCommunities, setUserCommunities] = useState<any[]>([])
@@ -20,10 +14,9 @@ export default function Communities() {
         const res = await fetch('/api/communities')
         const data = await res.json()
         if (data.communities) {
-          const filtered = data.communities.filter(
+          setUserCommunities(data.communities.filter(
             (c: any) => !seededCommunities.find(s => s.slug === c.slug)
-          )
-          setUserCommunities(filtered)
+          ))
         }
       } catch (e) {
         console.error(e)
@@ -32,69 +25,66 @@ export default function Communities() {
     fetchCommunities()
   }, [])
 
-  const allCommunities = [
-    ...seededCommunities,
-    ...userCommunities.map((c: any) => ({
-      slug: c.slug,
-      letter: c.icon_emoji || c.name.charAt(0).toUpperCase(),
-      accent: '#8B5CF6',
-      name: c.name,
-      description: c.description
-    }))
-  ]
+  const created = userCommunities.map((c: any) => ({
+    slug: c.slug,
+    name: c.name,
+    description: c.description,
+    accent: '#8B5CF6'
+  }))
+
+  function Row({ c }: { c: { slug: string; name: string; description: string; accent: string } }) {
+    return (
+      <Link
+        href={'/c/' + c.slug}
+        style={{display:'flex', alignItems:'center', gap:'14px', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'14px', padding:'14px 16px', textDecoration:'none', transition:'border-color 0.15s ease, background 0.15s ease'}}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.background = '#111A2E' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#1E293B'; e.currentTarget.style.background = '#0F172A' }}
+      >
+        <div style={{width:'48px', height:'48px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', background: c.accent + '1A', color: c.accent, flexShrink:0}}>
+          <CommunityIcon slug={c.slug} size={26} />
+        </div>
+        <div style={{flex:1, minWidth:0}}>
+          <p style={{fontFamily:'var(--font-sora)', fontWeight:'700', fontSize:'1rem', color:'#F8FAFC', margin:'0 0 3px'}}>{c.name}</p>
+          <p style={{fontSize:'0.85rem', color:'#94A3B8', margin:0, lineHeight:'1.4', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
+        </div>
+        <span style={{color:'#475569', display:'flex', flexShrink:0}}>
+          <ChevronIcon size={18} />
+        </span>
+      </Link>
+    )
+  }
 
   return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+    <main style={{minHeight:'100vh', background:'#080F14', color:'white', overflowX:'hidden'}}>
       <Header />
 
-      <div style={{maxWidth:'1100px', margin:'0 auto', padding:'48px 32px 96px'}}>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
-          <h1 style={{fontFamily:'var(--font-sora)', fontSize:'2.5rem', fontWeight:'700', color:'white'}}>Communities</h1>
-          <Link href='/create-community' style={{borderRadius:'999px', padding:'8px 20px', fontSize:'0.875rem', fontWeight:'600', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
-            + Create Community
+      <div style={{maxWidth:'720px', margin:'0 auto', padding:'32px 16px 96px'}}>
+        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'2rem', fontWeight:'700', color:'white', margin:'0 0 6px'}}>Communities</h1>
+        <p style={{color:'#94A3B8', margin:'0 0 28px', fontSize:'0.95rem'}}>Real people. No bots. Find your corner.</p>
+
+        <p style={{fontSize:'0.75rem', color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 12px'}}>Main communities</p>
+        <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'36px'}}>
+          {seededCommunities.map(c => <Row key={c.slug} c={c} />)}
+        </div>
+
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 0 12px', gap:'12px'}}>
+          <p style={{fontSize:'0.75rem', color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', margin:0}}>Started by members</p>
+          <Link href='/create-community' style={{fontSize:'0.85rem', fontWeight:'600', color:'#A78BFA', textDecoration:'none'}}>
+            + Start one
           </Link>
         </div>
-        <p style={{color:'#94A3B8', marginBottom:'40px'}}>For everyone building from nothing.</p>
-
-        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'24px'}}>
-          {allCommunities.map((c) => (
-            <Link
-              key={c.slug}
-              href={'/c/' + c.slug}
-              style={{display:'block', background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'24px', textDecoration:'none', transition:'all 0.2s ease'}}
-              onMouseEnter={e => {
-                const el = e.currentTarget
-                el.style.transform = 'translateY(-4px)'
-                el.style.background = '#131C31'
-                el.style.borderColor = c.accent
-                el.style.boxShadow = '0 0 0 1px rgba(139,92,246,0.35), 0 12px 32px rgba(139,92,246,0.12)'
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget
-                el.style.transform = 'translateY(0)'
-                el.style.background = '#0F172A'
-                el.style.borderColor = '#334155'
-                el.style.boxShadow = 'none'
-              }}
-            >
-              <div style={{width:'48px', height:'48px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'600', fontSize:'1rem', marginBottom:'16px', fontFamily:'var(--font-sora)', background: c.accent + '22', border:'1px solid ' + c.accent, color: c.accent}}>
-                {c.letter}
-              </div>
-              <h3 style={{fontFamily:'var(--font-sora)', fontWeight:'700', fontSize:'1.125rem', color:'white', marginBottom:'6px'}}>
-                {c.name}
-              </h3>
-              <p style={{fontSize:'0.875rem', color:'#94A3B8', marginBottom:'24px'}}>
-                {c.description}
-              </p>
-              <p style={{fontSize:'0.75rem', color:'#64748B'}}>
-                0 members
-              </p>
-            </Link>
-          ))}
-        </div>
+        {created.length === 0 ? (
+          <div style={{border:'1px dashed #334155', borderRadius:'14px', padding:'24px 16px', textAlign:'center', color:'#64748B', fontSize:'0.9rem'}}>
+            No member communities yet. Be the first to start one.
+          </div>
+        ) : (
+          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+            {created.map(c => <Row key={c.slug} c={c} />)}
+          </div>
+        )}
       </div>
 
-      <footer style={{borderTop:'1px solid #334155', padding:'24px', textAlign:'center', fontSize:'0.875rem', color:'#64748B'}}>
+      <footer style={{borderTop:'1px solid #1E293B', padding:'24px 16px', textAlign:'center', fontSize:'0.85rem', color:'#64748B'}}>
         Hektiq 2026 — For everyone building from nothing
       </footer>
     </main>
