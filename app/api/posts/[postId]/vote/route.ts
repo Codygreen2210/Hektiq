@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { getUserFromRequest } from '../../../../../lib/serverAuth'
 
 export async function POST(
   request: Request,
@@ -7,43 +8,52 @@ export async function POST(
 ) {
   try {
     const { postId } = await params
-    const { direction, previousVote } = await request.json()
+    const { direction } = await request.json()
+
+    if (direction !== 'up' && direction !== 'down') {
+      return NextResponse.json({ error: 'Bad vote.' })
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL as string,
       process.env.SUPABASE_SERVICE_ROLE_KEY as string
     )
 
-    const { data: post } = await supabase
-      .from('posts')
-      .select('upvotes')
-      .eq('id', postId)
-      .single()
+    const user = await getUserFromRequest(request, supabase)
+    if (!user) return NextResponse.json({ error: 'Log in to vote.' })
 
-    if (!post) return NextResponse.json({ error: 'Post not found' })
+    const value = direction === 'up' ? 1 : -1
 
-    let change = 0
-    if (!previousVote) {
-      change = direction === 'up' ? 1 : -1
-    } else if (previousVote === 'down' && direction === 'up') {
-      change = 1
-    } else if (previousVote === 'up' && direction === 'down') {
-      change = -1
+    const { data: existing } = await supabase
+      .from('post_votes')
+      .select('value')
+      .eq('post_id', postId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    let myVote: 'up' | 'down' | null = direction
+
+    if (existing && existing.value === value) {
+      await supabase.from('post_votes').delete().eq('post_id', postId).eq('user_id', user.id)
+      myVote = null
+    } else {
+      const { error } = await supabase
+        .from('post_votes')
+        .upsert({ post_id: postId, user_id: user.id, value }, { onConflict: 'post_id,user_id' })
+      if (error) return NextResponse.json({ error: 'Couldn\'t save your vote.' })
     }
 
-    const newCount = (post.upvotes || 0) + change
+    const { data: all } = await supabase
+      .from('post_votes')
+      .select('value')
+      .eq('post_id', postId)
 
-    const { data, error } = await supabase
-      .from('posts')
-      .update({ upvotes: newCount })
-      .eq('id', postId)
-      .select()
-      .single()
+    const score = (all || []).reduce((sum, v) => sum + v.value, 0)
 
-    if (error) return NextResponse.json({ error: error.message })
-    return NextResponse.json({ upvotes: data.upvotes })
+    await supabase.from('posts').update({ upvotes: score }).eq('id', postId)
 
+    return NextResponse.json({ upvotes: score, myVote })
   } catch (e) {
-    return NextResponse.json({ error: 'Something went wrong' })
+    return NextResponse.json({ error: 'Something went wrong.' })
   }
 }

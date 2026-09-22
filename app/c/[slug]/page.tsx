@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import { seededBySlug } from '../../../lib/communities'
+import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, HotIcon, NewIcon, TopIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
 
 function timeAgo(date: string) {
@@ -23,13 +24,12 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const [sort, setSort] = useState('hot')
   const [username, setUsername] = useState<string | null>(null)
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({})
+  const [voteMsg, setVoteMsg] = useState('')
 
   useEffect(() => {
     const u = localStorage.getItem('hektiq_username')
     if (u) setUsername(u)
-
-    const savedVotes = localStorage.getItem('hektiq_votes_' + slug)
-    if (savedVotes) setVotes(JSON.parse(savedVotes))
+    localStorage.removeItem('hektiq_votes_' + slug)
 
     async function fetchData() {
       if (!seededBySlug[slug]) {
@@ -37,11 +37,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           const res = await fetch('/api/communities/' + slug)
           const data = await res.json()
           if (data.community) {
-            setCommunity({
-              name: data.community.name,
-              description: data.community.description,
-              accent: '#8B5CF6'
-            })
+            setCommunity({ name: data.community.name, description: data.community.description, accent: '#8B5CF6' })
           } else {
             setNotFound(true)
             setLoading(false)
@@ -57,7 +53,15 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
       try {
         const res = await fetch('/api/posts?community=' + slug)
         const data = await res.json()
-        if (data.posts) setPosts(data.posts)
+        const list = data.posts || []
+        setPosts(list)
+
+        if (u && list.length > 0) {
+          const auth = await getAuthHeader()
+          const vr = await fetch('/api/posts/my-votes?ids=' + list.map((p: any) => p.id).join(','), { headers: { ...auth } })
+          const vd = await vr.json()
+          setVotes(vd.votes || {})
+        }
       } catch (e) {
         console.error(e)
       }
@@ -67,25 +71,40 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   }, [slug])
 
   async function handleVote(postId: string, direction: 'up' | 'down') {
-    const currentVote = votes[postId]
-    if (currentVote === direction) return
+    if (!username) {
+      setVoteMsg('Log in to vote.')
+      setTimeout(() => setVoteMsg(''), 2500)
+      return
+    }
 
-    const newVotes = { ...votes, [postId]: direction }
-    setVotes(newVotes)
-    localStorage.setItem('hektiq_votes_' + slug, JSON.stringify(newVotes))
+    const prevVote = votes[postId] || null
+    const prevPosts = posts
+    const nextVote = prevVote === direction ? null : direction
+    const delta = (nextVote === 'up' ? 1 : nextVote === 'down' ? -1 : 0) - (prevVote === 'up' ? 1 : prevVote === 'down' ? -1 : 0)
+
+    setVotes(v => ({ ...v, [postId]: nextVote }))
+    setPosts(ps => ps.map(p => p.id === postId ? { ...p, upvotes: (p.upvotes || 0) + delta } : p))
 
     try {
+      const auth = await getAuthHeader()
       const res = await fetch('/api/posts/' + postId + '/vote', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction, previousVote: currentVote })
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ direction })
       })
       const data = await res.json()
-      if (data.upvotes !== undefined) {
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, upvotes: data.upvotes } : p))
+      if (data.error) {
+        setVotes(v => ({ ...v, [postId]: prevVote }))
+        setPosts(prevPosts)
+        setVoteMsg(data.error)
+        setTimeout(() => setVoteMsg(''), 2500)
+      } else {
+        setVotes(v => ({ ...v, [postId]: data.myVote }))
+        setPosts(ps => ps.map(p => p.id === postId ? { ...p, upvotes: data.upvotes } : p))
       }
     } catch (e) {
-      console.error(e)
+      setVotes(v => ({ ...v, [postId]: prevVote }))
+      setPosts(prevPosts)
     }
   }
 
@@ -158,6 +177,12 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
             Post
           </Link>
         </div>
+
+        {voteMsg && (
+          <div style={{background:'rgba(139,92,246,0.1)', border:'1px solid #3B2F6B', color:'#C4B5FD', borderRadius:'10px', padding:'10px 14px', fontSize:'0.85rem', marginBottom:'12px'}}>
+            {voteMsg}{voteMsg === 'Log in to vote.' && <> <Link href='/auth/login' style={{color:'#A78BFA', fontWeight:'600'}}>Log in</Link></>}
+          </div>
+        )}
 
         {loading ? (
           <div style={{textAlign:'center', padding:'48px', color:'#64748B'}}>Loading...</div>
