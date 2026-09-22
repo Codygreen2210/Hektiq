@@ -3,7 +3,15 @@ import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import { seededBySlug } from '../../../lib/communities'
-import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, HotIcon, NewIcon, TopIcon, CommentIcon, UpIcon, DownIcon } from '../../../components/Icons'
+import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, HotIcon, NewIcon, TopIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
+
+function timeAgo(date: string) {
+  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return Math.floor(s / 60) + 'm ago'
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago'
+  return Math.floor(s / 86400) + 'd ago'
+}
 
 export default function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
@@ -32,8 +40,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
             setCommunity({
               name: data.community.name,
               description: data.community.description,
-              accent: '#8B5CF6',
-              letter: data.community.icon_emoji || data.community.name.charAt(0).toUpperCase()
+              accent: '#8B5CF6'
             })
           } else {
             setNotFound(true)
@@ -96,17 +103,19 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const navLink = { display:'flex', flexDirection:'column' as const, alignItems:'center', gap:'4px', textDecoration:'none', fontSize:'0.7rem', minWidth:'64px', padding:'4px 0' }
 
   if (notFound) return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white', display:'flex', alignItems:'center', justifyContent:'center', padding:'16px'}}>
-      <div style={{textAlign:'center'}}>
-        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.75rem', marginBottom:'16px'}}>Community not found</h1>
+    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+      <Header />
+      <div style={{textAlign:'center', padding:'64px 16px'}}>
+        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.6rem', marginBottom:'16px'}}>Community not found</h1>
         <Link href='/communities' style={{color:'#8B5CF6'}}>Browse communities</Link>
       </div>
     </main>
   )
 
   if (!community) return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white', display:'flex', alignItems:'center', justifyContent:'center'}}>
-      <p style={{color:'#64748B'}}>Loading...</p>
+    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+      <Header />
+      <p style={{color:'#64748B', textAlign:'center', padding:'64px 16px'}}>Loading...</p>
     </main>
   )
 
@@ -116,12 +125,12 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
 
       <div style={{maxWidth:'740px', margin:'0 auto', padding:'24px 16px'}}>
         <div style={{display:'flex', alignItems:'center', gap:'14px', marginBottom:'20px', flexWrap:'wrap'}}>
-          <div style={{width:'52px', height:'52px', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'1.2rem', fontFamily:'var(--font-sora)', background: community.accent + '22', border:'1px solid ' + community.accent, color: community.accent, flexShrink:0}}>
-            {community.letter}
+          <div style={{width:'54px', height:'54px', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', background: community.accent + '1A', color: community.accent, flexShrink:0}}>
+            <CommunityIcon slug={slug} size={30} />
           </div>
           <div style={{flex:'1 1 160px', minWidth:0}}>
-            <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.4rem', fontWeight:'700', color:'white', marginBottom:'2px'}}>{community.name}</h1>
-            <p style={{color:'#64748B', fontSize:'0.8rem'}}>{community.description}</p>
+            <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.4rem', fontWeight:'700', color:'white', margin:'0 0 2px'}}>{community.name}</h1>
+            <p style={{color:'#94A3B8', fontSize:'0.82rem', margin:0}}>{community.description}</p>
           </div>
           <button
             onClick={() => setJoined(!joined)}
@@ -139,7 +148,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                 onClick={() => setSort(key)}
                 style={{display:'flex', alignItems:'center', gap:'6px', borderRadius:'999px', padding:'8px 14px', minHeight:'40px', fontSize:'0.8rem', fontWeight:'600', cursor:'pointer', border:'1px solid', borderColor: sort === key ? community.accent : '#334155', color: sort === key ? community.accent : '#64748B', background:'transparent'}}
               >
-                <Icon size={16} />
+                <Icon size={16} active={sort === key} />
                 {label}
               </button>
             ))}
@@ -153,8 +162,8 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         {loading ? (
           <div style={{textAlign:'center', padding:'48px', color:'#64748B'}}>Loading...</div>
         ) : sortedPosts.length === 0 ? (
-          <div style={{background:'#0F172A', border:'1px solid #334155', borderRadius:'16px', padding:'40px 20px', textAlign:'center'}}>
-            <p style={{color:'#64748B', marginBottom:'16px'}}>No posts yet. Start the first conversation.</p>
+          <div style={{border:'1px dashed #334155', borderRadius:'16px', padding:'40px 20px', textAlign:'center'}}>
+            <p style={{color:'#64748B', margin:'0 0 16px'}}>No posts yet. Start the first conversation.</p>
             <Link href={'/c/' + slug + '/new-post'} style={{color:'#8B5CF6', textDecoration:'none', fontSize:'0.875rem', fontWeight:'500'}}>
               Create first post
             </Link>
@@ -163,14 +172,15 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
             {sortedPosts.map((post) => {
               const userVote = votes[post.id]
+              const name = post.author?.username
               return (
-                <div key={post.id} style={{display:'flex', background:'#0F172A', border:'1px solid #334155', borderRadius:'12px', overflow:'hidden'}}>
+                <div key={post.id} style={{display:'flex', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'12px', overflow:'hidden'}}>
                   <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'10px 8px', gap:'2px', background:'#0B1220', minWidth:'48px'}}>
                     <button
                       onClick={() => handleVote(post.id, 'up')}
                       aria-label='Upvote'
                       style={{background:'none', border:'none', color: userVote === 'up' ? '#8B5CF6' : '#64748B', cursor:'pointer', padding:'6px', display:'flex'}}
-                    ><UpIcon size={18} /></button>
+                    ><UpIcon size={18} active={userVote === 'up'} /></button>
                     <span style={{color: userVote === 'up' ? '#8B5CF6' : userVote === 'down' ? '#EF4444' : '#CBD5E1', fontSize:'0.8rem', fontWeight:'600'}}>
                       {post.upvotes || 0}
                     </span>
@@ -178,15 +188,18 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                       onClick={() => handleVote(post.id, 'down')}
                       aria-label='Downvote'
                       style={{background:'none', border:'none', color: userVote === 'down' ? '#EF4444' : '#64748B', cursor:'pointer', padding:'6px', display:'flex'}}
-                    ><DownIcon size={18} /></button>
+                    ><DownIcon size={18} active={userVote === 'down'} /></button>
                   </div>
                   <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'block'}}>
-                    <h3 style={{fontFamily:'var(--font-sora)', fontSize:'1rem', fontWeight:'700', color:'white', marginBottom:'6px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
-                    <p style={{color:'#64748B', fontSize:'0.85rem', lineHeight:'1.6', marginBottom:'10px', wordBreak:'break-word'}}>{post.body.substring(0, 150)}{post.body.length > 150 ? '...' : ''}</p>
-                    <div style={{display:'flex', gap:'14px', alignItems:'center', color:'#475569', fontSize:'0.75rem'}}>
-                      <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                      <span style={{display:'flex', alignItems:'center', gap:'4px'}}><CommentIcon size={14} />{post.comment_count || 0}</span>
-                    </div>
+                    <p style={{fontSize:'0.78rem', color:'#64748B', margin:'0 0 6px'}}>
+                      {name ? <span style={{color:'#CBD5E1', fontWeight:'600'}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
+                    </p>
+                    <h3 style={{fontFamily:'var(--font-sora)', fontSize:'1rem', fontWeight:'700', color:'white', margin:'0 0 6px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
+                    <p style={{color:'#94A3B8', fontSize:'0.85rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{(post.body || '').substring(0, 150)}{(post.body || '').length > 150 ? '...' : ''}</p>
+                    <span style={{display:'inline-flex', alignItems:'center', gap:'5px', color:'#64748B', fontSize:'0.78rem'}}>
+                      <CommentIcon size={14} />
+                      {post.comment_count || 0} {post.comment_count === 1 ? 'comment' : 'comments'}
+                    </span>
                   </Link>
                 </div>
               )
@@ -195,13 +208,13 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         )}
       </div>
 
-      <nav style={{position:'fixed', bottom:0, left:0, right:0, background:'#0F172A', borderTop:'1px solid #334155', display:'flex', justifyContent:'space-around', padding:'8px 0 12px', zIndex:10}}>
+      <nav style={{position:'fixed', bottom:0, left:0, right:0, background:'#0F172A', borderTop:'1px solid #1E293B', display:'flex', justifyContent:'space-around', padding:'8px 0 12px', zIndex:10}}>
         <Link href='/' style={{...navLink, color:'#64748B'}}>
           <HomeIcon />
           Home
         </Link>
         <Link href='/communities' style={{...navLink, color:'#8B5CF6'}}>
-          <CommunitiesIcon />
+          <CommunitiesIcon active />
           Communities
         </Link>
         <Link href={'/c/' + slug + '/new-post'} style={{...navLink, color:'#64748B'}}>

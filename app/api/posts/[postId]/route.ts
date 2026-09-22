@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { attachAuthors } from '../../../../lib/serverAuth'
 
 export async function GET(
   request: Request,
@@ -17,11 +18,13 @@ export async function GET(
       .from('posts')
       .select('*')
       .eq('id', postId)
+      .eq('is_deleted', false)
       .single()
 
-    if (error) return NextResponse.json({ error: error.message })
-    return NextResponse.json({ post: data })
+    if (error || !data) return NextResponse.json({ error: 'Post not found' })
 
+    const [withAuthor] = await attachAuthors([data], supabase)
+    return NextResponse.json({ post: withAuthor })
   } catch (e) {
     return NextResponse.json({ error: 'Something went wrong' })
   }
