@@ -6,6 +6,7 @@ import ReportButton from '../../../../../components/ReportButton'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon } from '../../../../../components/Icons'
+import { Trash } from '@phosphor-icons/react'
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -50,12 +51,23 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [loggedIn, setLoggedIn] = useState(false)
+  const [me, setMe] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const community = seededBySlug[slug]
 
   useEffect(() => {
-    setLoggedIn(!!localStorage.getItem('hektiq_username'))
+    const u = localStorage.getItem('hektiq_username')
+    setMe(u)
+    if (u) {
+      fetch('/api/profile/' + u)
+        .then(r => r.json())
+        .then(d => setIsAdmin(!!d.profile?.is_admin))
+        .catch(() => {})
+    }
 
     async function load() {
       try {
@@ -100,6 +112,25 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     setSubmitting(false)
   }
 
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/posts/' + postId, { method: 'DELETE', headers: { ...auth } })
+      const data = await res.json()
+      if (data.error) {
+        setDeleteError(data.error)
+        setDeleting(false)
+      } else {
+        window.location.href = '/c/' + slug
+      }
+    } catch (e) {
+      setDeleteError('Something went wrong. Try again.')
+      setDeleting(false)
+    }
+  }
+
   if (loading) return (
     <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
       <Header />
@@ -116,6 +147,9 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
       </div>
     </main>
   )
+
+  const isOwner = !!me && post.author?.username === me
+  const canDelete = isOwner || isAdmin
 
   return (
     <main style={{minHeight:'100vh', background:'#080F14', color:'white', overflowX:'hidden'}}>
@@ -137,12 +171,40 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         <div style={{display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap', paddingBottom:'24px', borderBottom:'1px solid #1E293B', marginBottom:'28px'}}>
           <span style={{fontSize:'0.85rem', color:'#94A3B8'}}>▲ {post.upvotes || 0}</span>
           <span style={{fontSize:'0.85rem', color:'#94A3B8'}}>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</span>
-          <div style={{marginLeft:'auto'}}>
-            <ReportButton postId={postId} />
+          <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+            {canDelete && !confirmDelete && (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                style={{display:'inline-flex', alignItems:'center', gap:'6px', background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}}
+              >
+                <Trash size={15} weight='duotone' aria-hidden='true' />
+                Delete
+              </button>
+            )}
+            {canDelete && confirmDelete && (
+              <>
+                <span style={{fontSize:'0.8rem', color:'#FCA5A5'}}>Delete this post?</span>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  style={{background:'#DC2626', border:'none', color:'white', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', fontWeight:'600', cursor:'pointer', minHeight:'36px'}}
+                >
+                  {deleting ? 'Deleting...' : 'Yes, delete'}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  style={{background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+            {!isOwner && <ReportButton postId={postId} />}
           </div>
         </div>
+        {deleteError && <p style={{color:'#FCA5A5', fontSize:'0.85rem', margin:'-16px 0 20px'}}>{deleteError}</p>}
 
-        {loggedIn ? (
+        {me ? (
           <div style={{marginBottom:'24px'}}>
             <textarea
               value={comment}
