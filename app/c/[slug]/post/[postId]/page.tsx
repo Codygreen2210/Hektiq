@@ -31,7 +31,7 @@ function Author({ author, date, size = 28 }: { author: any; date: string; size?:
   )
 
   return (
-    <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.82rem'}}>
+    <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.82rem', minWidth:0}}>
       {name ? <Link href={'/profile/' + name} style={{display:'flex'}}>{avatar}</Link> : avatar}
       {name ? (
         <Link href={'/profile/' + name} style={{color:'#E2E8F0', fontWeight:'600', textDecoration:'none'}}>{name}</Link>
@@ -42,6 +42,9 @@ function Author({ author, date, size = 28 }: { author: any; date: string; size?:
     </div>
   )
 }
+
+const smallBtn = {display:'inline-flex', alignItems:'center', gap:'6px', background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}
+const dangerBtn = {background:'#DC2626', border:'none', color:'white', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', fontWeight:'600', cursor:'pointer', minHeight:'36px'}
 
 export default function PostPage({ params }: { params: Promise<{ slug: string; postId: string }> }) {
   const { slug, postId } = use(params)
@@ -56,6 +59,8 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [confirmComment, setConfirmComment] = useState<string | null>(null)
+  const [deletingComment, setDeletingComment] = useState<string | null>(null)
 
   const community = seededBySlug[slug]
 
@@ -131,6 +136,20 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     }
   }
 
+  async function handleDeleteComment(id: string) {
+    setDeletingComment(id)
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/comments/' + id, { method: 'DELETE', headers: { ...auth } })
+      const data = await res.json()
+      if (!data.error) setComments(prev => prev.filter(c => c.id !== id))
+    } catch (e) {
+      console.error(e)
+    }
+    setDeletingComment(null)
+    setConfirmComment(null)
+  }
+
   if (loading) return (
     <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
       <Header />
@@ -173,10 +192,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
           <span style={{fontSize:'0.85rem', color:'#94A3B8'}}>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</span>
           <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
             {canDelete && !confirmDelete && (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                style={{display:'inline-flex', alignItems:'center', gap:'6px', background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}}
-              >
+              <button onClick={() => setConfirmDelete(true)} style={smallBtn}>
                 <Trash size={15} weight='duotone' aria-hidden='true' />
                 Delete
               </button>
@@ -184,19 +200,10 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             {canDelete && confirmDelete && (
               <>
                 <span style={{fontSize:'0.8rem', color:'#FCA5A5'}}>Delete this post?</span>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  style={{background:'#DC2626', border:'none', color:'white', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', fontWeight:'600', cursor:'pointer', minHeight:'36px'}}
-                >
+                <button onClick={handleDelete} disabled={deleting} style={dangerBtn}>
                   {deleting ? 'Deleting...' : 'Yes, delete'}
                 </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  style={{background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}}
-                >
-                  Cancel
-                </button>
+                <button onClick={() => setConfirmDelete(false)} style={smallBtn}>Cancel</button>
               </>
             )}
             {!isOwner && <ReportButton postId={postId} />}
@@ -236,14 +243,35 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
           </div>
         ) : (
           <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-            {comments.map((c, i) => (
-              <div key={c.id || i} style={{background:'#0F172A', border:'1px solid #1E293B', borderRadius:'12px', padding:'14px 16px'}}>
-                <div style={{marginBottom:'8px'}}>
-                  <Author author={c.author} date={c.created_at} size={24} />
+            {comments.map((c, i) => {
+              const canDeleteComment = (!!me && c.author?.username === me) || isAdmin
+              return (
+                <div key={c.id || i} style={{background:'#0F172A', border:'1px solid #1E293B', borderRadius:'12px', padding:'14px 16px'}}>
+                  <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'8px'}}>
+                    <Author author={c.author} date={c.created_at} size={24} />
+                    {canDeleteComment && c.id && confirmComment !== c.id && (
+                      <button
+                        onClick={() => setConfirmComment(c.id)}
+                        aria-label='Delete comment'
+                        style={{background:'none', border:'none', color:'#64748B', cursor:'pointer', padding:'6px', display:'flex', flexShrink:0}}
+                      >
+                        <Trash size={16} weight='duotone' />
+                      </button>
+                    )}
+                  </div>
+                  <p style={{color:'#CBD5E1', fontSize:'0.92rem', lineHeight:'1.6', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
+                  {confirmComment === c.id && (
+                    <div style={{display:'flex', alignItems:'center', gap:'8px', marginTop:'12px', flexWrap:'wrap'}}>
+                      <span style={{fontSize:'0.8rem', color:'#FCA5A5'}}>Delete this comment?</span>
+                      <button onClick={() => handleDeleteComment(c.id)} disabled={deletingComment === c.id} style={dangerBtn}>
+                        {deletingComment === c.id ? 'Deleting...' : 'Yes, delete'}
+                      </button>
+                      <button onClick={() => setConfirmComment(null)} style={smallBtn}>Cancel</button>
+                    </div>
+                  )}
                 </div>
-                <p style={{color:'#CBD5E1', fontSize:'0.92rem', lineHeight:'1.6', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
