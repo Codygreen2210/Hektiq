@@ -4,7 +4,16 @@ import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
-import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, HotIcon, NewIcon, TopIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
+import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
+import { PixelFlame, PixelSparkle, PixelTrophy } from '../../../components/PixelIcons'
+
+const COLOR: Record<string, string> = {
+  'outdoors': '4',
+  'sports': '5',
+  'money-building': '3',
+  'garage': '1',
+  'art-makers': '2',
+}
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -25,11 +34,14 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const [username, setUsername] = useState<string | null>(null)
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({})
   const [voteMsg, setVoteMsg] = useState('')
+  const [popId, setPopId] = useState<string | null>(null)
+
+  const n = COLOR[slug] || '2'
+  const accent = `var(--c${n})`
 
   useEffect(() => {
     const u = localStorage.getItem('hektiq_username')
     if (u) setUsername(u)
-    localStorage.removeItem('hektiq_votes_' + slug)
 
     async function fetchData() {
       if (!seededBySlug[slug]) {
@@ -37,7 +49,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           const res = await fetch('/api/communities/' + slug)
           const data = await res.json()
           if (data.community) {
-            setCommunity({ name: data.community.name, description: data.community.description, accent: '#8B5CF6' })
+            setCommunity({ name: data.community.name, description: data.community.description })
           } else {
             setNotFound(true)
             setLoading(false)
@@ -77,6 +89,9 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
       return
     }
 
+    setPopId(postId + direction)
+    setTimeout(() => setPopId(null), 300)
+
     const prevVote = votes[postId] || null
     const prevPosts = posts
     const nextVote = prevVote === direction ? null : direction
@@ -114,115 +129,161 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   })
 
   const sorts = [
-    { key: 'hot', label: 'Hot', Icon: HotIcon },
-    { key: 'new', label: 'New', Icon: NewIcon },
-    { key: 'top', label: 'Top', Icon: TopIcon },
+    { key: 'hot', label: 'HOT', Icon: PixelFlame, day: '1' },
+    { key: 'new', label: 'NEW', Icon: PixelSparkle, day: '5' },
+    { key: 'top', label: 'TOP', Icon: PixelTrophy, day: '3' },
   ]
 
-  const navLink = { display:'flex', flexDirection:'column' as const, alignItems:'center', gap:'4px', textDecoration:'none', fontSize:'0.7rem', minWidth:'64px', padding:'4px 0' }
+  const navLink = { display:'flex', flexDirection:'column' as const, alignItems:'center', gap:'4px', textDecoration:'none', fontSize:'0.72rem', fontWeight:600, minWidth:'64px', padding:'4px 0' }
 
   if (notFound) return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+    <main style={{minHeight:'100vh', color:'var(--text)'}}>
       <Header />
       <div style={{textAlign:'center', padding:'64px 16px'}}>
-        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.6rem', marginBottom:'16px'}}>Community not found</h1>
-        <Link href='/communities' style={{color:'#8B5CF6'}}>Browse communities</Link>
+        <h1 className='font-display' style={{fontSize:'2.4rem', marginBottom:'16px'}}>COMMUNITY NOT FOUND</h1>
+        <Link href='/communities' className='hk-btn'>Browse communities</Link>
       </div>
     </main>
   )
 
   if (!community) return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+    <main style={{minHeight:'100vh', color:'var(--text)'}}>
       <Header />
-      <p style={{color:'#64748B', textAlign:'center', padding:'64px 16px'}}>Loading...</p>
+      <p style={{color:'var(--muted)', textAlign:'center', padding:'64px 16px'}}>Loading...</p>
     </main>
   )
 
   return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white', paddingBottom:'88px', overflowX:'hidden'}}>
+    <main className='hk-dots' style={{minHeight:'100vh', color:'var(--text)', paddingBottom:'96px', overflowX:'hidden', ['--tube' as any]: accent}}>
+      <style>{`
+        .hk-banner { border-bottom: 2px solid var(--ink); transition: background-color .6s ease; }
+        [data-theme='night'] .hk-banner { background: transparent !important; border-color: var(--banner-glow); box-shadow: 0 6px 18px -8px var(--banner-glow); }
+        [data-theme='night'] .hk-banner-title, [data-theme='night'] .hk-banner-icon { color: var(--banner-glow) !important; text-shadow: 0 0 12px var(--banner-glow); }
+        [data-theme='night'] .hk-banner-icon { border-color: var(--banner-glow) !important; box-shadow: 0 0 10px var(--banner-glow); background: transparent !important; }
+        [data-theme='night'] .hk-banner-desc { color: var(--muted) !important; }
+
+        .hk-tab {
+          display:flex; align-items:center; gap:8px;
+          border-radius:6px; padding:7px 14px 6px; min-height:42px;
+          font-family: var(--font-bebas), 'Arial Narrow', sans-serif; font-size:1.2rem; letter-spacing:.06em; line-height:1;
+          cursor:pointer; border:2px solid var(--border-soft); color:var(--muted); background:var(--surface);
+          transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, transform .12s ease;
+        }
+        .hk-tab:hover { border-color: var(--border); color: var(--text); }
+        .hk-tab.active {
+          background: var(--tab-day); color: var(--tab-on);
+          border-color: var(--ink); box-shadow: var(--shadow-hard);
+        }
+        .hk-tab.active:active { transform: translate(2px,2px); box-shadow: none; }
+
+        [data-theme='night'] .hk-tab { background: rgba(22,12,38,.6); border-color: #2E1F47; color: #7D6A9C; }
+        [data-theme='night'] .hk-tab:hover { color: #F6E9FF; border-color: #4A3470; }
+        [data-theme='night'] .hk-tab.active {
+          color: #FFFFFF;
+          text-shadow: 0 0 8px var(--tube);
+          border: 2px solid var(--tube);
+          background-color: rgba(255,255,255,.04);
+          background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0px, rgba(255,255,255,.07) 1px, transparent 1px, transparent 3px);
+          box-shadow: inset 0 0 0 2px rgba(255,255,255,.55), 0 0 10px var(--tube), inset 0 0 12px var(--tube);
+          animation: hk-tube 3.2s ease-in-out infinite;
+        }
+        @keyframes hk-tube {
+          0%, 100% { box-shadow: inset 0 0 0 2px rgba(255,255,255,.55), 0 0 10px var(--tube), inset 0 0 12px var(--tube); }
+          50% { box-shadow: inset 0 0 0 2px rgba(255,255,255,.7), 0 0 20px var(--tube), 0 0 32px var(--tube), inset 0 0 16px var(--tube); }
+        }
+
+        .hk-vote { background:none; border:none; cursor:pointer; padding:6px; display:flex; color:var(--faint); }
+        .hk-vote.up.on { color: var(--c4); }
+        .hk-vote.down.on { color: var(--c1); }
+        [data-theme='night'] .hk-vote.on { filter: drop-shadow(0 0 6px currentColor); }
+
+        .hk-bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:2px solid var(--border-soft); display:flex; justify-content:space-around; padding:8px 0 12px; z-index:10; transition: background-color .6s ease; }
+        [data-theme='night'] .hk-bottom-nav { border-top-color: var(--tube); box-shadow: 0 -4px 16px -8px var(--tube); }
+      `}</style>
+
       <Header />
 
-      <div style={{maxWidth:'740px', margin:'0 auto', padding:'24px 16px'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'14px', marginBottom:'20px', flexWrap:'wrap'}}>
-          <div style={{width:'54px', height:'54px', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', background: community.accent + '1A', color: community.accent, flexShrink:0}}>
-            <CommunityIcon slug={slug} size={30} />
+      <div className='hk-banner' style={{background: accent, ['--banner-glow' as any]: accent}}>
+        <div style={{maxWidth:'740px', margin:'0 auto', padding:'24px 16px', display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap'}}>
+          <div className='hk-banner-icon' style={{width:'60px', height:'60px', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)', color: accent, border:'2px solid var(--ink)', flexShrink:0}}>
+            <CommunityIcon slug={slug} size={34} />
           </div>
           <div style={{flex:'1 1 160px', minWidth:0}}>
-            <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.4rem', fontWeight:'700', color:'white', margin:'0 0 2px'}}>{community.name}</h1>
-            <p style={{color:'#94A3B8', fontSize:'0.82rem', margin:0}}>{community.description}</p>
+            <h1 className='font-display hk-banner-title' style={{fontSize:'2.4rem', lineHeight:1, margin:'0 0 4px', color:`var(--on-c${n})`}}>{community.name.toUpperCase()}</h1>
+            <p className='hk-banner-desc' style={{fontSize:'0.92rem', margin:0, color:`var(--on-c${n})`}}>{community.description}</p>
           </div>
-          <button
-            onClick={() => setJoined(!joined)}
-            style={{borderRadius:'999px', padding:'10px 22px', minHeight:'44px', fontSize:'0.875rem', fontWeight:'600', color:'white', background: joined ? 'transparent' : 'linear-gradient(to right, #8B5CF6, #06B6D4)', border: joined ? '1px solid #334155' : 'none', cursor:'pointer', flexShrink:0}}
-          >
+          <button onClick={() => setJoined(!joined)} className={joined ? 'hk-btn-ghost' : 'hk-btn'} style={{flexShrink:0, background: joined ? 'var(--bg)' : undefined}}>
             {joined ? 'Joined' : 'Join'}
           </button>
         </div>
+      </div>
 
+      <div style={{maxWidth:'740px', margin:'0 auto', padding:'20px 16px'}}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px', gap:'10px', flexWrap:'wrap'}}>
-          <div style={{display:'flex', gap:'8px'}}>
-            {sorts.map(({ key, label, Icon }) => (
+          <div style={{display:'flex', gap:'8px'}} role='tablist' aria-label='Sort posts'>
+            {sorts.map(({ key, label, Icon, day }) => (
               <button
                 key={key}
+                role='tab'
+                aria-selected={sort === key}
                 onClick={() => setSort(key)}
-                style={{display:'flex', alignItems:'center', gap:'6px', borderRadius:'999px', padding:'8px 14px', minHeight:'40px', fontSize:'0.8rem', fontWeight:'600', cursor:'pointer', border:'1px solid', borderColor: sort === key ? community.accent : '#334155', color: sort === key ? community.accent : '#64748B', background:'transparent'}}
+                className={'hk-tab' + (sort === key ? ' active' : '')}
+                style={{['--tab-day' as any]: `var(--c${day})`, ['--tab-on' as any]: `var(--on-c${day})`}}
               >
-                <Icon size={16} active={sort === key} />
+                <Icon size={18} />
                 {label}
               </button>
             ))}
           </div>
-          <Link href={'/c/' + slug + '/new-post'} style={{display:'flex', alignItems:'center', gap:'6px', borderRadius:'999px', padding:'8px 16px', minHeight:'40px', fontSize:'0.8rem', fontWeight:'600', color:'white', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', textDecoration:'none'}}>
+          <Link href={'/c/' + slug + '/new-post'} className='hk-btn' style={{padding:'8px 16px', minHeight:'42px', fontSize:'0.88rem'}}>
             <PostIcon size={16} />
             Post
           </Link>
         </div>
 
         {voteMsg && (
-          <div style={{background:'rgba(139,92,246,0.1)', border:'1px solid #3B2F6B', color:'#C4B5FD', borderRadius:'10px', padding:'10px 14px', fontSize:'0.85rem', marginBottom:'12px'}}>
-            {voteMsg}{voteMsg === 'Log in to vote.' && <> <Link href='/auth/login' style={{color:'#A78BFA', fontWeight:'600'}}>Log in</Link></>}
+          <div className='hk-card' style={{padding:'10px 14px', fontSize:'0.9rem', marginBottom:'12px', borderColor:'var(--border)'}}>
+            {voteMsg}{voteMsg === 'Log in to vote.' && <> <Link href='/auth/login' style={{color:'var(--c5)', fontWeight:700}}>Log in</Link></>}
           </div>
         )}
 
         {loading ? (
-          <div style={{textAlign:'center', padding:'48px', color:'#64748B'}}>Loading...</div>
+          <div style={{textAlign:'center', padding:'48px', color:'var(--muted)'}}>Loading...</div>
         ) : sortedPosts.length === 0 ? (
-          <div style={{border:'1px dashed #334155', borderRadius:'16px', padding:'40px 20px', textAlign:'center'}}>
-            <p style={{color:'#64748B', margin:'0 0 16px'}}>No posts yet. Start the first conversation.</p>
-            <Link href={'/c/' + slug + '/new-post'} style={{color:'#8B5CF6', textDecoration:'none', fontSize:'0.875rem', fontWeight:'500'}}>
-              Create first post
-            </Link>
+          <div className='hk-card' style={{padding:'40px 20px', textAlign:'center', borderStyle:'dashed'}}>
+            <p style={{color:'var(--muted)', margin:'0 0 16px'}}>No posts yet. Start the first conversation.</p>
+            <Link href={'/c/' + slug + '/new-post'} className='hk-btn'>Create first post</Link>
           </div>
         ) : (
-          <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
             {sortedPosts.map((post) => {
               const userVote = votes[post.id]
               const name = post.author?.username
               return (
-                <div key={post.id} style={{display:'flex', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'12px', overflow:'hidden'}}>
-                  <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'10px 8px', gap:'2px', background:'#0B1220', minWidth:'48px'}}>
+                <div key={post.id} className='hk-card' style={{display:'flex', overflow:'hidden'}}>
+                  <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'10px 6px', gap:'2px', background:'var(--surface-2)', minWidth:'50px', borderRight:'2px solid var(--border-soft)'}}>
                     <button
                       onClick={() => handleVote(post.id, 'up')}
                       aria-label='Upvote'
-                      style={{background:'none', border:'none', color: userVote === 'up' ? '#8B5CF6' : '#64748B', cursor:'pointer', padding:'6px', display:'flex'}}
-                    ><UpIcon size={18} active={userVote === 'up'} /></button>
-                    <span style={{color: userVote === 'up' ? '#8B5CF6' : userVote === 'down' ? '#EF4444' : '#CBD5E1', fontSize:'0.8rem', fontWeight:'600'}}>
+                      className={'hk-vote up' + (userVote === 'up' ? ' on' : '') + (popId === post.id + 'up' ? ' hk-pop' : '')}
+                    ><UpIcon size={20} active={userVote === 'up'} /></button>
+                    <span style={{fontSize:'0.9rem', fontWeight:800, color: userVote === 'up' ? 'var(--c4)' : userVote === 'down' ? 'var(--c1)' : 'var(--text)'}}>
                       {post.upvotes || 0}
                     </span>
                     <button
                       onClick={() => handleVote(post.id, 'down')}
                       aria-label='Downvote'
-                      style={{background:'none', border:'none', color: userVote === 'down' ? '#EF4444' : '#64748B', cursor:'pointer', padding:'6px', display:'flex'}}
-                    ><DownIcon size={18} active={userVote === 'down'} /></button>
+                      className={'hk-vote down' + (userVote === 'down' ? ' on' : '') + (popId === post.id + 'down' ? ' hk-pop' : '')}
+                    ><DownIcon size={20} active={userVote === 'down'} /></button>
                   </div>
-                  <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'block'}}>
-                    <p style={{fontSize:'0.78rem', color:'#64748B', margin:'0 0 6px'}}>
-                      {name ? <span style={{color:'#CBD5E1', fontWeight:'600'}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
+                  <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'block', color:'var(--text)'}}>
+                    <p style={{fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
+                      {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
                     </p>
-                    <h3 style={{fontFamily:'var(--font-sora)', fontSize:'1rem', fontWeight:'700', color:'white', margin:'0 0 6px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
-                    <p style={{color:'#94A3B8', fontSize:'0.85rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{(post.body || '').substring(0, 150)}{(post.body || '').length > 150 ? '...' : ''}</p>
-                    <span style={{display:'inline-flex', alignItems:'center', gap:'5px', color:'#64748B', fontSize:'0.78rem'}}>
-                      <CommentIcon size={14} />
+                    <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 6px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
+                    <p style={{color:'var(--muted)', fontSize:'0.9rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{(post.body || '').substring(0, 150)}{(post.body || '').length > 150 ? '...' : ''}</p>
+                    <span style={{display:'inline-flex', alignItems:'center', gap:'5px', color:'var(--faint)', fontSize:'0.82rem', fontWeight:600}}>
+                      <CommentIcon size={15} />
                       {post.comment_count || 0} {post.comment_count === 1 ? 'comment' : 'comments'}
                     </span>
                   </Link>
@@ -233,20 +294,20 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         )}
       </div>
 
-      <nav style={{position:'fixed', bottom:0, left:0, right:0, background:'#0F172A', borderTop:'1px solid #1E293B', display:'flex', justifyContent:'space-around', padding:'8px 0 12px', zIndex:10}}>
-        <Link href='/' style={{...navLink, color:'#64748B'}}>
+      <nav className='hk-bottom-nav'>
+        <Link href='/' style={{...navLink, color:'var(--faint)'}}>
           <HomeIcon />
           Home
         </Link>
-        <Link href='/communities' style={{...navLink, color:'#8B5CF6'}}>
+        <Link href='/communities' style={{...navLink, color: accent}}>
           <CommunitiesIcon active />
           Communities
         </Link>
-        <Link href={'/c/' + slug + '/new-post'} style={{...navLink, color:'#64748B'}}>
+        <Link href={'/c/' + slug + '/new-post'} style={{...navLink, color:'var(--faint)'}}>
           <PostIcon />
           Post
         </Link>
-        <Link href={username ? '/profile/' + username : '/auth/login'} style={{...navLink, color:'#64748B'}}>
+        <Link href={username ? '/profile/' + username : '/auth/login'} style={{...navLink, color:'var(--faint)'}}>
           <ProfileIcon />
           {username || 'Profile'}
         </Link>

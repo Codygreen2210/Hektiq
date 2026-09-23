@@ -5,6 +5,14 @@ import Header from '../../components/Header'
 import { seededCommunities } from '../../lib/communities'
 import { CommunityIcon, ChevronIcon } from '../../components/Icons'
 
+const COLOR: Record<string, string> = {
+  'outdoors': '4',
+  'sports': '5',
+  'money-building': '3',
+  'garage': '1',
+  'art-makers': '2',
+}
+
 export default function Communities() {
   const [userCommunities, setUserCommunities] = useState<any[]>([])
 
@@ -25,67 +33,71 @@ export default function Communities() {
     fetchCommunities()
   }, [])
 
-  const created = userCommunities.map((c: any) => ({
-    slug: c.slug,
-    name: c.name,
-    description: c.description,
-    accent: '#8B5CF6'
-  }))
-
-  function Row({ c }: { c: { slug: string; name: string; description: string; accent: string } }) {
-    return (
-      <Link
-        href={'/c/' + c.slug}
-        style={{display:'flex', alignItems:'center', gap:'14px', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'14px', padding:'14px 16px', textDecoration:'none', transition:'border-color 0.15s ease, background 0.15s ease'}}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.background = '#111A2E' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#1E293B'; e.currentTarget.style.background = '#0F172A' }}
-      >
-        <div style={{width:'48px', height:'48px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', background: c.accent + '1A', color: c.accent, flexShrink:0}}>
-          <CommunityIcon slug={c.slug} size={26} />
-        </div>
-        <div style={{flex:1, minWidth:0}}>
-          <p style={{fontFamily:'var(--font-sora)', fontWeight:'700', fontSize:'1rem', color:'#F8FAFC', margin:'0 0 3px'}}>{c.name}</p>
-          <p style={{fontSize:'0.85rem', color:'#94A3B8', margin:0, lineHeight:'1.4', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
-        </div>
-        <span style={{color:'#475569', display:'flex', flexShrink:0}}>
-          <ChevronIcon size={18} />
-        </span>
-      </Link>
-    )
-  }
-
   return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white', overflowX:'hidden'}}>
+    <main className='hk-dots' style={{minHeight:'100vh', overflowX:'hidden', color:'var(--text)'}}>
+      <style>{`
+        .hk-row { display:flex; align-items:center; gap:14px; padding:14px 16px; text-decoration:none; color:var(--text); }
+        .hk-row-icon { width:50px; height:50px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid var(--ink); transition: background-color .6s ease, color .6s ease, box-shadow .6s ease; }
+        [data-theme='night'] .hk-row-icon { background: transparent !important; color: var(--row-glow) !important; border-color: var(--row-glow); box-shadow: 0 0 10px var(--row-glow); }
+        [data-theme='night'] .hk-row-title { text-shadow: 0 0 10px var(--row-glow); color: var(--row-glow); }
+      `}</style>
+
       <Header />
 
       <div style={{maxWidth:'720px', margin:'0 auto', padding:'32px 16px 96px'}}>
-        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'2rem', fontWeight:'700', color:'white', margin:'0 0 6px'}}>Communities</h1>
-        <p style={{color:'#94A3B8', margin:'0 0 28px', fontSize:'0.95rem'}}>Real people. No bots. Find your corner.</p>
+        <h1 className='font-display' style={{fontSize:'3.2rem', lineHeight:1, margin:'0 0 6px'}}>COMMUNITIES</h1>
+        <p style={{color:'var(--muted)', margin:'0 0 28px', fontSize:'1rem'}}>Your corner of the internet, run by the people in it.</p>
 
-        <p style={{fontSize:'0.75rem', color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 12px'}}>Main communities</p>
-        <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'36px'}}>
-          {seededCommunities.map(c => <Row key={c.slug} c={c} />)}
+        <h2 className='font-display' style={{fontSize:'1.3rem', margin:'0 0 12px'}}>MAIN COMMUNITIES</h2>
+        <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'40px'}}>
+          {seededCommunities.map(c => {
+            const n = COLOR[c.slug] || '1'
+            return (
+              <Link key={c.slug} href={'/c/' + c.slug} className='hk-card hk-row' style={{['--row-glow' as any]: `var(--c${n})`}}>
+                <div className='hk-row-icon' style={{background:`var(--c${n})`, color:`var(--on-c${n})`}}>
+                  <CommunityIcon slug={c.slug} size={28} />
+                </div>
+                <div style={{flex:1, minWidth:0}}>
+                  <p className='font-display hk-row-title' style={{fontSize:'1.5rem', lineHeight:1, margin:'0 0 4px'}}>{c.name.toUpperCase()}</p>
+                  <p style={{fontSize:'0.88rem', color:'var(--muted)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
+                </div>
+                <span style={{color:'var(--faint)', display:'flex', flexShrink:0}}><ChevronIcon size={18} /></span>
+              </Link>
+            )
+          })}
         </div>
 
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 0 12px', gap:'12px'}}>
-          <p style={{fontSize:'0.75rem', color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', margin:0}}>Started by members</p>
-          <Link href='/create-community' style={{fontSize:'0.85rem', fontWeight:'600', color:'#A78BFA', textDecoration:'none'}}>
+          <h2 className='font-display' style={{fontSize:'1.3rem', margin:0}}>STARTED BY MEMBERS</h2>
+          <Link href='/create-community' className='hk-btn' style={{padding:'6px 14px', minHeight:'38px', fontSize:'0.85rem'}}>
             + Start one
           </Link>
         </div>
-        {created.length === 0 ? (
-          <div style={{border:'1px dashed #334155', borderRadius:'14px', padding:'24px 16px', textAlign:'center', color:'#64748B', fontSize:'0.9rem'}}>
+
+        {userCommunities.length === 0 ? (
+          <div className='hk-card' style={{padding:'24px 16px', textAlign:'center', color:'var(--muted)', borderStyle:'dashed'}}>
             No member communities yet. Be the first to start one.
           </div>
         ) : (
           <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-            {created.map(c => <Row key={c.slug} c={c} />)}
+            {userCommunities.map((c: any) => (
+              <Link key={c.slug} href={'/c/' + c.slug} className='hk-card hk-row' style={{['--row-glow' as any]: 'var(--c2)'}}>
+                <div className='hk-row-icon' style={{background:'var(--surface-2)', color:'var(--text)'}}>
+                  <CommunityIcon slug={c.slug} size={26} />
+                </div>
+                <div style={{flex:1, minWidth:0}}>
+                  <p style={{fontWeight:700, fontSize:'1rem', margin:'0 0 3px'}}>{c.name}</p>
+                  <p style={{fontSize:'0.85rem', color:'var(--muted)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
+                </div>
+                <span style={{color:'var(--faint)', display:'flex', flexShrink:0}}><ChevronIcon size={18} /></span>
+              </Link>
+            ))}
           </div>
         )}
       </div>
 
-      <footer style={{borderTop:'1px solid #1E293B', padding:'24px 16px', textAlign:'center', fontSize:'0.85rem', color:'#64748B'}}>
-        Hektiq 2026 — For everyone building from nothing
+      <footer style={{borderTop:'2px solid var(--border-soft)', padding:'24px 16px', textAlign:'center', color:'var(--muted)', fontSize:'0.85rem'}}>
+        Hektiq 2026. Built by the community.
       </footer>
     </main>
   )
