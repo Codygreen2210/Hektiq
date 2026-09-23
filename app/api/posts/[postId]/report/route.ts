@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 const REASONS: Record<string, string> = {
   bot: 'Bot or fake account',
-  ai: 'AI-generated content',
+  fake: 'Fake or copied content',
   spam: 'Spam or advertising',
   harassment: 'Harassment or hate',
   other: 'Something else'

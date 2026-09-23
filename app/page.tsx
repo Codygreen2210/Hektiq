@@ -2,8 +2,17 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Header from '../components/Header'
+import HeroScene from '../components/HeroScene'
 import { seededCommunities, seededBySlug } from '../lib/communities'
 import { CommunityIcon, ChevronIcon, CommentIcon } from '../components/Icons'
+
+const COLOR: Record<string, string> = {
+  'outdoors': '4',
+  'sports': '5',
+  'money-building': '3',
+  'garage': '1',
+  'art-makers': '2',
+}
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -51,100 +60,97 @@ export default function Home() {
     setSending(false)
   }
 
-  const label = { fontSize:'0.75rem', color:'#64748B', textTransform:'uppercase' as const, letterSpacing:'0.08em', margin:'0 0 14px' }
-  const section = { maxWidth:'1100px', margin:'0 auto', padding:'0 16px' }
-  const footLink = { color:'#A78BFA', textDecoration:'none' }
+  const label = { fontSize:'1.4rem', color:'var(--text)', margin:'0 0 14px' }
+  const section = { maxWidth:'1100px', margin:'0 auto', padding:'56px 16px 0' }
 
   return (
-    <main style={{background:'#080F14', color:'white', minHeight:'100vh', overflowX:'hidden'}}>
+    <main className='hk-dots' style={{minHeight:'100vh', overflowX:'hidden', color:'var(--text)'}}>
       <style>{`
-        .hk-hero-bg {
-          background-image:
-            radial-gradient(ellipse 60% 50% at 50% 0%, rgba(139,92,246,0.18), transparent 70%),
-            linear-gradient(rgba(148,163,184,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(148,163,184,0.06) 1px, transparent 1px);
-          background-size: 100% 100%, 44px 44px, 44px 44px;
-        }
-        .hk-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .hk-grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .hk-hero-title { font-size: 3.4rem; }
-        @media (max-width: 820px) {
-          .hk-grid-2, .hk-grid-3 { grid-template-columns: 1fr; }
-          .hk-hero-title { font-size: 2.3rem; }
-        }
-        .hk-card:hover { border-color: #334155 !important; background: #111A2E !important; }
+        .hk-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .hk-grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        @media (max-width: 820px) { .hk-grid-2, .hk-grid-3 { grid-template-columns: 1fr; } }
+
+        .hk-comm { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:8px; text-decoration:none; border:2px solid var(--ink); box-shadow: var(--shadow-hard); transition: transform .15s ease, box-shadow .15s ease, background-color .6s ease, color .6s ease; }
+        .hk-comm:hover { transform: translate(-2px,-2px); }
+        .hk-comm-title, .hk-comm-icon, .hk-comm-desc { color: var(--comm-on); transition: color .6s ease, text-shadow .6s ease; }
+
+        [data-theme='night'] .hk-comm { background: transparent !important; border-color: currentColor; box-shadow: 0 0 10px currentColor; }
+        [data-theme='night'] .hk-comm-title { color: var(--comm-glow); text-shadow: 0 0 10px var(--comm-glow); }
+        [data-theme='night'] .hk-comm-icon { color: var(--comm-glow); filter: drop-shadow(0 0 6px var(--comm-glow)); }
+        [data-theme='night'] .hk-comm-desc { color: var(--muted); }
+        [data-theme='night'] .hk-comm:hover { box-shadow: 0 0 18px currentColor; }
+
+        .hk-type { border-radius:6px; padding:8px 14px; min-height:40px; font-size:0.85rem; font-weight:600; cursor:pointer; border:2px solid var(--border-soft); background:transparent; color:var(--muted); }
+        .hk-type.active { border-color: var(--border); color: var(--text); background: var(--surface-2); }
       `}</style>
 
       <Header />
+      <HeroScene />
 
-      <section className='hk-hero-bg' style={{padding:'72px 16px 64px', textAlign:'center', borderBottom:'1px solid #1E293B'}}>
-        <p style={{display:'inline-block', fontSize:'0.8rem', color:'#A78BFA', border:'1px solid #3B2F6B', background:'rgba(139,92,246,0.08)', borderRadius:'999px', padding:'6px 14px', margin:'0 0 22px'}}>
-          No bots. No AI junk. Just people.
+      <div style={{textAlign:'center', padding:'0 16px 8px'}}>
+        <p style={{color:'var(--text)', fontSize:'1.2rem', fontWeight:600, lineHeight:'1.5', maxWidth:'540px', margin:'0 auto 8px'}}>
+          Your corner of the internet, run by the people in it.
         </p>
-        <h1 className='hk-hero-title' style={{fontFamily:'var(--font-sora)', fontWeight:'700', lineHeight:'1.15', margin:'0 auto 18px', maxWidth:'780px'}}>
-          A place for the community,{' '}
-          <span style={{background:'linear-gradient(to right, #8B5CF6, #06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'}}>built by the community.</span>
-        </h1>
-        <p style={{color:'#94A3B8', fontSize:'1.1rem', lineHeight:'1.7', maxWidth:'560px', margin:'0 auto 32px'}}>
-          Tell us what you want and we'll build it. Every feature on Hektiq starts with someone asking for it.
+        <p style={{color:'var(--muted)', fontSize:'1rem', lineHeight:'1.6', maxWidth:'520px', margin:'0 auto 26px'}}>
+          Tell us what you want and we'll build it.
         </p>
-        <div style={{display:'flex', gap:'12px', justifyContent:'center', flexWrap:'wrap'}}>
-          <Link href='/auth/signup' style={{background:'linear-gradient(to right, #8B5CF6, #06B6D4)', color:'white', borderRadius:'999px', padding:'13px 28px', fontWeight:'600', textDecoration:'none'}}>
-            Join free
-          </Link>
-          <a href='#suggest' style={{border:'1px solid #334155', color:'white', borderRadius:'999px', padding:'13px 28px', fontWeight:'600', textDecoration:'none'}}>
-            Suggest something
-          </a>
+        <div style={{display:'flex', gap:'14px', justifyContent:'center', flexWrap:'wrap'}}>
+          <Link href='/auth/signup' className='hk-btn'>Join free</Link>
+          <a href='#suggest' className='hk-btn-ghost'>Suggest something</a>
         </div>
-      </section>
+      </div>
 
-      <section style={{...section, padding:'56px 16px 0'}}>
-        <p style={label}>Pick your corner</p>
-        <div className='hk-grid-3' style={{marginBottom:'12px'}}>
-          {seededCommunities.map(c => (
-            <Link key={c.slug} href={'/c/' + c.slug} className='hk-card' style={{display:'flex', alignItems:'center', gap:'14px', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'14px', padding:'16px', textDecoration:'none'}}>
-              <div style={{width:'46px', height:'46px', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', background: c.accent + '1A', color: c.accent, flexShrink:0}}>
-                <CommunityIcon slug={c.slug} size={26} />
-              </div>
-              <div style={{flex:1, minWidth:0}}>
-                <p style={{fontFamily:'var(--font-sora)', fontWeight:'700', color:'#F8FAFC', margin:'0 0 2px'}}>{c.name}</p>
-                <p style={{fontSize:'0.8rem', color:'#94A3B8', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
-              </div>
-              <span style={{color:'#475569', display:'flex'}}><ChevronIcon size={16} /></span>
-            </Link>
-          ))}
-          <Link href='/communities' className='hk-card' style={{display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'1px dashed #334155', borderRadius:'14px', padding:'16px', textDecoration:'none', color:'#94A3B8', fontSize:'0.9rem', fontWeight:'600'}}>
-            See all communities
+      <section style={section}>
+        <h2 className='font-display' style={label}>PICK YOUR CORNER</h2>
+        <div className='hk-grid-3'>
+          {seededCommunities.map(c => {
+            const n = COLOR[c.slug] || '1'
+            const vars = { background:`var(--c${n})`, color:`var(--c${n})`, ['--comm-on' as any]:`var(--on-c${n})`, ['--comm-glow' as any]:`var(--c${n})` }
+            return (
+              <Link key={c.slug} href={'/c/' + c.slug} className='hk-comm' style={vars}>
+                <span className='hk-comm-icon' style={{display:'flex'}}>
+                  <CommunityIcon slug={c.slug} size={28} />
+                </span>
+                <div style={{flex:1, minWidth:0}}>
+                  <p className='font-display hk-comm-title' style={{fontSize:'1.45rem', lineHeight:1, margin:'0 0 3px'}}>{c.name.toUpperCase()}</p>
+                  <p className='hk-comm-desc' style={{fontSize:'0.8rem', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
+                </div>
+              </Link>
+            )
+          })}
+          <Link href='/communities' className='hk-card' style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'14px', textDecoration:'none', color:'var(--muted)', fontWeight:600, borderStyle:'dashed'}}>
+            See all communities <ChevronIcon size={16} />
           </Link>
         </div>
       </section>
 
-      <section style={{...section, padding:'56px 16px 0'}}>
-        <p style={label}>Latest from the community</p>
+      <section style={section}>
+        <h2 className='font-display' style={label}>LATEST FROM THE COMMUNITY</h2>
         {loadingPosts ? (
-          <p style={{color:'#64748B'}}>Loading...</p>
+          <p style={{color:'var(--muted)'}}>Loading...</p>
         ) : posts.length === 0 ? (
-          <div style={{border:'1px dashed #334155', borderRadius:'14px', padding:'28px 16px', textAlign:'center', color:'#64748B'}}>
+          <div className='hk-card' style={{padding:'28px 16px', textAlign:'center', color:'var(--muted)', borderStyle:'dashed'}}>
             It's quiet in here. Be the first to post.
           </div>
         ) : (
           <div className='hk-grid-2'>
             {posts.map(post => {
               const c = seededBySlug[post.community_id]
+              const n = COLOR[post.community_id] || '1'
               return (
-                <Link key={post.id} href={'/c/' + post.community_id + '/post/' + post.id} className='hk-card' style={{display:'block', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'14px', padding:'16px', textDecoration:'none'}}>
-                  <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.78rem', color:'#64748B', marginBottom:'8px'}}>
-                    <span style={{color: c ? c.accent : '#A78BFA', display:'flex', alignItems:'center', gap:'6px'}}>
+                <Link key={post.id} href={'/c/' + post.community_id + '/post/' + post.id} className='hk-card' style={{display:'block', padding:'16px', textDecoration:'none', color:'var(--text)'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.8rem', color:'var(--muted)', marginBottom:'8px'}}>
+                    <span style={{color:`var(--c${n})`, display:'flex', alignItems:'center', gap:'6px', fontWeight:600}}>
                       <CommunityIcon slug={post.community_id} size={16} />
                       {c ? c.name : post.community_id}
                     </span>
                     <span>· {timeAgo(post.created_at)}</span>
                   </div>
-                  <p style={{fontFamily:'var(--font-sora)', fontWeight:'700', color:'#F8FAFC', lineHeight:'1.4', margin:'0 0 6px', wordBreak:'break-word'}}>{post.title}</p>
-                  <p style={{fontSize:'0.85rem', color:'#94A3B8', lineHeight:'1.5', margin:'0 0 10px', wordBreak:'break-word'}}>
+                  <p style={{fontWeight:700, fontSize:'1.02rem', lineHeight:'1.4', margin:'0 0 6px', wordBreak:'break-word'}}>{post.title}</p>
+                  <p style={{fontSize:'0.88rem', color:'var(--muted)', lineHeight:'1.55', margin:'0 0 10px', wordBreak:'break-word'}}>
                     {(post.body || '').substring(0, 110)}{(post.body || '').length > 110 ? '...' : ''}
                   </p>
-                  <div style={{display:'flex', gap:'14px', fontSize:'0.78rem', color:'#64748B'}}>
+                  <div style={{display:'flex', gap:'14px', fontSize:'0.8rem', color:'var(--faint)'}}>
                     <span>▲ {post.upvotes || 0}</span>
                     <span style={{display:'flex', alignItems:'center', gap:'4px'}}><CommentIcon size={14} /> Discuss</span>
                   </div>
@@ -155,33 +161,33 @@ export default function Home() {
         )}
       </section>
 
-      <section style={{...section, padding:'56px 16px 0'}}>
-        <p style={label}>Why Hektiq</p>
+      <section style={section}>
+        <h2 className='font-display' style={label}>WHY HEKTIQ</h2>
         <div className='hk-grid-3'>
           {[
-            { t: 'Real people only', d: 'Bot accounts and AI-generated posts get cut. If you see one, report it and it goes.' },
-            { t: 'No karma farming', d: 'Posts rise because people find them useful, not because someone gamed the system.' },
-            { t: 'You decide what\'s next', d: 'Features come from the suggestion box below. Ask for it and we\'ll build it.' },
+            { t: 'REAL PEOPLE ONLY', d: 'One account, one vote. Fake accounts and spam get reported and removed.', n: '4' },
+            { t: 'NO KARMA FARMING', d: 'Posts rise because people find them useful, not because someone gamed the system.', n: '5' },
+            { t: 'YOU DECIDE WHAT\'S NEXT', d: 'Features come from the suggestion box below. Ask for it and we\'ll build it.', n: '1' },
           ].map(f => (
-            <div key={f.t} style={{background:'#0F172A', border:'1px solid #1E293B', borderRadius:'14px', padding:'18px'}}>
-              <p style={{fontFamily:'var(--font-sora)', fontWeight:'700', margin:'0 0 6px'}}>{f.t}</p>
-              <p style={{fontSize:'0.88rem', color:'#94A3B8', lineHeight:'1.6', margin:0}}>{f.d}</p>
+            <div key={f.t} className='hk-card' style={{padding:'18px', borderTop:`6px solid var(--c${f.n})`}}>
+              <p className='font-display' style={{fontSize:'1.35rem', margin:'0 0 6px'}}>{f.t}</p>
+              <p style={{fontSize:'0.9rem', color:'var(--muted)', lineHeight:'1.6', margin:0}}>{f.d}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section id='suggest' style={{maxWidth:'640px', margin:'0 auto', padding:'64px 16px 24px'}}>
-        <div style={{background:'#0F172A', border:'1px solid #1E293B', borderRadius:'18px', padding:'24px'}}>
-          <h2 style={{fontFamily:'var(--font-sora)', fontSize:'1.4rem', fontWeight:'700', margin:'0 0 6px'}}>Suggestion box</h2>
-          <p style={{color:'#94A3B8', fontSize:'0.92rem', lineHeight:'1.6', margin:'0 0 20px'}}>
+        <div className='hk-card' style={{padding:'24px', borderColor:'var(--border)', boxShadow:'var(--shadow-hard)'}}>
+          <h2 className='font-display' style={{fontSize:'2rem', margin:'0 0 6px'}}>SUGGESTION BOX</h2>
+          <p style={{color:'var(--muted)', fontSize:'0.95rem', lineHeight:'1.6', margin:'0 0 20px'}}>
             Something you want, something that's broken, or something that bugs you. It goes straight to me, and I read every one.
           </p>
 
           {sent ? (
-            <div style={{background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.35)', borderRadius:'12px', padding:'16px', color:'#6EE7B7'}}>
+            <div style={{border:'2px solid var(--c4)', borderRadius:'8px', padding:'16px', color:'var(--text)'}}>
               Got it. Thanks for helping build this place.
-              <button onClick={() => setSent(false)} style={{display:'block', marginTop:'10px', background:'none', border:'none', color:'#A78BFA', cursor:'pointer', padding:0, fontSize:'0.88rem'}}>
+              <button onClick={() => setSent(false)} style={{display:'block', marginTop:'10px', background:'none', border:'none', color:'var(--c5)', cursor:'pointer', padding:0, fontSize:'0.9rem', fontWeight:600}}>
                 Send another
               </button>
             </div>
@@ -189,13 +195,7 @@ export default function Home() {
             <>
               <div style={{display:'flex', gap:'8px', marginBottom:'14px', flexWrap:'wrap'}}>
                 {[['idea', 'Idea'], ['complaint', 'Complaint'], ['bug', 'Something\'s broken']].map(([k, l]) => (
-                  <button
-                    key={k}
-                    onClick={() => setType(k)}
-                    style={{borderRadius:'999px', padding:'8px 16px', minHeight:'40px', fontSize:'0.85rem', fontWeight:'600', cursor:'pointer', border:'1px solid', borderColor: type === k ? '#8B5CF6' : '#334155', color: type === k ? '#C4B5FD' : '#94A3B8', background: type === k ? 'rgba(139,92,246,0.1)' : 'transparent'}}
-                  >
-                    {l}
-                  </button>
+                  <button key={k} onClick={() => setType(k)} className={'hk-type' + (type === k ? ' active' : '')}>{l}</button>
                 ))}
               </div>
 
@@ -205,7 +205,8 @@ export default function Home() {
                 placeholder='I wish Hektiq had...'
                 rows={5}
                 maxLength={2000}
-                style={{width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'12px', padding:'14px', color:'white', fontSize:'0.95rem', outline:'none', boxSizing:'border-box', resize:'vertical', lineHeight:'1.6', marginBottom:'12px'}}
+                className='hk-input'
+                style={{resize:'vertical', lineHeight:'1.6', marginBottom:'12px'}}
               />
 
               <input
@@ -213,7 +214,8 @@ export default function Home() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder='Your email, if you want a reply (optional)'
-                style={{width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'12px', padding:'12px 14px', color:'white', fontSize:'0.9rem', outline:'none', boxSizing:'border-box', marginBottom:'12px'}}
+                className='hk-input'
+                style={{marginBottom:'12px'}}
               />
 
               <input
@@ -226,13 +228,9 @@ export default function Home() {
                 style={{position:'absolute', left:'-9999px', width:'1px', height:'1px', opacity:0}}
               />
 
-              {error && <p style={{color:'#FCA5A5', fontSize:'0.85rem', margin:'0 0 12px'}}>{error}</p>}
+              {error && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'0 0 12px'}}>{error}</p>}
 
-              <button
-                onClick={sendSuggestion}
-                disabled={sending}
-                style={{width:'100%', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', border:'none', borderRadius:'999px', padding:'14px', color:'white', fontSize:'0.95rem', fontWeight:'600', cursor:'pointer'}}
-              >
+              <button onClick={sendSuggestion} disabled={sending} className='hk-btn' style={{width:'100%'}}>
                 {sending ? 'Sending...' : 'Send it'}
               </button>
             </>
@@ -241,18 +239,18 @@ export default function Home() {
       </section>
 
       <section style={{maxWidth:'640px', margin:'0 auto', padding:'8px 16px 64px', textAlign:'center'}}>
-        <p style={{color:'#64748B', fontSize:'0.88rem', lineHeight:'1.7', margin:0}}>
+        <p style={{color:'var(--muted)', fontSize:'0.9rem', lineHeight:'1.7', margin:0}}>
           Built by one guy in Louisiana, after work, one piece at a time.
         </p>
-        <p style={{fontSize:'0.88rem', margin:'6px 0 0'}}>
-          <a href='https://substack.com/@hektiqmind' target='_blank' rel='noopener noreferrer' style={footLink}>Read the build journal</a>
-          <span style={{color:'#475569'}}>{' · '}</span>
-          <a href='https://x.com/HektiqMind' target='_blank' rel='noopener noreferrer' style={footLink}>Follow on X</a>
+        <p style={{fontSize:'0.9rem', margin:'6px 0 0', fontWeight:600}}>
+          <a href='https://substack.com/@hektiqmind' target='_blank' rel='noopener noreferrer' style={{color:'var(--c5)', textDecoration:'none'}}>Read the build journal</a>
+          <span style={{color:'var(--faint)'}}>{' · '}</span>
+          <a href='https://x.com/HektiqMind' target='_blank' rel='noopener noreferrer' style={{color:'var(--c1)', textDecoration:'none'}}>Follow on X</a>
         </p>
       </section>
 
-      <footer style={{borderTop:'1px solid #1E293B', padding:'24px 16px', textAlign:'center', color:'#64748B', fontSize:'0.85rem'}}>
-        Hektiq 2026 — For everyone building from nothing
+      <footer style={{borderTop:'2px solid var(--border-soft)', padding:'24px 16px', textAlign:'center', color:'var(--muted)', fontSize:'0.85rem'}}>
+        Hektiq 2026. Built by the community.
       </footer>
     </main>
   )

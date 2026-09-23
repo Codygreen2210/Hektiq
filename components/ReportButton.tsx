@@ -4,7 +4,7 @@ import { Flag } from '@phosphor-icons/react'
 
 const REASONS = [
   { key: 'bot', label: 'Bot or fake account' },
-  { key: 'ai', label: 'AI-generated content' },
+  { key: 'fake', label: 'Fake or copied content' },
   { key: 'spam', label: 'Spam or advertising' },
   { key: 'harassment', label: 'Harassment or hate' },
   { key: 'other', label: 'Something else' },
@@ -45,15 +45,12 @@ export default function ReportButton({ postId }: { postId: string }) {
   }
 
   if (done) {
-    return <span style={{fontSize:'0.8rem', color:'#6EE7B7'}}>Reported. Thanks for keeping this place clean.</span>
+    return <span style={{fontSize:'0.85rem', color:'var(--c4)', fontWeight:600}}>Reported. Thanks for keeping this place clean.</span>
   }
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        style={{display:'inline-flex', alignItems:'center', gap:'6px', background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}}
-      >
+      <button onClick={() => setOpen(true)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>
         <Flag size={15} weight='duotone' aria-hidden='true' />
         Report
       </button>
@@ -61,23 +58,23 @@ export default function ReportButton({ postId }: { postId: string }) {
       {open && (
         <div
           onClick={close}
-          style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:50, display:'flex', alignItems:'flex-end', justifyContent:'center', padding:'16px'}}
+          style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:50, display:'flex', alignItems:'flex-end', justifyContent:'center', padding:'16px'}}
         >
           <div
             onClick={e => e.stopPropagation()}
             role='dialog'
             aria-label='Report this post'
-            style={{width:'100%', maxWidth:'440px', background:'#0F172A', border:'1px solid #334155', borderRadius:'18px', padding:'20px', marginBottom:'env(safe-area-inset-bottom)'}}
+            style={{width:'100%', maxWidth:'440px', background:'var(--bg)', color:'var(--text)', border:'2px solid var(--border)', borderRadius:'12px', padding:'20px', boxShadow:'var(--shadow-hard)'}}
           >
-            <p style={{fontFamily:'var(--font-sora)', fontWeight:'700', fontSize:'1.1rem', margin:'0 0 4px', color:'white'}}>Report this post</p>
-            <p style={{color:'#94A3B8', fontSize:'0.85rem', margin:'0 0 16px'}}>What's wrong with it?</p>
+            <p className='font-display' style={{fontSize:'1.6rem', margin:'0 0 2px'}}>REPORT THIS POST</p>
+            <p style={{color:'var(--muted)', fontSize:'0.9rem', margin:'0 0 16px'}}>What's wrong with it?</p>
 
             <div style={{display:'flex', flexDirection:'column', gap:'8px', marginBottom:'14px'}}>
               {REASONS.map(r => (
                 <button
                   key={r.key}
                   onClick={() => { setReason(r.key); setError('') }}
-                  style={{textAlign:'left', padding:'12px 14px', borderRadius:'12px', fontSize:'0.9rem', cursor:'pointer', border:'1px solid', borderColor: reason === r.key ? '#8B5CF6' : '#334155', background: reason === r.key ? 'rgba(139,92,246,0.1)' : 'transparent', color: reason === r.key ? '#C4B5FD' : '#E2E8F0'}}
+                  style={{textAlign:'left', padding:'12px 14px', borderRadius:'8px', fontSize:'0.92rem', fontWeight:600, cursor:'pointer', border:'2px solid', borderColor: reason === r.key ? 'var(--border)' : 'var(--border-soft)', background: reason === r.key ? 'var(--surface-2)' : 'var(--surface)', color:'var(--text)'}}
                 >
                   {r.label}
                 </button>
@@ -90,23 +87,15 @@ export default function ReportButton({ postId }: { postId: string }) {
               placeholder='Anything else I should know? (optional)'
               rows={2}
               maxLength={1000}
-              style={{width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'12px', padding:'12px', color:'white', fontSize:'0.9rem', outline:'none', boxSizing:'border-box', resize:'vertical', marginBottom:'12px'}}
+              className='hk-input'
+              style={{resize:'vertical', marginBottom:'12px'}}
             />
 
-            {error && <p style={{color:'#FCA5A5', fontSize:'0.85rem', margin:'0 0 12px'}}>{error}</p>}
+            {error && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'0 0 12px'}}>{error}</p>}
 
             <div style={{display:'flex', gap:'10px'}}>
-              <button
-                onClick={close}
-                style={{flex:1, background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'12px', fontSize:'0.9rem', cursor:'pointer'}}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submit}
-                disabled={sending}
-                style={{flex:1, background:'linear-gradient(to right, #8B5CF6, #06B6D4)', border:'none', color:'white', borderRadius:'999px', padding:'12px', fontSize:'0.9rem', fontWeight:'600', cursor:'pointer'}}
-              >
+              <button onClick={close} className='hk-btn-ghost' style={{flex:1}}>Cancel</button>
+              <button onClick={submit} disabled={sending} className='hk-btn' style={{flex:1}}>
                 {sending ? 'Sending...' : 'Send report'}
               </button>
             </div>

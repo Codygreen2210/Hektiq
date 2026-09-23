@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { Sora, Inter } from 'next/font/google';
+import { Sora, Inter, Bebas_Neue } from 'next/font/google';
 import './globals.css';
+import './theme.css';
 
 const sora = Sora({
   variable: '--font-sora',
@@ -14,15 +15,36 @@ const inter = Inter({
   weight: ['400', '500', '600'],
 });
 
+const bebas = Bebas_Neue({
+  variable: '--font-bebas',
+  subsets: ['latin'],
+  weight: ['400'],
+});
+
 export const metadata: Metadata = {
-  title: 'Hektiq - Real People. Deeper Discussions.',
-  description: 'For everyone building from nothing. Money. Business. Building. One place. No gatekeeping.',
+  title: 'Hektiq - Your corner of the internet',
+  description: 'Your corner of the internet, run by the people in it. Outdoors, sports, money, garage, and art communities built by the people who use them.',
 };
+
+const themeScript = `
+(function() {
+  try {
+    var saved = localStorage.getItem('hektiq_theme');
+    var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'day');
+  }
+})();
+`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang='en' className={sora.variable + ' ' + inter.variable}>
-      <body className='min-h-screen bg-[#080F14] text-white antialiased'>
+    <html lang='en' className={sora.variable + ' ' + inter.variable + ' ' + bebas.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className='min-h-screen antialiased'>
         {children}
       </body>
     </html>

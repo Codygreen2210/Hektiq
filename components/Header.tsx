@@ -2,6 +2,16 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
+import ThemeToggle from './ThemeToggle'
+
+function LogoMark() {
+  const colors = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)']
+  return (
+    <div style={{width:'28px', height:'28px', borderRadius:'6px', overflow:'hidden', display:'flex', flexDirection:'column', transform:'skewX(-8deg)', border:'2px solid var(--ink)', flexShrink:0}}>
+      {colors.map(c => <div key={c} style={{flex:1, background:c, transition:'background 0.6s ease'}} />)}
+    </div>
+  )
+}
 
 export default function Header() {
   const [username, setUsername] = useState<string | null>(null)
@@ -32,7 +42,7 @@ export default function Header() {
   }
 
   return (
-    <header style={{borderBottom:'1px solid #1E293B', background:'rgba(8,15,20,0.92)', backdropFilter:'blur(8px)', position:'sticky', top:0, zIndex:20}}>
+    <header style={{borderBottom:'2px solid var(--border-soft)', background:'var(--bg)', position:'sticky', top:0, zIndex:20, transition:'background 0.6s ease, border-color 0.6s ease'}}>
       <style>{`
         .hk-desktop { display: flex; }
         .hk-mobile { display: none; }
@@ -42,13 +52,14 @@ export default function Header() {
         }
       `}</style>
 
-      <div style={{maxWidth:'1100px', margin:'0 auto', padding:'12px 16px', display:'flex', alignItems:'center', gap:'16px'}}>
-        <Link href='/' style={{fontSize:'1.35rem', fontWeight:'700', fontFamily:'var(--font-sora)', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', textDecoration:'none', flexShrink:0}}>
-          Hektiq
+      <div style={{maxWidth:'1100px', margin:'0 auto', padding:'10px 16px', display:'flex', alignItems:'center', gap:'14px'}}>
+        <Link href='/' style={{display:'flex', alignItems:'center', gap:'10px', textDecoration:'none', color:'var(--text)', flexShrink:0}}>
+          <LogoMark />
+          <span className='font-display' style={{fontSize:'1.7rem', lineHeight:1}}>HEKTIQ</span>
         </Link>
 
         <div className='hk-desktop' style={{flex:1, justifyContent:'center'}}>
-          <div style={{display:'flex', alignItems:'center', gap:'10px', width:'100%', maxWidth:'460px', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'999px', padding:'0 16px', height:'42px', color:'#64748B'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'10px', width:'100%', maxWidth:'440px', background:'var(--surface)', border:'2px solid var(--border-soft)', borderRadius:'8px', padding:'0 14px', height:'42px', color:'var(--faint)'}}>
             <MagnifyingGlass size={18} weight='bold' aria-hidden='true' />
             <input
               value={query}
@@ -56,46 +67,44 @@ export default function Header() {
               onKeyDown={handleSearch}
               placeholder='Search Hektiq'
               aria-label='Search Hektiq'
-              style={{flex:1, background:'transparent', border:'none', outline:'none', color:'white', fontSize:'0.9rem'}}
+              style={{flex:1, background:'transparent', border:'none', outline:'none', color:'var(--text)', fontSize:'0.9rem'}}
             />
           </div>
         </div>
 
         <div style={{flex:1}} className='hk-mobile' />
 
-        <nav style={{display:'flex', alignItems:'center', gap:'12px', flexShrink:0}}>
-          <Link href='/communities' className='hk-desktop' style={{color:'#94A3B8', textDecoration:'none', fontSize:'0.875rem', padding:'8px 4px'}}>
+        <nav style={{display:'flex', alignItems:'center', gap:'10px', flexShrink:0}}>
+          <Link href='/communities' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>
             Communities
           </Link>
 
-          <Link href='/search' className='hk-mobile' aria-label='Search' style={{color:'#94A3B8', width:'40px', height:'40px', alignItems:'center', justifyContent:'center', borderRadius:'50%'}}>
+          <Link href='/search' className='hk-mobile' aria-label='Search' style={{color:'var(--muted)', width:'40px', height:'40px', alignItems:'center', justifyContent:'center'}}>
             <MagnifyingGlass size={22} weight='bold' />
           </Link>
+
+          <ThemeToggle />
 
           {username ? (
             <>
               <Link href={'/profile/' + username} style={{display:'flex', alignItems:'center', gap:'8px', textDecoration:'none'}}>
                 {avatar ? (
-                  <img src={avatar} alt={username} style={{width:'34px', height:'34px', borderRadius:'50%', objectFit:'cover', border:'1px solid #334155'}} />
+                  <img src={avatar} alt={username} style={{width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
                 ) : (
-                  <div style={{width:'34px', height:'34px', borderRadius:'50%', background:'linear-gradient(135deg, #8B5CF6, #06B6D4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.8rem', fontWeight:'700', color:'white'}}>
+                  <div style={{width:'36px', height:'36px', borderRadius:'50%', background:'var(--c2)', color:'var(--on-c2)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', fontWeight:700}}>
                     {username.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className='hk-desktop' style={{color:'#E2E8F0', fontSize:'0.875rem', fontWeight:'600'}}>{username}</span>
+                <span className='hk-desktop' style={{color:'var(--text)', fontSize:'0.9rem', fontWeight:600}}>{username}</span>
               </Link>
-              <button
-                onClick={handleLogout}
-                className='hk-desktop'
-                style={{background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 16px', fontSize:'0.85rem', cursor:'pointer'}}
-              >
-                Logout
+              <button onClick={handleLogout} className='hk-desktop hk-btn-ghost' style={{padding:'6px 14px', minHeight:'38px', fontSize:'0.85rem'}}>
+                Log out
               </button>
             </>
           ) : (
             <>
-              <Link href='/auth/login' className='hk-desktop' style={{color:'#94A3B8', textDecoration:'none', fontSize:'0.875rem', padding:'8px 4px'}}>Login</Link>
-              <Link href='/auth/signup' style={{background:'linear-gradient(to right, #8B5CF6, #06B6D4)', color:'white', borderRadius:'999px', padding:'9px 18px', fontWeight:'600', textDecoration:'none', fontSize:'0.85rem', whiteSpace:'nowrap'}}>
+              <Link href='/auth/login' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>Log in</Link>
+              <Link href='/auth/signup' className='hk-btn' style={{padding:'8px 16px', minHeight:'40px', fontSize:'0.9rem'}}>
                 Join
               </Link>
             </>

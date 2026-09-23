@@ -1,0 +1,181 @@
+:root,
+[data-theme='day'] {
+  --bg: #FBF1DC;
+  --surface: #FFF8EA;
+  --surface-2: #F4E7CD;
+  --border: #2A1F16;
+  --border-soft: #E2D2B3;
+  --ink: #2A1F16;
+  --text: #2A1F16;
+  --muted: #6B5A48;
+  --faint: #9A8870;
+
+  --c1: #E4502F;
+  --c2: #F08A24;
+  --c3: #F2C230;
+  --c4: #2FA36B;
+  --c5: #2B84D6;
+
+  --on-c1: #FFF7EA;
+  --on-c2: #2A1400;
+  --on-c3: #3A2C00;
+  --on-c4: #0C2B1B;
+  --on-c5: #082440;
+
+  --sun1: #F2C230;
+  --sun2: #F08A24;
+  --dot: rgba(228, 80, 47, 0.13);
+
+  --btn-bg: #E4502F;
+  --btn-fg: #FFF7EA;
+  --shadow-hard: 4px 4px 0 #2A1F16;
+  --glow: none;
+  --glow-text: none;
+}
+
+[data-theme='night'] {
+  --bg: #0E0719;
+  --surface: #160C26;
+  --surface-2: #1E1233;
+  --border: #FF3D9A;
+  --border-soft: #2E1F47;
+  --ink: #FF3D9A;
+  --text: #F6E9FF;
+  --muted: #B9A4D6;
+  --faint: #7D6A9C;
+
+  --c1: #FF3D9A;
+  --c2: #FF7A3D;
+  --c3: #FFE14D;
+  --c4: #27F5B0;
+  --c5: #2DD4FF;
+
+  --on-c1: #1A0620;
+  --on-c2: #1F0A00;
+  --on-c3: #1F1800;
+  --on-c4: #00241A;
+  --on-c5: #00202B;
+
+  --sun1: #FF3D9A;
+  --sun2: #7A2BFF;
+  --dot: rgba(122, 43, 255, 0.18);
+
+  --btn-bg: #FF3D9A;
+  --btn-fg: #1A0620;
+  --shadow-hard: 0 0 14px rgba(255, 61, 154, 0.55);
+  --glow: 0 0 12px currentColor;
+  --glow-text: 0 0 14px currentColor;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+
+.font-display {
+  font-family: var(--font-bebas), 'Arial Narrow', sans-serif;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+}
+
+.hk-dots {
+  background-image: radial-gradient(var(--dot) 1.4px, transparent 1.6px);
+  background-size: 12px 12px;
+}
+
+.hk-card {
+  background: var(--surface);
+  border: 2px solid var(--border-soft);
+  border-radius: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.hk-card:hover {
+  border-color: var(--border);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hard);
+}
+
+.hk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 20px;
+  min-height: 44px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-hard);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.hk-btn:hover { transform: translate(-1px, -1px); }
+.hk-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+.hk-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 10px 20px;
+  min-height: 44px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.hk-btn-ghost:hover { border-color: var(--border); }
+
+.hk-input {
+  width: 100%;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.hk-input:focus { border-color: var(--c5); }
+.hk-input::placeholder { color: var(--faint); }
+
+.hk-stripe {
+  height: 9px;
+  transform-origin: left;
+  animation: hk-paint 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: background-color 0.6s ease, box-shadow 0.6s ease;
+}
+[data-theme='night'] .hk-stripe { box-shadow: 0 0 12px currentColor; }
+.hk-stripe.from-right { transform-origin: right; }
+
+.hk-neon-text { color: var(--c1); transition: color 0.6s ease, text-shadow 0.6s ease; }
+[data-theme='night'] .hk-neon-text { text-shadow: var(--glow-text); }
+
+@keyframes hk-paint { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hk-flicker-on {
+  0%, 19%, 21%, 23%, 55%, 57%, 100% { opacity: 1; }
+  20%, 22%, 56% { opacity: 0.3; }
+}
+@keyframes hk-flicker-off {
+  0% { opacity: 1; } 15% { opacity: 0.25; } 25% { opacity: 0.9; } 35% { opacity: 0.15; } 100% { opacity: 1; }
+}
+@keyframes hk-pop {
+  0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); }
+}
+.hk-pop { animation: hk-pop 0.3s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
