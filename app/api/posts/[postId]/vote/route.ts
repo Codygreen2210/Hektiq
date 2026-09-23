@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { getUserFromRequest } from '../../../../../lib/serverAuth'
+import { getUserFromRequest, VERIFY_MESSAGE } from '../../../../../lib/serverAuth'
 
 export async function POST(
   request: Request,
@@ -21,6 +21,7 @@ export async function POST(
 
     const user = await getUserFromRequest(request, supabase)
     if (!user) return NextResponse.json({ error: 'Log in to vote.' })
+    if (!user.email_verified) return NextResponse.json({ error: VERIFY_MESSAGE })
 
     const value = direction === 'up' ? 1 : -1
 

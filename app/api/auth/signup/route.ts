@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendVerificationEmail, baseUrlFrom } from '../../../../lib/verifyEmail'
 
 export async function POST(request: Request) {
   try {
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
       username: cleanName,
       password_hash: 'managed_by_supabase_auth',
       karma: 0,
-      is_admin: false
+      is_admin: false,
+      email_verified: false
     })
 
     if (profileError) {
@@ -53,29 +55,12 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Couldn\'t finish creating your account. Try again.' })
     }
 
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.RESEND_API_KEY
-      },
-      body: JSON.stringify({
-        from: 'Hektiq <noreply@hektiq.com>',
-        to: cleanEmail,
-        subject: 'Welcome to Hektiq',
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #080F14; color: white; border-radius: 16px;">
-            <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #A78BFA;">Hektiq</h1>
-            <h2 style="font-size: 20px; color: white; margin-bottom: 16px;">Welcome, ${cleanName}.</h2>
-            <p style="color: #94A3B8; margin-bottom: 32px; line-height: 1.6;">You're in. Come join the conversation.</p>
-            <a href="${process.env.NEXT_PUBLIC_SITE_URL}/auth/login" style="background: #8B5CF6; color: white; padding: 14px 28px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">
-              Go to Hektiq
-            </a>
-            <p style="color: #475569; font-size: 12px; margin-top: 32px;">If you didn't create this account you can ignore this email.</p>
-          </div>
-        `
-      })
-    }).catch(() => {})
+    await sendVerificationEmail(supabase, {
+      userId: data.user.id,
+      email: cleanEmail,
+      username: cleanName,
+      baseUrl: baseUrlFrom(request)
+    })
 
     return Response.json({ ok: true })
   } catch (e) {

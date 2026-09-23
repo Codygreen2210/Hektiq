@@ -11,7 +11,7 @@ export async function getUserFromRequest(request: Request, supabase: SupabaseCli
 
     const { data: profile } = await supabase
       .from('users')
-      .select('id, username, avatar_url')
+      .select('id, username, avatar_url, email_verified')
       .eq('id', user.id)
       .single()
 
@@ -20,6 +20,8 @@ export async function getUserFromRequest(request: Request, supabase: SupabaseCli
     return null
   }
 }
+
+export const VERIFY_MESSAGE = 'Verify your email first. Check your inbox for the link, or resend it from the banner at the top.'
 
 export async function attachAuthors(rows: any[], supabase: SupabaseClient) {
   const ids = Array.from(new Set(rows.map(r => r.author_id).filter(Boolean)))

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { getUserFromRequest } from '../../../lib/serverAuth'
+import { getUserFromRequest, VERIFY_MESSAGE } from '../../../lib/serverAuth'
 import { seededCommunities } from '../../../lib/communities'
 
 function db() {
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const supabase = db()
     const user = await getUserFromRequest(request, supabase)
     if (!user) return NextResponse.json({ error: 'Log in to start a community.' })
+    if (!user.email_verified) return NextResponse.json({ error: VERIFY_MESSAGE })
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const { count } = await supabase

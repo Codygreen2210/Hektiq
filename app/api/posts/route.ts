@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { getUserFromRequest, attachAuthors } from '../../../lib/serverAuth'
+import { getUserFromRequest, attachAuthors, VERIFY_MESSAGE } from '../../../lib/serverAuth'
 
 function db() {
   return createClient(
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const supabase = db()
     const user = await getUserFromRequest(request, supabase)
     if (!user) return NextResponse.json({ error: 'Log in to post.' })
+    if (!user.email_verified) return NextResponse.json({ error: VERIFY_MESSAGE })
 
     const { data, error } = await supabase
       .from('posts')
