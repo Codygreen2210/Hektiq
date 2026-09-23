@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ username: string }> }
@@ -15,11 +17,13 @@ export async function GET(
 
     const { data: profile, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, username, bio, avatar_url, karma, is_admin, email_verified, created_at')
       .eq('username', username)
       .single()
 
-    if (error) return NextResponse.json({ error: error.message })
+    if (error || !profile) {
+      return NextResponse.json({ error: 'User not found' }, { headers: { 'Cache-Control': 'no-store' } })
+    }
 
     const { data: posts } = await supabase
       .from('posts')
@@ -28,8 +32,10 @@ export async function GET(
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
 
-    return NextResponse.json({ profile, posts: posts || [] })
-
+    return NextResponse.json(
+      { profile, posts: posts || [] },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
   } catch (e) {
     return NextResponse.json({ error: 'Something went wrong' })
   }

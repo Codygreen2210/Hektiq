@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MagnifyingGlass, EnvelopeSimple } from '@phosphor-icons/react'
 import ThemeToggle from './ThemeToggle'
 import { getAuthHeader } from '../lib/authToken'
@@ -22,19 +22,33 @@ export default function Header() {
   const [resendMsg, setResendMsg] = useState('')
   const [query, setQuery] = useState('')
 
+  const loadProfile = useCallback((u: string) => {
+    fetch('/api/profile/' + encodeURIComponent(u), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.profile) return
+        setAvatar(data.profile.avatar_url || null)
+        setUnverified(data.profile.email_verified === false)
+      })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     const u = localStorage.getItem('hektiq_username')
-    if (u) {
-      setUsername(u)
-      fetch('/api/profile/' + u)
-        .then(r => r.json())
-        .then(data => {
-          if (data.profile?.avatar_url) setAvatar(data.profile.avatar_url)
-          if (data.profile && data.profile.email_verified === false) setUnverified(true)
-        })
-        .catch(console.error)
+    if (!u) return
+    setUsername(u)
+    loadProfile(u)
+
+    function recheck() {
+      if (document.visibilityState === 'visible') loadProfile(u as string)
     }
-  }, [])
+    document.addEventListener('visibilitychange', recheck)
+    window.addEventListener('focus', recheck)
+    return () => {
+      document.removeEventListener('visibilitychange', recheck)
+      window.removeEventListener('focus', recheck)
+    }
+  }, [loadProfile])
 
   function handleLogout() {
     localStorage.removeItem('hektiq_username')
@@ -55,7 +69,7 @@ export default function Header() {
       const auth = await getAuthHeader()
       const res = await fetch('/api/auth/resend-verification', { method: 'POST', headers: { ...auth } })
       const data = await res.json()
-      if (data.already) { setUnverified(false); return }
+      if (data.already) { setUnverified(false); setResendState(''); return }
       if (data.error) { setResendMsg(data.error); setResendState('') }
       else setResendState('sent')
     } catch (e) {
