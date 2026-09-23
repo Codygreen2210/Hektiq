@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
+import { randomBytes } from 'crypto'
 import { sendVerificationEmail, baseUrlFrom } from '../../../../lib/verifyEmail'
 
 export async function POST(request: Request) {
   try {
-    const { email, password, username } = await request.json()
+    const { email, password, username, wantsUpdates } = await request.json()
 
     const cleanEmail = (email || '').trim().toLowerCase()
     const cleanName = (username || '').trim().toLowerCase()
@@ -53,6 +54,17 @@ export async function POST(request: Request) {
     if (profileError) {
       await supabase.auth.admin.deleteUser(data.user.id)
       return Response.json({ error: 'Couldn\'t finish creating your account. Try again.' })
+    }
+
+    if (wantsUpdates === true) {
+      await supabase.from('update_subscribers').upsert({
+        email: cleanEmail,
+        user_id: data.user.id,
+        subscribed: true,
+        unsubscribe_token: randomBytes(24).toString('hex'),
+        source: 'signup',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email' })
     }
 
     await sendVerificationEmail(supabase, {
