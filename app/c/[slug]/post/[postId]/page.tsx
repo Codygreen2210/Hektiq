@@ -5,8 +5,16 @@ import Header from '../../../../../components/Header'
 import ReportButton from '../../../../../components/ReportButton'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
-import { CommunityIcon } from '../../../../../components/Icons'
-import { Trash } from '@phosphor-icons/react'
+import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
+import { Trash, ArrowLeft } from '@phosphor-icons/react'
+
+const COLOR: Record<string, string> = {
+  'outdoors': '4',
+  'sports': '5',
+  'money-building': '3',
+  'garage': '1',
+  'art-makers': '2',
+}
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -16,35 +24,32 @@ function timeAgo(date: string) {
   return Math.floor(s / 86400) + 'd ago'
 }
 
-function Author({ author, date, size = 28 }: { author: any; date: string; size?: number }) {
+function Author({ author, date, size = 30 }: { author: any; date: string; size?: number }) {
   const name = author?.username
   const avatar = name ? (
     author.avatar_url ? (
-      <img src={author.avatar_url} alt='' style={{width:size, height:size, borderRadius:'50%', objectFit:'cover'}} />
+      <img src={author.avatar_url} alt='' style={{width:size, height:size, borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
     ) : (
-      <div style={{width:size, height:size, borderRadius:'50%', background:'linear-gradient(135deg, #8B5CF6, #06B6D4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:size * 0.42, fontWeight:'700', color:'white'}}>
+      <div style={{width:size, height:size, borderRadius:'50%', background:'var(--c2)', color:'var(--on-c2)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:size * 0.42, fontWeight:800}}>
         {name.charAt(0).toUpperCase()}
       </div>
     )
   ) : (
-    <div style={{width:size, height:size, borderRadius:'50%', background:'#1E293B'}} />
+    <div style={{width:size, height:size, borderRadius:'50%', background:'var(--surface-2)', border:'2px solid var(--border-soft)'}} />
   )
 
   return (
-    <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.82rem', minWidth:0}}>
+    <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.85rem', minWidth:0}}>
       {name ? <Link href={'/profile/' + name} style={{display:'flex'}}>{avatar}</Link> : avatar}
       {name ? (
-        <Link href={'/profile/' + name} style={{color:'#E2E8F0', fontWeight:'600', textDecoration:'none'}}>{name}</Link>
+        <Link href={'/profile/' + name} style={{color:'var(--text)', fontWeight:700, textDecoration:'none'}}>{name}</Link>
       ) : (
-        <span style={{color:'#64748B'}}>unknown</span>
+        <span style={{color:'var(--faint)'}}>unknown</span>
       )}
-      <span style={{color:'#64748B'}}>· {timeAgo(date)}</span>
+      <span style={{color:'var(--faint)'}}>· {timeAgo(date)}</span>
     </div>
   )
 }
-
-const smallBtn = {display:'inline-flex', alignItems:'center', gap:'6px', background:'transparent', border:'1px solid #334155', color:'#94A3B8', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', cursor:'pointer', minHeight:'36px'}
-const dangerBtn = {background:'#DC2626', border:'none', color:'white', borderRadius:'999px', padding:'7px 14px', fontSize:'0.8rem', fontWeight:'600', cursor:'pointer', minHeight:'36px'}
 
 export default function PostPage({ params }: { params: Promise<{ slug: string; postId: string }> }) {
   const { slug, postId } = use(params)
@@ -61,8 +66,13 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [deleteError, setDeleteError] = useState('')
   const [confirmComment, setConfirmComment] = useState<string | null>(null)
   const [deletingComment, setDeletingComment] = useState<string | null>(null)
+  const [myVote, setMyVote] = useState<'up' | 'down' | null>(null)
+  const [voteMsg, setVoteMsg] = useState('')
+  const [pop, setPop] = useState<'' | 'up' | 'down'>('')
 
   const community = seededBySlug[slug]
+  const n = COLOR[slug] || '2'
+  const accent = `var(--c${n})`
 
   useEffect(() => {
     const u = localStorage.getItem('hektiq_username')
@@ -89,10 +99,57 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
       } catch (e) {
         console.error(e)
       }
+      if (u) {
+        try {
+          const auth = await getAuthHeader()
+          const vr = await fetch('/api/posts/my-votes?ids=' + postId, { headers: { ...auth } })
+          const vd = await vr.json()
+          setMyVote(vd.votes?.[postId] || null)
+        } catch (e) {}
+      }
       setLoading(false)
     }
     load()
   }, [postId])
+
+  async function handleVote(direction: 'up' | 'down') {
+    if (!me) {
+      setVoteMsg('Log in to vote.')
+      setTimeout(() => setVoteMsg(''), 2500)
+      return
+    }
+    setPop(direction)
+    setTimeout(() => setPop(''), 300)
+
+    const prevVote = myVote
+    const prevScore = post.upvotes || 0
+    const nextVote = prevVote === direction ? null : direction
+    const delta = (nextVote === 'up' ? 1 : nextVote === 'down' ? -1 : 0) - (prevVote === 'up' ? 1 : prevVote === 'down' ? -1 : 0)
+    setMyVote(nextVote)
+    setPost((p: any) => ({ ...p, upvotes: prevScore + delta }))
+
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/posts/' + postId + '/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ direction })
+      })
+      const data = await res.json()
+      if (data.error) {
+        setMyVote(prevVote)
+        setPost((p: any) => ({ ...p, upvotes: prevScore }))
+        setVoteMsg(data.error)
+        setTimeout(() => setVoteMsg(''), 2500)
+      } else {
+        setMyVote(data.myVote)
+        setPost((p: any) => ({ ...p, upvotes: data.upvotes }))
+      }
+    } catch (e) {
+      setMyVote(prevVote)
+      setPost((p: any) => ({ ...p, upvotes: prevScore }))
+    }
+  }
 
   async function handleComment() {
     if (!comment.trim()) return
@@ -151,18 +208,18 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   }
 
   if (loading) return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+    <main style={{minHeight:'100vh', color:'var(--text)'}}>
       <Header />
-      <p style={{color:'#64748B', textAlign:'center', padding:'64px 16px'}}>Loading...</p>
+      <p style={{color:'var(--muted)', textAlign:'center', padding:'64px 16px'}}>Loading...</p>
     </main>
   )
 
   if (!post) return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white'}}>
+    <main style={{minHeight:'100vh', color:'var(--text)'}}>
       <Header />
       <div style={{textAlign:'center', padding:'64px 16px'}}>
-        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.6rem', marginBottom:'16px'}}>Post not found</h1>
-        <Link href={'/c/' + slug} style={{color:'#8B5CF6'}}>Back to community</Link>
+        <h1 className='font-display' style={{fontSize:'2.4rem', marginBottom:'16px'}}>POST NOT FOUND</h1>
+        <Link href={'/c/' + slug} className='hk-btn'>Back to community</Link>
       </div>
     </main>
   )
@@ -171,45 +228,88 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const canDelete = isOwner || isAdmin
 
   return (
-    <main style={{minHeight:'100vh', background:'#080F14', color:'white', overflowX:'hidden'}}>
+    <main className='hk-dots' style={{minHeight:'100vh', color:'var(--text)', overflowX:'hidden', ['--tube' as any]: accent}}>
+      <style>{`
+        .hk-post { border-top: 6px solid var(--tube); }
+        [data-theme='night'] .hk-post { box-shadow: 0 -6px 18px -10px var(--tube); }
+        .hk-comm-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:700; font-size:0.85rem; border:2px solid var(--ink); background: var(--tube); color: var(--chip-on); transition: background-color .6s, color .6s; }
+        [data-theme='night'] .hk-comm-chip { background: transparent; color: var(--tube); border-color: var(--tube); box-shadow: 0 0 8px var(--tube); }
+
+        .hk-vbar { display:inline-flex; align-items:center; gap:4px; border:2px solid var(--border-soft); border-radius:8px; background:var(--surface-2); padding:2px 6px; }
+        .hk-vote { background:none; border:none; cursor:pointer; padding:6px; display:flex; color:var(--faint); }
+        .hk-vote.up.on { color: var(--c4); }
+        .hk-vote.down.on { color: var(--c1); }
+        [data-theme='night'] .hk-vote.on { filter: drop-shadow(0 0 6px currentColor); }
+
+        .hk-trash { background:none; border:none; color:var(--faint); cursor:pointer; padding:6px; display:flex; flex-shrink:0; }
+        .hk-trash:hover { color: var(--c1); }
+        .hk-danger { display:inline-flex; align-items:center; background: var(--c1); color: var(--on-c1); border:2px solid var(--ink); border-radius:6px; padding:6px 14px; min-height:36px; font-size:0.85rem; font-weight:700; cursor:pointer; }
+      `}</style>
+
       <Header />
 
-      <div style={{maxWidth:'720px', margin:'0 auto', padding:'24px 16px 48px'}}>
-        <Link href={'/c/' + slug} style={{display:'inline-flex', alignItems:'center', gap:'8px', color: community ? community.accent : '#A78BFA', textDecoration:'none', fontSize:'0.85rem', fontWeight:'600', marginBottom:'16px'}}>
-          <CommunityIcon slug={slug} size={18} />
-          {community ? community.name : slug}
-        </Link>
-
-        <div style={{marginBottom:'12px'}}>
-          <Author author={post.author} date={post.created_at} />
+      <div style={{maxWidth:'740px', margin:'0 auto', padding:'20px 16px 56px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px', flexWrap:'wrap'}}>
+          <Link href={'/c/' + slug} aria-label='Back' style={{display:'flex', color:'var(--muted)', padding:'6px'}}>
+            <ArrowLeft size={20} weight='bold' />
+          </Link>
+          <Link href={'/c/' + slug} className='hk-comm-chip' style={{['--chip-on' as any]: `var(--on-c${n})`}}>
+            <CommunityIcon slug={slug} size={18} />
+            {community ? community.name : slug}
+          </Link>
         </div>
 
-        <h1 style={{fontFamily:'var(--font-sora)', fontSize:'1.6rem', fontWeight:'700', color:'white', lineHeight:'1.3', margin:'0 0 16px', wordBreak:'break-word'}}>{post.title}</h1>
-        <p style={{color:'#CBD5E1', fontSize:'1rem', lineHeight:'1.8', margin:'0 0 24px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{post.body}</p>
-
-        <div style={{display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap', paddingBottom:'24px', borderBottom:'1px solid #1E293B', marginBottom:'28px'}}>
-          <span style={{fontSize:'0.85rem', color:'#94A3B8'}}>▲ {post.upvotes || 0}</span>
-          <span style={{fontSize:'0.85rem', color:'#94A3B8'}}>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</span>
-          <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
-            {canDelete && !confirmDelete && (
-              <button onClick={() => setConfirmDelete(true)} style={smallBtn}>
-                <Trash size={15} weight='duotone' aria-hidden='true' />
-                Delete
-              </button>
-            )}
-            {canDelete && confirmDelete && (
-              <>
-                <span style={{fontSize:'0.8rem', color:'#FCA5A5'}}>Delete this post?</span>
-                <button onClick={handleDelete} disabled={deleting} style={dangerBtn}>
-                  {deleting ? 'Deleting...' : 'Yes, delete'}
-                </button>
-                <button onClick={() => setConfirmDelete(false)} style={smallBtn}>Cancel</button>
-              </>
-            )}
-            {!isOwner && <ReportButton postId={postId} />}
+        <article className='hk-card hk-post' style={{padding:'20px'}}>
+          <div style={{marginBottom:'12px'}}>
+            <Author author={post.author} date={post.created_at} />
           </div>
-        </div>
-        {deleteError && <p style={{color:'#FCA5A5', fontSize:'0.85rem', margin:'-16px 0 20px'}}>{deleteError}</p>}
+
+          <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 14px', wordBreak:'break-word'}}>{post.title}</h1>
+          <p style={{color:'var(--text)', fontSize:'1.02rem', lineHeight:'1.8', margin:'0 0 20px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{post.body}</p>
+
+          <div style={{display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap', paddingTop:'14px', borderTop:'2px solid var(--border-soft)'}}>
+            <div className='hk-vbar'>
+              <button onClick={() => handleVote('up')} aria-label='Upvote' className={'hk-vote up' + (myVote === 'up' ? ' on' : '') + (pop === 'up' ? ' hk-pop' : '')}>
+                <UpIcon size={20} active={myVote === 'up'} />
+              </button>
+              <span style={{fontWeight:800, minWidth:'20px', textAlign:'center', color: myVote === 'up' ? 'var(--c4)' : myVote === 'down' ? 'var(--c1)' : 'var(--text)'}}>{post.upvotes || 0}</span>
+              <button onClick={() => handleVote('down')} aria-label='Downvote' className={'hk-vote down' + (myVote === 'down' ? ' on' : '') + (pop === 'down' ? ' hk-pop' : '')}>
+                <DownIcon size={20} active={myVote === 'down'} />
+              </button>
+            </div>
+            <span style={{display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'0.88rem', color:'var(--muted)', fontWeight:600}}>
+              <CommentIcon size={16} />
+              {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+            </span>
+
+            <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+              {canDelete && !confirmDelete && (
+                <button onClick={() => setConfirmDelete(true)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>
+                  <Trash size={15} weight='duotone' aria-hidden='true' />
+                  Delete
+                </button>
+              )}
+              {canDelete && confirmDelete && (
+                <>
+                  <span style={{fontSize:'0.85rem', color:'var(--c1)', fontWeight:700}}>Delete this post?</span>
+                  <button onClick={handleDelete} disabled={deleting} className='hk-danger'>
+                    {deleting ? 'Deleting...' : 'Yes, delete'}
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>Cancel</button>
+                </>
+              )}
+              {!isOwner && <ReportButton postId={postId} />}
+            </div>
+          </div>
+          {voteMsg && (
+            <p style={{fontSize:'0.88rem', margin:'10px 0 0', color:'var(--muted)'}}>
+              {voteMsg}{voteMsg === 'Log in to vote.' && <> <Link href='/auth/login' style={{color:'var(--c5)', fontWeight:700}}>Log in</Link></>}
+            </p>
+          )}
+          {deleteError && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'10px 0 0'}}>{deleteError}</p>}
+        </article>
+
+        <h2 className='font-display' style={{fontSize:'1.6rem', margin:'32px 0 14px'}}>COMMENTS</h2>
 
         {me ? (
           <div style={{marginBottom:'24px'}}>
@@ -219,26 +319,23 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
               placeholder='Share your thoughts...'
               rows={3}
               maxLength={5000}
-              style={{width:'100%', background:'#0F172A', border:'1px solid #334155', borderRadius:'12px', padding:'14px', color:'white', fontSize:'0.95rem', outline:'none', boxSizing:'border-box', resize:'vertical', lineHeight:'1.6', marginBottom:'10px'}}
+              className='hk-input'
+              style={{resize:'vertical', lineHeight:'1.6', marginBottom:'10px'}}
             />
-            {error && <p style={{color:'#FCA5A5', fontSize:'0.85rem', margin:'0 0 10px'}}>{error}</p>}
-            <button
-              onClick={handleComment}
-              disabled={submitting}
-              style={{background:'linear-gradient(to right, #8B5CF6, #06B6D4)', border:'none', borderRadius:'999px', padding:'11px 24px', minHeight:'44px', color:'white', fontSize:'0.9rem', fontWeight:'600', cursor:'pointer'}}
-            >
+            {error && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'0 0 10px'}}>{error}</p>}
+            <button onClick={handleComment} disabled={submitting} className='hk-btn'>
               {submitting ? 'Posting...' : 'Post comment'}
             </button>
           </div>
         ) : (
-          <div style={{background:'#0F172A', border:'1px solid #1E293B', borderRadius:'12px', padding:'16px', marginBottom:'24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap'}}>
-            <span style={{color:'#CBD5E1', fontSize:'0.9rem'}}>Log in to join the conversation.</span>
-            <Link href='/auth/login' style={{background:'linear-gradient(to right, #8B5CF6, #06B6D4)', color:'white', borderRadius:'999px', padding:'9px 20px', textDecoration:'none', fontWeight:'600', fontSize:'0.85rem'}}>Log in</Link>
+          <div className='hk-card' style={{padding:'16px', marginBottom:'24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap'}}>
+            <span style={{fontSize:'0.95rem'}}>Log in to join the conversation.</span>
+            <Link href='/auth/login' className='hk-btn' style={{padding:'8px 18px', minHeight:'40px'}}>Log in</Link>
           </div>
         )}
 
         {comments.length === 0 ? (
-          <div style={{border:'1px dashed #334155', borderRadius:'14px', padding:'24px 16px', textAlign:'center', color:'#64748B', fontSize:'0.9rem'}}>
+          <div className='hk-card' style={{padding:'24px 16px', textAlign:'center', color:'var(--muted)', borderStyle:'dashed'}}>
             No comments yet. Start the conversation.
           </div>
         ) : (
@@ -246,27 +343,23 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             {comments.map((c, i) => {
               const canDeleteComment = (!!me && c.author?.username === me) || isAdmin
               return (
-                <div key={c.id || i} style={{background:'#0F172A', border:'1px solid #1E293B', borderRadius:'12px', padding:'14px 16px'}}>
+                <div key={c.id || i} className='hk-card' style={{padding:'14px 16px', borderLeft:'4px solid var(--tube)'}}>
                   <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'8px'}}>
-                    <Author author={c.author} date={c.created_at} size={24} />
+                    <Author author={c.author} date={c.created_at} size={26} />
                     {canDeleteComment && c.id && confirmComment !== c.id && (
-                      <button
-                        onClick={() => setConfirmComment(c.id)}
-                        aria-label='Delete comment'
-                        style={{background:'none', border:'none', color:'#64748B', cursor:'pointer', padding:'6px', display:'flex', flexShrink:0}}
-                      >
-                        <Trash size={16} weight='duotone' />
+                      <button onClick={() => setConfirmComment(c.id)} aria-label='Delete comment' className='hk-trash'>
+                        <Trash size={17} weight='duotone' />
                       </button>
                     )}
                   </div>
-                  <p style={{color:'#CBD5E1', fontSize:'0.92rem', lineHeight:'1.6', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
+                  <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
                   {confirmComment === c.id && (
                     <div style={{display:'flex', alignItems:'center', gap:'8px', marginTop:'12px', flexWrap:'wrap'}}>
-                      <span style={{fontSize:'0.8rem', color:'#FCA5A5'}}>Delete this comment?</span>
-                      <button onClick={() => handleDeleteComment(c.id)} disabled={deletingComment === c.id} style={dangerBtn}>
+                      <span style={{fontSize:'0.85rem', color:'var(--c1)', fontWeight:700}}>Delete this comment?</span>
+                      <button onClick={() => handleDeleteComment(c.id)} disabled={deletingComment === c.id} className='hk-danger'>
                         {deletingComment === c.id ? 'Deleting...' : 'Yes, delete'}
                       </button>
-                      <button onClick={() => setConfirmComment(null)} style={smallBtn}>Cancel</button>
+                      <button onClick={() => setConfirmComment(null)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>Cancel</button>
                     </div>
                   )}
                 </div>
