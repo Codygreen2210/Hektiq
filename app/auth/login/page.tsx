@@ -1,6 +1,16 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import ThemeToggle from '../../../components/ThemeToggle'
+
+function Stripes() {
+  const colors = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)']
+  return (
+    <div className='hk-auth-stripes'>
+      {colors.map(c => <div key={c} style={{background:c}} />)}
+    </div>
+  )
+}
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -49,54 +59,62 @@ export default function Login() {
     setLoading(false)
   }
 
-  const inputStyle = {width:'100%', background:'#080F14', border:'1px solid #334155', borderRadius:'10px', padding:'12px 16px', color:'white', fontSize:'0.95rem', outline:'none', boxSizing:'border-box' as const}
-  const labelStyle = {display:'block', color:'#94A3B8', fontSize:'0.75rem', fontWeight:'500', marginBottom:'6px', textTransform:'uppercase' as const, letterSpacing:'0.05em'}
-
   return (
-    <main style={{minHeight:'100vh', background:'#080F14', display:'flex', alignItems:'center', justifyContent:'center', padding:'16px'}}>
-      <div style={{width:'100%', maxWidth:'420px', background:'#0F172A', border:'1px solid #1E293B', borderRadius:'20px', padding:'32px 24px'}}>
-        <Link href='/' style={{fontSize:'1.5rem', fontWeight:'700', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:'var(--font-sora)', textDecoration:'none', display:'inline-block', marginBottom:'8px'}}>
-          Hektiq
-        </Link>
-        <h2 style={{fontFamily:'var(--font-sora)', fontSize:'1.5rem', fontWeight:'700', color:'white', margin:'0 0 6px'}}>Welcome back</h2>
-        <p style={{color:'#94A3B8', fontSize:'0.9rem', margin:'0 0 28px'}}>Log in to your account.</p>
+    <main className='hk-dots' style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:'16px', color:'var(--text)'}}>
+      <style>{`
+        .hk-auth { width: 100%; max-width: 420px; border: 2px solid var(--border); box-shadow: var(--shadow-hard); overflow: hidden; }
+        .hk-auth-stripes { display: flex; flex-direction: column; height: 14px; }
+        .hk-auth-stripes div { flex: 1; }
+        [data-theme='night'] .hk-auth-stripes { box-shadow: 0 0 14px rgba(255,61,154,.5); }
+        .hk-auth-label { display: block; font-size: 1.05rem; margin: 0 0 6px; }
+      `}</style>
 
-        {error && (
-          <div style={{background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'10px', padding:'12px', marginBottom:'18px', color:'#FCA5A5', fontSize:'0.875rem', lineHeight:'1.5'}}>
-            {error}
+      <div style={{position:'fixed', top:'14px', right:'14px'}}>
+        <ThemeToggle />
+      </div>
+
+      <div className='hk-card hk-auth'>
+        <Stripes />
+        <div style={{padding:'28px 24px'}}>
+          <Link href='/' className='font-display' style={{fontSize:'2rem', lineHeight:1, textDecoration:'none', color:'var(--text)', display:'inline-block', marginBottom:'14px'}}>
+            HEKTIQ
+          </Link>
+          <h1 className='font-display' style={{fontSize:'2.4rem', lineHeight:1, margin:'0 0 6px'}}>WELCOME BACK</h1>
+          <p style={{color:'var(--muted)', fontSize:'0.95rem', margin:'0 0 24px'}}>Log in to your account.</p>
+
+          {error && (
+            <div style={{border:'2px solid var(--c1)', borderRadius:'8px', padding:'10px 12px', marginBottom:'16px', color:'var(--c1)', fontSize:'0.9rem', fontWeight:600, lineHeight:'1.5'}}>
+              {error}
+            </div>
+          )}
+
+          <div style={{marginBottom:'14px'}}>
+            <label className='font-display hk-auth-label'>EMAIL</label>
+            <input type='email' value={email} onChange={e => { setEmail(e.target.value); setError('') }} placeholder='you@example.com' autoComplete='email' className='hk-input' />
           </div>
-        )}
 
-        <div style={{marginBottom:'16px'}}>
-          <label style={labelStyle}>Email</label>
-          <input type='email' value={email} onChange={e => setEmail(e.target.value)} placeholder='you@example.com' autoComplete='email' style={inputStyle} />
+          <div style={{marginBottom:'22px'}}>
+            <label className='font-display hk-auth-label'>PASSWORD</label>
+            <input
+              type='password'
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError('') }}
+              onKeyDown={e => { if (e.key === 'Enter') handleLogin() }}
+              placeholder='••••••••'
+              autoComplete='current-password'
+              className='hk-input'
+            />
+          </div>
+
+          <button onClick={handleLogin} disabled={loading} className='hk-btn' style={{width:'100%', marginBottom:'18px'}}>
+            {loading ? 'Logging in...' : 'Log in'}
+          </button>
+
+          <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.92rem', margin:0}}>
+            No account?{' '}
+            <Link href='/auth/signup' style={{color:'var(--c5)', textDecoration:'none', fontWeight:700}}>Join free</Link>
+          </p>
         </div>
-
-        <div style={{marginBottom:'24px'}}>
-          <label style={labelStyle}>Password</label>
-          <input
-            type='password'
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleLogin() }}
-            placeholder='••••••••'
-            autoComplete='current-password'
-            style={inputStyle}
-          />
-        </div>
-
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          style={{width:'100%', background:'linear-gradient(to right, #8B5CF6, #06B6D4)', border:'none', borderRadius:'999px', padding:'14px', color:'white', fontSize:'0.95rem', fontWeight:'600', cursor:'pointer', marginBottom:'20px'}}
-        >
-          {loading ? 'Logging in...' : 'Log in'}
-        </button>
-
-        <p style={{textAlign:'center', color:'#64748B', fontSize:'0.9rem', margin:0}}>
-          No account?{' '}
-          <Link href='/auth/signup' style={{color:'#A78BFA', textDecoration:'none', fontWeight:'500'}}>Join free</Link>
-        </p>
       </div>
     </main>
   )
