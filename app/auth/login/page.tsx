@@ -104,6 +104,9 @@ export default function Login() {
               autoComplete='current-password'
               className='hk-input'
             />
+            <p style={{textAlign:'right', margin:'8px 0 0', fontSize:'0.85rem'}}>
+              <Link href='/auth/forgot' style={{color:'var(--muted)', textDecoration:'none', fontWeight:600}}>Forgot password?</Link>
+            </p>
           </div>
 
           <button onClick={handleLogin} disabled={loading} className='hk-btn' style={{width:'100%', marginBottom:'18px'}}>
