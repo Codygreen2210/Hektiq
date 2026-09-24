@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
-import { MagnifyingGlass, EnvelopeSimple } from '@phosphor-icons/react'
+import { MagnifyingGlass, EnvelopeSimple, TrendUp } from '@phosphor-icons/react'
 import ThemeToggle from './ThemeToggle'
 import { getAuthHeader } from '../lib/authToken'
 
@@ -117,8 +117,16 @@ export default function Header() {
           <div style={{flex:1}} className='hk-mobile' />
 
           <nav style={{display:'flex', alignItems:'center', gap:'10px', flexShrink:0}}>
+            <Link href='/trending' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>
+              Trending
+            </Link>
+
             <Link href='/communities' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>
               Communities
+            </Link>
+
+            <Link href='/trending' className='hk-mobile' aria-label='Trending' style={{color:'var(--muted)', width:'40px', height:'40px', alignItems:'center', justifyContent:'center'}}>
+              <TrendUp size={22} weight='bold' />
             </Link>
 
             <Link href='/search' className='hk-mobile' aria-label='Search' style={{color:'var(--muted)', width:'40px', height:'40px', alignItems:'center', justifyContent:'center'}}>
