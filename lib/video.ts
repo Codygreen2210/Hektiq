@@ -88,13 +88,24 @@ export function isShortTiktokLink(input: string) {
   }
 }
 
-export function embedUrl(v: VideoInfo, hostname: string) {
+// autoplay = true starts the video muted (browsers only allow muted autoplay).
+// TikTok and Instagram ignore it and still need a tap.
+export function embedUrl(v: VideoInfo, hostname: string, autoplay = false) {
   switch (v.provider) {
-    case 'youtube': return 'https://www.youtube-nocookie.com/embed/' + v.id + '?rel=0'
-    case 'tiktok': return 'https://www.tiktok.com/embed/v2/' + v.id
-    case 'vimeo': return 'https://player.vimeo.com/video/' + v.id + '?dnt=1'
-    case 'instagram': return 'https://www.instagram.com/' + v.id + '/embed'
-    case 'twitch': return 'https://clips.twitch.tv/embed?clip=' + encodeURIComponent(v.id) + '&parent=' + encodeURIComponent(hostname) + '&autoplay=false'
+    case 'youtube':
+      return 'https://www.youtube-nocookie.com/embed/' + v.id + '?rel=0&playsinline=1' +
+        (autoplay ? '&autoplay=1&mute=1' : '')
+    case 'tiktok':
+      return 'https://www.tiktok.com/embed/v2/' + v.id
+    case 'vimeo':
+      return 'https://player.vimeo.com/video/' + v.id + '?dnt=1&playsinline=1' +
+        (autoplay ? '&autoplay=1&muted=1' : '')
+    case 'instagram':
+      return 'https://www.instagram.com/' + v.id + '/embed'
+    case 'twitch':
+      return 'https://clips.twitch.tv/embed?clip=' + encodeURIComponent(v.id) +
+        '&parent=' + encodeURIComponent(hostname) +
+        (autoplay ? '&autoplay=true&muted=true' : '&autoplay=false')
   }
 }
 
