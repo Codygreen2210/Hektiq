@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUserFromRequest, attachAuthors, VERIFY_MESSAGE } from '../../../lib/serverAuth'
+import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../../../lib/video'
 
 function db() {
   return createClient(
@@ -11,13 +12,26 @@ function db() {
 
 export async function POST(request: Request) {
   try {
-    const { title, body, community_slug } = await request.json()
+    const { title, body, community_slug, video_url } = await request.json()
     const t = (title || '').trim()
     const b = (body || '').trim()
+    const rawVideo = (video_url || '').trim()
 
-    if (!t || !b || !community_slug) return NextResponse.json({ error: 'Missing required fields' })
+    if (!t || !community_slug) return NextResponse.json({ error: 'Add a title.' })
     if (t.length > 300) return NextResponse.json({ error: 'Keep the title under 300 characters.' })
     if (b.length > 20000) return NextResponse.json({ error: 'That post is too long.' })
+
+    let videoCanonical: string | null = null
+    if (rawVideo) {
+      if (isShortTiktokLink(rawVideo)) {
+        return NextResponse.json({ error: 'That\'s a TikTok short link. Open it, then copy the full link from your browser.' })
+      }
+      const v = parseVideo(rawVideo)
+      if (!v) return NextResponse.json({ error: 'That video link isn\'t supported. Use a link from ' + VIDEO_SITES + '.' })
+      videoCanonical = v.canonical
+    }
+
+    if (!b && !videoCanonical) return NextResponse.json({ error: 'Add something in the body, or a video link.' })
 
     const supabase = db()
     const user = await getUserFromRequest(request, supabase)
@@ -26,7 +40,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from('posts')
-      .insert({ title: t, body: b, community_id: community_slug, author_id: user.id })
+      .insert({ title: t, body: b, community_id: community_slug, author_id: user.id, video_url: videoCanonical })
       .select()
       .single()
 

@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
+import VideoPreview from '../../../components/VideoPreview'
 import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
@@ -112,7 +113,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         setVotes(v => ({ ...v, [postId]: prevVote }))
         setPosts(prevPosts)
         setVoteMsg(data.error)
-        setTimeout(() => setVoteMsg(''), 2500)
+        setTimeout(() => setVoteMsg(''), 3500)
       } else {
         setVotes(v => ({ ...v, [postId]: data.myVote }))
         setPosts(ps => ps.map(p => p.id === postId ? { ...p, upvotes: data.upvotes } : p))
@@ -170,10 +171,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, transform .12s ease;
         }
         .hk-tab:hover { border-color: var(--border); color: var(--text); }
-        .hk-tab.active {
-          background: var(--tab-day); color: var(--tab-on);
-          border-color: var(--ink); box-shadow: var(--shadow-hard);
-        }
+        .hk-tab.active { background: var(--tab-day); color: var(--tab-on); border-color: var(--ink); box-shadow: var(--shadow-hard); }
         .hk-tab.active:active { transform: translate(2px,2px); box-shadow: none; }
 
         [data-theme='night'] .hk-tab { background: rgba(22,12,38,.6); border-color: #2E1F47; color: #7D6A9C; }
@@ -280,8 +278,11 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                     <p style={{fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
                       {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
                     </p>
-                    <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 6px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
-                    <p style={{color:'var(--muted)', fontSize:'0.9rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{(post.body || '').substring(0, 150)}{(post.body || '').length > 150 ? '...' : ''}</p>
+                    <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 8px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
+                    {post.video_url && <VideoPreview url={post.video_url} />}
+                    {post.body && (
+                      <p style={{color:'var(--muted)', fontSize:'0.9rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{post.body.substring(0, 150)}{post.body.length > 150 ? '...' : ''}</p>
+                    )}
                     <span style={{display:'inline-flex', alignItems:'center', gap:'5px', color:'var(--faint)', fontSize:'0.82rem', fontWeight:600}}>
                       <CommentIcon size={15} />
                       {post.comment_count || 0} {post.comment_count === 1 ? 'comment' : 'comments'}

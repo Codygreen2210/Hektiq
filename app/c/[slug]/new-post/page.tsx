@@ -2,10 +2,12 @@
 import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import Header from '../../../../components/Header'
+import VideoEmbed from '../../../../components/VideoEmbed'
 import { getAuthHeader } from '../../../../lib/authToken'
 import { seededBySlug } from '../../../../lib/communities'
+import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../../../../lib/video'
 import { CommunityIcon } from '../../../../components/Icons'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { ArrowLeft, VideoCamera, X } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -19,6 +21,8 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
   const { slug } = use(params)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [showVideo, setShowVideo] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
@@ -27,13 +31,21 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
   const n = COLOR[slug] || '2'
   const accent = `var(--c${n})`
 
+  const trimmedVideo = videoUrl.trim()
+  const video = trimmedVideo ? parseVideo(trimmedVideo) : null
+  const shortTiktok = trimmedVideo ? isShortTiktokLink(trimmedVideo) : false
+  const videoProblem = trimmedVideo && !video
+    ? (shortTiktok ? 'That\'s a TikTok short link. Open it, then copy the full link from your browser.' : 'That link isn\'t supported. Use a link from ' + VIDEO_SITES + '.')
+    : ''
+
   useEffect(() => {
     setLoggedIn(!!localStorage.getItem('hektiq_username'))
   }, [])
 
   async function handleSubmit() {
     if (!title.trim()) return setError('Add a title.')
-    if (!body.trim()) return setError('Add something in the body.')
+    if (videoProblem) return setError(videoProblem)
+    if (!body.trim() && !video) return setError('Add something in the body, or a video link.')
     setLoading(true)
     setError('')
     try {
@@ -41,7 +53,7 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...auth },
-        body: JSON.stringify({ title, body, community_slug: slug })
+        body: JSON.stringify({ title, body, community_slug: slug, video_url: video ? trimmedVideo : '' })
       })
       const data = await res.json()
       if (data.error) setError(data.error)
@@ -62,6 +74,8 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
         .hk-compose { border-top: 6px solid var(--tube); }
         [data-theme='night'] .hk-compose { box-shadow: 0 -6px 18px -10px var(--tube); }
         .hk-compose .hk-input:focus { border-color: var(--tube); }
+        .hk-add-video { display:inline-flex; align-items:center; gap:8px; background: var(--surface-2); color: var(--text); border: 2px dashed var(--border-soft); border-radius: 8px; padding: 10px 14px; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+        .hk-add-video:hover { border-color: var(--tube); }
       `}</style>
 
       <Header />
@@ -108,13 +122,48 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
               />
             </div>
 
+            <div style={{marginBottom:'16px'}}>
+              {!showVideo ? (
+                <button type='button' onClick={() => setShowVideo(true)} className='hk-add-video'>
+                  <VideoCamera size={18} weight='bold' />
+                  Add a video link
+                </button>
+              ) : (
+                <>
+                  <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'6px'}}>
+                    <label className='font-display' style={{fontSize:'1.1rem', margin:0}}>VIDEO LINK</label>
+                    <button type='button' onClick={() => { setShowVideo(false); setVideoUrl('') }} aria-label='Remove video' style={{background:'none', border:'none', color:'var(--faint)', cursor:'pointer', display:'flex', padding:'4px'}}>
+                      <X size={18} weight='bold' />
+                    </button>
+                  </div>
+                  <input
+                    type='url'
+                    value={videoUrl}
+                    onChange={e => { setVideoUrl(e.target.value); setError('') }}
+                    placeholder='Paste a YouTube, TikTok, Vimeo, Instagram, or Twitch clip link'
+                    className='hk-input'
+                  />
+                  {videoProblem ? (
+                    <p style={{color:'var(--c1)', fontSize:'0.85rem', fontWeight:600, margin:'8px 0 0'}}>{videoProblem}</p>
+                  ) : !trimmedVideo ? (
+                    <p style={{color:'var(--faint)', fontSize:'0.8rem', margin:'8px 0 0'}}>Copy the link from the Share button on the video.</p>
+                  ) : null}
+                  {video && (
+                    <div style={{marginTop:'14px'}}>
+                      <VideoEmbed url={trimmedVideo} />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
             <div style={{marginBottom:'20px'}}>
-              <label className='font-display' style={labelStyle}>BODY</label>
+              <label className='font-display' style={labelStyle}>{video ? 'BODY (OPTIONAL)' : 'BODY'}</label>
               <textarea
                 value={body}
                 onChange={e => { setBody(e.target.value); setError('') }}
-                placeholder='Share the details...'
-                rows={10}
+                placeholder={video ? 'Say something about the video...' : 'Share the details...'}
+                rows={video ? 4 : 10}
                 className='hk-input'
                 style={{resize:'vertical', lineHeight:'1.7'}}
               />

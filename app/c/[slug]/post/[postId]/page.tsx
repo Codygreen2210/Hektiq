@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 import Header from '../../../../../components/Header'
 import ReportButton from '../../../../../components/ReportButton'
+import VideoEmbed from '../../../../../components/VideoEmbed'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
@@ -78,7 +79,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     const u = localStorage.getItem('hektiq_username')
     setMe(u)
     if (u) {
-      fetch('/api/profile/' + u)
+      fetch('/api/profile/' + u, { cache: 'no-store' })
         .then(r => r.json())
         .then(d => setIsAdmin(!!d.profile?.is_admin))
         .catch(() => {})
@@ -140,7 +141,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         setMyVote(prevVote)
         setPost((p: any) => ({ ...p, upvotes: prevScore }))
         setVoteMsg(data.error)
-        setTimeout(() => setVoteMsg(''), 2500)
+        setTimeout(() => setVoteMsg(''), 3500)
       } else {
         setMyVote(data.myVote)
         setPost((p: any) => ({ ...p, upvotes: data.upvotes }))
@@ -264,8 +265,13 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             <Author author={post.author} date={post.created_at} />
           </div>
 
-          <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 14px', wordBreak:'break-word'}}>{post.title}</h1>
-          <p style={{color:'var(--text)', fontSize:'1.02rem', lineHeight:'1.8', margin:'0 0 20px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{post.body}</p>
+          <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 16px', wordBreak:'break-word'}}>{post.title}</h1>
+
+          {post.video_url && <VideoEmbed url={post.video_url} />}
+
+          {post.body && (
+            <p style={{color:'var(--text)', fontSize:'1.02rem', lineHeight:'1.8', margin:'0 0 20px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{post.body}</p>
+          )}
 
           <div style={{display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap', paddingTop:'14px', borderTop:'2px solid var(--border-soft)'}}>
             <div className='hk-vbar'>
