@@ -4,7 +4,9 @@ import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import { CommunityIcon } from '../../../components/Icons'
 import { seededBySlug } from '../../../lib/communities'
-import { Camera, PencilSimple } from '@phosphor-icons/react'
+import { getAuthHeader } from '../../../lib/authToken'
+import { shrinkImage } from '../../../lib/shrinkImage'
+import { Camera, PencilSimple, Warning } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -23,8 +25,13 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   const [editing, setEditing] = useState(false)
   const [bio, setBio] = useState('')
   const [saving, setSaving] = useState(false)
+  const [bioError, setBioError] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [showDelete, setShowDelete] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('hektiq_username')
@@ -49,55 +56,80 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 
   async function saveBio() {
     setSaving(true)
+    setBioError('')
     try {
-      const userId = localStorage.getItem('hektiq_user_id')
+      const auth = await getAuthHeader()
       const res = await fetch('/api/profile/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, bio })
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ bio })
       })
       const data = await res.json()
-      if (data.profile) {
-        setProfile(data.profile)
+      if (data.error) setBioError(data.error)
+      else if (data.profile) {
+        setProfile((p: any) => ({ ...p, ...data.profile }))
         setEditing(false)
       }
     } catch (e) {
-      console.error(e)
+      setBioError('Couldn\'t save. Try again.')
     }
     setSaving(false)
   }
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     setUploadError('')
     if (!file.type.startsWith('image/')) return setUploadError('That file isn\'t an image.')
-    if (file.size > 5 * 1024 * 1024) return setUploadError('Keep the photo under 5 MB.')
     setUploading(true)
     try {
-      const userId = localStorage.getItem('hektiq_user_id')
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      const ext = file.name.split('.').pop()
-      const path = userId + '.' + ext
-      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-      if (uploadErr) { setUploadError('Upload failed. Try again.'); setUploading(false); return }
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
-      const avatarUrl = urlData.publicUrl + '?t=' + Date.now()
-      const res = await fetch('/api/profile/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, avatar_url: avatarUrl })
-      })
+      const blob = await shrinkImage(file)
+      const form = new FormData()
+      form.append('file', blob, 'avatar.jpg')
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/uploads/avatar', { method: 'POST', headers: { ...auth }, body: form })
       const data = await res.json()
-      if (data.profile) setProfile(data.profile)
-    } catch (e) {
-      setUploadError('Upload failed. Try again.')
+      if (data.error) setUploadError(data.error)
+      else if (data.profile) setProfile((p: any) => ({ ...p, ...data.profile }))
+    } catch (err: any) {
+      setUploadError(err?.message || 'Upload failed. Try again.')
     }
     setUploading(false)
+  }
+
+  async function handleDeleteAccount() {
+    if (!deletePassword) return setDeleteError('Enter your password.')
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ password: deletePassword })
+      })
+      const data = await res.json()
+      if (data.error) {
+        setDeleteError(data.error)
+        setDeleting(false)
+        return
+      }
+      try {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        await supabase.auth.signOut()
+      } catch (e) {}
+      localStorage.removeItem('hektiq_username')
+      localStorage.removeItem('hektiq_user_id')
+      window.location.href = '/'
+    } catch (e) {
+      setDeleteError('Something went wrong. Try again.')
+      setDeleting(false)
+    }
   }
 
   if (loading) return (
@@ -130,6 +162,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
         .hk-profile-stripes { height: 14px; display: flex; flex-direction: column; }
         .hk-profile-stripes div { flex: 1; }
         [data-theme='night'] .hk-profile-stripes { box-shadow: 0 0 14px rgba(255,61,154,.5); }
+        .hk-danger-zone { border: 2px dashed var(--c1); border-radius: 10px; padding: 18px; margin-top: 40px; }
+        .hk-danger-btn { display:inline-flex; align-items:center; gap:8px; background: var(--c1); color: var(--on-c1); border:2px solid var(--ink); border-radius:6px; padding:8px 16px; min-height:40px; font-size:0.9rem; font-weight:700; cursor:pointer; }
+        .hk-danger-btn:disabled { opacity: .6; cursor: default; }
       `}</style>
 
       <Header />
@@ -150,7 +185,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
               {isOwner && (
                 <label className='hk-cam' aria-label='Change photo'>
                   {uploading ? '...' : <Camera size={16} weight='bold' />}
-                  <input type='file' accept='image/*' onChange={handleAvatarUpload} style={{display:'none'}} />
+                  <input type='file' accept='image/*' onChange={handleAvatarUpload} disabled={uploading} style={{display:'none'}} />
                 </label>
               )}
             </div>
@@ -170,18 +205,19 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                 <div>
                   <textarea
                     value={bio}
-                    onChange={e => setBio(e.target.value)}
+                    onChange={e => { setBio(e.target.value); setBioError('') }}
                     placeholder='Tell people about yourself...'
                     rows={3}
                     maxLength={300}
                     className='hk-input'
                     style={{resize:'vertical', marginBottom:'10px'}}
                   />
+                  {bioError && <p style={{color:'var(--c1)', fontSize:'0.85rem', fontWeight:600, margin:'0 0 10px'}}>{bioError}</p>}
                   <div style={{display:'flex', gap:'8px'}}>
                     <button onClick={saveBio} disabled={saving} className='hk-btn' style={{padding:'6px 16px', minHeight:'38px'}}>
                       {saving ? 'Saving...' : 'Save'}
                     </button>
-                    <button onClick={() => { setEditing(false); setBio(profile.bio || '') }} className='hk-btn-ghost' style={{padding:'6px 16px', minHeight:'38px'}}>
+                    <button onClick={() => { setEditing(false); setBio(profile.bio || ''); setBioError('') }} className='hk-btn-ghost' style={{padding:'6px 16px', minHeight:'38px'}}>
                       Cancel
                     </button>
                   </div>
@@ -238,6 +274,47 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                 </Link>
               )
             })}
+          </div>
+        )}
+
+        {isOwner && (
+          <div className='hk-danger-zone'>
+            <h2 className='font-display' style={{fontSize:'1.4rem', margin:'0 0 6px', color:'var(--c1)', display:'flex', alignItems:'center', gap:'8px'}}>
+              <Warning size={20} weight='bold' />
+              DELETE ACCOUNT
+            </h2>
+            <p style={{fontSize:'0.9rem', color:'var(--muted)', lineHeight:'1.6', margin:'0 0 14px'}}>
+              This deletes your profile, photo, email, and login for good. Your posts and comments stay up but show "deleted account" instead of your name. This can't be undone.
+            </p>
+
+            {!showDelete ? (
+              <button onClick={() => setShowDelete(true)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'38px', fontSize:'0.85rem', color:'var(--c1)'}}>
+                Delete my account
+              </button>
+            ) : (
+              <div>
+                <label className='font-display' style={{display:'block', fontSize:'1.05rem', margin:'0 0 6px'}}>ENTER YOUR PASSWORD TO CONFIRM</label>
+                <input
+                  type='password'
+                  value={deletePassword}
+                  onChange={e => { setDeletePassword(e.target.value); setDeleteError('') }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleDeleteAccount() }}
+                  placeholder='••••••••'
+                  autoComplete='current-password'
+                  className='hk-input'
+                  style={{marginBottom:'10px'}}
+                />
+                {deleteError && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'0 0 10px'}}>{deleteError}</p>}
+                <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                  <button onClick={handleDeleteAccount} disabled={deleting} className='hk-danger-btn'>
+                    {deleting ? 'Deleting...' : 'Yes, delete everything'}
+                  </button>
+                  <button onClick={() => { setShowDelete(false); setDeletePassword(''); setDeleteError('') }} disabled={deleting} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'40px', fontSize:'0.85rem'}}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
