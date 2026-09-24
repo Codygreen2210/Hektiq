@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
-import { MagnifyingGlass, EnvelopeSimple, TrendUp } from '@phosphor-icons/react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { MagnifyingGlass, EnvelopeSimple, TrendUp, User, SignOut } from '@phosphor-icons/react'
 import ThemeToggle from './ThemeToggle'
 import { getAuthHeader } from '../lib/authToken'
 
@@ -21,6 +21,9 @@ export default function Header() {
   const [resendState, setResendState] = useState<'' | 'sending' | 'sent'>('')
   const [resendMsg, setResendMsg] = useState('')
   const [query, setQuery] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const loadProfile = useCallback((u: string) => {
     fetch('/api/profile/' + encodeURIComponent(u), { cache: 'no-store' })
@@ -50,7 +53,33 @@ export default function Header() {
     }
   }, [loadProfile])
 
-  function handleLogout() {
+  // Close the menu on outside tap or Escape
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDown(e: MouseEvent | TouchEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('touchstart', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('touchstart', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
+  async function handleLogout() {
+    setLoggingOut(true)
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+      )
+      await supabase.auth.signOut()
+    } catch (e) {}
     localStorage.removeItem('hektiq_username')
     localStorage.removeItem('hektiq_user_id')
     window.location.href = '/'
@@ -92,6 +121,14 @@ export default function Header() {
           [data-theme='night'] .hk-verify { background: rgba(255,225,77,.08); color: #FFE14D; border-bottom-color: #FFE14D; box-shadow: 0 4px 14px -8px #FFE14D; }
           .hk-verify-btn { background: var(--ink); color: var(--bg); border: none; border-radius: 5px; padding: 5px 12px; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
           [data-theme='night'] .hk-verify-btn { background: #FFE14D; color: #1F1800; }
+
+          .hk-menu-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; cursor: pointer; }
+          .hk-menu { position: absolute; top: calc(100% + 10px); right: 0; min-width: 190px; background: var(--bg); border: 2px solid var(--ink); border-radius: 10px; box-shadow: var(--shadow-hard); padding: 6px; z-index: 50; }
+          [data-theme='night'] .hk-menu { border-color: var(--c1); box-shadow: 0 0 14px -2px var(--c1); }
+          .hk-menu-name { padding: 8px 10px 10px; font-size: .8rem; color: var(--faint); border-bottom: 2px solid var(--border-soft); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .hk-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border-radius: 6px; font-size: .92rem; font-weight: 600; color: var(--text); text-decoration: none; background: none; border: none; cursor: pointer; text-align: left; }
+          .hk-menu-item:hover { background: var(--surface-2); }
+          .hk-menu-item.danger { color: var(--c1); }
         `}</style>
 
         <div style={{maxWidth:'1100px', margin:'0 auto', padding:'10px 16px', display:'flex', alignItems:'center', gap:'14px'}}>
@@ -136,21 +173,38 @@ export default function Header() {
             <ThemeToggle />
 
             {username ? (
-              <>
-                <Link href={'/profile/' + username} style={{display:'flex', alignItems:'center', gap:'8px', textDecoration:'none'}}>
+              <div ref={menuRef} style={{position:'relative'}}>
+                <button
+                  className='hk-menu-btn'
+                  onClick={() => setMenuOpen(o => !o)}
+                  aria-label='Account menu'
+                  aria-haspopup='menu'
+                  aria-expanded={menuOpen}
+                >
                   {avatar ? (
-                    <img src={avatar} alt={username} style={{width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
+                    <img src={avatar} alt='' style={{width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
                   ) : (
                     <div style={{width:'36px', height:'36px', borderRadius:'50%', background:'var(--c2)', color:'var(--on-c2)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', fontWeight:700}}>
                       {username.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <span className='hk-desktop' style={{color:'var(--text)', fontSize:'0.9rem', fontWeight:600}}>{username}</span>
-                </Link>
-                <button onClick={handleLogout} className='hk-desktop hk-btn-ghost' style={{padding:'6px 14px', minHeight:'38px', fontSize:'0.85rem'}}>
-                  Log out
                 </button>
-              </>
+
+                {menuOpen && (
+                  <div className='hk-menu' role='menu'>
+                    <div className='hk-menu-name'>Logged in as <strong style={{color:'var(--text)'}}>{username}</strong></div>
+                    <Link href={'/profile/' + username} className='hk-menu-item' role='menuitem' onClick={() => setMenuOpen(false)}>
+                      <User size={18} weight='bold' />
+                      Profile
+                    </Link>
+                    <button className='hk-menu-item danger' role='menuitem' onClick={handleLogout} disabled={loggingOut}>
+                      <SignOut size={18} weight='bold' />
+                      {loggingOut ? 'Logging out...' : 'Log out'}
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link href='/auth/login' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>Log in</Link>
