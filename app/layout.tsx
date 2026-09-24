@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Sora, Inter, Bebas_Neue } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import PostButton from '../components/PostButton';
+import Footer from '../components/Footer';
 import './globals.css';
 import './theme.css';
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className='min-h-screen antialiased'>
         {children}
+        <Footer />
         <PostButton />
         <Analytics />
       </body>

@@ -44,7 +44,7 @@ export default function Communities() {
 
       <Header />
 
-      <div style={{maxWidth:'720px', margin:'0 auto', padding:'32px 16px 96px'}}>
+      <div style={{maxWidth:'720px', margin:'0 auto', padding:'32px 16px 40px'}}>
         <h1 className='font-display' style={{fontSize:'3.2rem', lineHeight:1, margin:'0 0 6px'}}>COMMUNITIES</h1>
         <p style={{color:'var(--muted)', margin:'0 0 28px', fontSize:'1rem'}}>Your corner of the internet, run by the people in it.</p>
 
@@ -95,10 +95,6 @@ export default function Communities() {
           </div>
         )}
       </div>
-
-      <footer style={{borderTop:'2px solid var(--border-soft)', padding:'24px 16px', textAlign:'center', color:'var(--muted)', fontSize:'0.85rem'}}>
-        Hektiq 2026. Built by the community.
-      </footer>
     </main>
   )
 }

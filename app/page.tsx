@@ -248,10 +248,6 @@ export default function Home() {
           <a href='https://x.com/HektiqMind' target='_blank' rel='noopener noreferrer' style={{color:'var(--c1)', textDecoration:'none'}}>Follow on X</a>
         </p>
       </section>
-
-      <footer style={{borderTop:'2px solid var(--border-soft)', padding:'24px 16px', textAlign:'center', color:'var(--muted)', fontSize:'0.85rem'}}>
-        Hektiq 2026. Built by the community.
-      </footer>
     </main>
   )
 }
