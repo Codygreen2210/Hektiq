@@ -18,8 +18,10 @@ const sections = [
     t: 'WHAT WE COLLECT',
     b: [
       'Your account: your username, email address, and password. Passwords are handled by our login provider and are never stored in a form we can read.',
-      'What you post: posts, comments, votes, your bio, and your profile photo. Posts, comments, your bio, and your photo are public. Your votes are not shown to other people.',
+      'What you post: posts, photos, comments, votes, your bio, and your profile photo. Posts, photos, comments, your bio, and your profile photo are public. Your votes are not shown to other people.',
+      'Communities you join: we save which communities you joined so we can show you their posts. Member counts are public, but the list of who joined is not.',
       'Suggestions and reports: when you use the suggestion box or report a post, we save what you wrote, your username if you\'re logged in, and your internet address (IP) so we can stop spam and abuse.',
+      'Password resets: when you ask for a reset link, we save your internet address (IP) for a short time to stop people from spamming the reset form.',
       'Visits: we count page views to see which parts of Hektiq people use. This doesn\'t use cookies and doesn\'t identify you personally.',
       'Your browser remembers a few things on your device, like whether you picked day or night mode and that you\'re logged in.',
     ],
@@ -28,7 +30,7 @@ const sections = [
     t: 'WHAT WE USE IT FOR',
     b: [
       'Running your account and showing your posts and profile.',
-      'Sending account emails, like verifying your email address.',
+      'Sending account emails, like verifying your email address or resetting your password.',
       'Keeping fake accounts and spam out.',
       'Sending occasional update emails, only if you checked the box when you signed up.',
     ],
@@ -43,7 +45,7 @@ const sections = [
   {
     t: 'EMAILS',
     b: [
-      'Account emails, like verification, go to everyone who signs up.',
+      'Account emails, like verification and password resets, go to anyone who needs them.',
       'Update emails only go to people who asked for them, and every one has a link to unsubscribe in one click.',
     ],
   },
@@ -51,7 +53,9 @@ const sections = [
     t: 'YOUR CHOICES',
     b: [
       'You can edit your bio and photo, and delete your own posts and comments, anytime.',
-      'To delete your account or get a copy of your information, email cody@hektiq.com and I\'ll take care of it.',
+      'You can delete your account yourself from the bottom of your profile page. You\'ll need your password to confirm.',
+      'Deleting your account removes your profile, profile photo, email address, login, update emails, and the communities you joined. Your posts and comments stay up but show "deleted account" instead of your name. If you want those gone too, delete them before you delete your account.',
+      'To get a copy of your information, email cody@hektiq.com and I\'ll take care of it.',
     ],
   },
   {
@@ -74,7 +78,7 @@ export default function Privacy() {
       <Header />
       <div style={{maxWidth:'720px', margin:'0 auto', padding:'32px 16px 64px'}}>
         <h1 className='font-display' style={{fontSize:'3rem', lineHeight:1, margin:'0 0 6px'}}>PRIVACY</h1>
-        <p style={{color:'var(--faint)', fontSize:'0.9rem', margin:'0 0 28px'}}>Last updated September 23, 2026</p>
+        <p style={{color:'var(--faint)', fontSize:'0.9rem', margin:'0 0 28px'}}>Last updated September 24, 2026</p>
 
         <div style={{display:'flex', flexDirection:'column', gap:'14px'}}>
           {sections.map(s => (

@@ -46,7 +46,7 @@ function Author({ author, date, size = 30 }: { author: any; date: string; size?:
       {name ? (
         <Link href={'/profile/' + name} style={{color:'var(--text)', fontWeight:700, textDecoration:'none'}}>{name}</Link>
       ) : (
-        <span style={{color:'var(--faint)'}}>unknown</span>
+        <span style={{color:'var(--faint)', fontStyle:'italic'}}>deleted account</span>
       )}
       <span style={{color:'var(--faint)'}}>· {timeAgo(date)}</span>
     </div>

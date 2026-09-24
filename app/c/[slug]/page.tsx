@@ -333,7 +333,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                   <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'flex', gap:'12px', color:'var(--text)'}}>
                     <div style={{flex:1, minWidth:0}}>
                       <p style={{fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
-                        {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
+                        {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : <span style={{fontStyle:'italic'}}>deleted account</span>} · {timeAgo(post.created_at)}
                       </p>
                       <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 8px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
                       {post.video_url && <VideoPreview url={post.video_url} />}

@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
 
     const result = scored.map((p) => ({
       ...p,
-      author_username: authors[p.author_id]?.username || 'unknown',
+      author_username: authors[p.author_id]?.username || 'deleted account',
       author_avatar_url: authors[p.author_id]?.avatar_url || null,
     }))
 
