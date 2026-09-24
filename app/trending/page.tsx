@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Header from '../../components/Header'
 import VideoFeed, { FeedPost } from '../../components/VideoFeed'
+import { getAuthHeader } from '../../lib/authToken'
 import { ArrowFatUp, ChatCircle } from '@phosphor-icons/react'
 
 type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[] }
@@ -24,32 +25,90 @@ function timeAgo(date: string) {
 
 export default function TrendingPage() {
   const [tab, setTab] = useState<'posts' | 'videos'>('posts')
+  const [scope, setScope] = useState<'everyone' | 'following'>('everyone')
   const [posts, setPosts] = useState<Post[]>([])
+  const [following, setFollowing] = useState<string[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [loggedIn, setLoggedIn] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
-    setError('')
-    fetch('/api/trending?type=' + tab, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => {
+    setLoggedIn(!!localStorage.getItem('hektiq_username'))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      setError('')
+      setFollowing(null)
+
+      if (scope === 'following' && !localStorage.getItem('hektiq_username')) {
+        setPosts([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        const auth = scope === 'following' ? await getAuthHeader() : {}
+        const url = '/api/trending?type=' + tab + (scope === 'following' ? '&following=1' : '')
+        const r = await fetch(url, { headers: { ...auth }, cache: 'no-store' })
+        const d = await r.json()
+        if (cancelled) return
         if (d.error) setError(d.error)
-        else setPosts(d.posts || [])
-      })
-      .catch(() => setError('Could not load trending.'))
-      .finally(() => setLoading(false))
-  }, [tab])
+        else {
+          setPosts(d.posts || [])
+          setFollowing(d.following ?? null)
+        }
+      } catch (e) {
+        if (!cancelled) setError('Could not load trending.')
+      }
+      if (!cancelled) setLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [tab, scope])
+
+  const emptyBox = { padding: '28px 16px', textAlign: 'center' as const, color: 'var(--muted)', borderStyle: 'dashed' }
+
+  function emptyState() {
+    if (scope === 'following' && !loggedIn) {
+      return (
+        <div className='hk-card' style={emptyBox}>
+          <p style={{ margin: '0 0 14px' }}>Log in to see what's trending in the communities you've joined.</p>
+          <Link href='/auth/login' className='hk-btn'>Log in</Link>
+        </div>
+      )
+    }
+    if (scope === 'following' && following && following.length === 0) {
+      return (
+        <div className='hk-card' style={emptyBox}>
+          <p style={{ margin: '0 0 14px' }}>You haven't joined any communities yet. Hit Join on the ones you like and their best stuff shows up here.</p>
+          <Link href='/communities' className='hk-btn'>Browse communities</Link>
+        </div>
+      )
+    }
+    return (
+      <div className='hk-card' style={emptyBox}>
+        {tab === 'videos'
+          ? 'No videos yet. Post one in any community.'
+          : 'Nothing trending yet. Start a conversation in any community.'}
+      </div>
+    )
+  }
 
   return (
     <div className='hk-dots' style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <Header />
       <style>{`
-        .hk-tabs { display: flex; gap: 10px; margin: 18px 0 16px; }
+        .hk-tabs { display: flex; gap: 10px; margin: 18px 0 10px; }
         .hk-tab { flex: 1; padding: 10px; font-size: 1.3rem; letter-spacing: .04em; border: 2px solid var(--ink); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
         .hk-tab.on { background: var(--c1); color: var(--on-c1); box-shadow: var(--shadow-hard); }
         [data-theme='night'] .hk-tab { background: transparent; border-color: var(--border); color: var(--muted); }
         [data-theme='night'] .hk-tab.on { border-color: var(--c1); color: var(--c1); box-shadow: 0 0 12px var(--c1), inset 0 0 8px var(--c1); }
+        .hk-scope { display: flex; gap: 8px; margin: 0 0 16px; }
+        .hk-scope button { border-radius: 6px; padding: 7px 14px; min-height: 38px; font-size: .85rem; font-weight: 700; cursor: pointer; border: 2px solid var(--border-soft); background: transparent; color: var(--muted); }
+        .hk-scope button.on { border-color: var(--border); color: var(--text); background: var(--surface-2); }
         .hk-trend-card { display: flex; gap: 12px; padding: 14px 16px; margin-bottom: 12px; text-decoration: none; color: var(--text); }
         .hk-trend-main { flex: 1; min-width: 0; }
         .hk-trend-chip { display: inline-block; font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #111; margin-right: 8px; }
@@ -81,47 +140,50 @@ export default function TrendingPage() {
           </button>
         </div>
 
+        <div className='hk-scope' role='tablist' aria-label='Whose posts'>
+          <button role='tab' aria-selected={scope === 'everyone'} className={scope === 'everyone' ? 'on' : ''} onClick={() => setScope('everyone')}>
+            Everyone
+          </button>
+          <button role='tab' aria-selected={scope === 'following'} className={scope === 'following' ? 'on' : ''} onClick={() => setScope('following')}>
+            Following
+          </button>
+        </div>
+
         {loading && <p style={{ textAlign: 'center', color: 'var(--muted)' }}>Loading...</p>}
         {!loading && error && <p style={{ textAlign: 'center', color: 'var(--c1)' }}>{error}</p>}
 
-        {!loading && !error && tab === 'videos' && <VideoFeed posts={posts} />}
+        {!loading && !error && posts.length === 0 && emptyState()}
 
-        {!loading && !error && tab === 'posts' && (
-          posts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '30px 0' }}>
-              Nothing trending yet. Start a conversation in any community.
-            </p>
-          ) : (
-            posts.map((p) => {
-              const color = COLORS[p.community_id] || 'var(--c2)'
-              const photos = Array.isArray(p.image_urls) ? p.image_urls : []
-              return (
-                <Link key={p.id} href={'/c/' + p.community_id + '/post/' + p.id} className='hk-card hk-trend-card'>
-                  <div className='hk-trend-main'>
-                    <div>
-                      <span className='hk-trend-chip' style={{ background: color, ['--chip' as string]: color } as React.CSSProperties}>
-                        {p.community_id}
-                      </span>
-                      <span className='hk-trend-meta'>by {p.author_username} · {timeAgo(p.created_at)}</span>
-                    </div>
-                    <p className='hk-trend-title'>{p.title}</p>
-                    {p.body && <p className='hk-trend-body'>{p.body}</p>}
-                    <div className='hk-trend-stats'>
-                      <span><ArrowFatUp size={16} weight='bold' /> {p.upvotes || 0}</span>
-                      <span><ChatCircle size={16} weight='bold' /> {p.comment_count}</span>
-                    </div>
-                  </div>
-                  {photos.length > 0 && (
-                    <div className='hk-trend-thumb'>
-                      <img src={photos[0]} alt='' loading='lazy' />
-                      {photos.length > 1 && <span className='hk-trend-more'>+{photos.length - 1}</span>}
-                    </div>
-                  )}
-                </Link>
-              )
-            })
+        {!loading && !error && posts.length > 0 && tab === 'videos' && <VideoFeed posts={posts} />}
+
+        {!loading && !error && posts.length > 0 && tab === 'posts' && posts.map((p) => {
+          const color = COLORS[p.community_id] || 'var(--c2)'
+          const photos = Array.isArray(p.image_urls) ? p.image_urls : []
+          return (
+            <Link key={p.id} href={'/c/' + p.community_id + '/post/' + p.id} className='hk-card hk-trend-card'>
+              <div className='hk-trend-main'>
+                <div>
+                  <span className='hk-trend-chip' style={{ background: color, ['--chip' as string]: color } as React.CSSProperties}>
+                    {p.community_id}
+                  </span>
+                  <span className='hk-trend-meta'>by {p.author_username} · {timeAgo(p.created_at)}</span>
+                </div>
+                <p className='hk-trend-title'>{p.title}</p>
+                {p.body && <p className='hk-trend-body'>{p.body}</p>}
+                <div className='hk-trend-stats'>
+                  <span><ArrowFatUp size={16} weight='bold' /> {p.upvotes || 0}</span>
+                  <span><ChatCircle size={16} weight='bold' /> {p.comment_count}</span>
+                </div>
+              </div>
+              {photos.length > 0 && (
+                <div className='hk-trend-thumb'>
+                  <img src={photos[0]} alt='' loading='lazy' />
+                  {photos.length > 1 && <span className='hk-trend-more'>+{photos.length - 1}</span>}
+                </div>
+              )}
+            </Link>
           )
-        )}
+        })}
       </main>
     </div>
   )

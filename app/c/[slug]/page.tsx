@@ -29,6 +29,8 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const { slug } = use(params)
   const [community, setCommunity] = useState<any>(seededBySlug[slug] || null)
   const [joined, setJoined] = useState(false)
+  const [members, setMembers] = useState<number | null>(null)
+  const [joining, setJoining] = useState(false)
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -64,6 +66,17 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         }
       }
 
+      // Join status and member count
+      try {
+        const auth = u ? await getAuthHeader() : {}
+        const fr = await fetch('/api/communities/' + slug + '/follow', { headers: { ...auth }, cache: 'no-store' })
+        const fd = await fr.json()
+        if (!fd.error) {
+          setJoined(!!fd.joined)
+          setMembers(fd.members ?? 0)
+        }
+      } catch (e) {}
+
       try {
         const res = await fetch('/api/posts?community=' + slug)
         const data = await res.json()
@@ -84,12 +97,43 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
     fetchData()
   }, [slug])
 
-  async function handleVote(postId: string, direction: 'up' | 'down') {
-    if (!username) {
-      setVoteMsg('Log in to vote.')
-      setTimeout(() => setVoteMsg(''), 2500)
-      return
+  function flash(msg: string, ms = 3500) {
+    setVoteMsg(msg)
+    setTimeout(() => setVoteMsg(''), ms)
+  }
+
+  async function handleJoin() {
+    if (!username) return flash('Log in to join.', 2500)
+    if (joining) return
+    setJoining(true)
+
+    const prevJoined = joined
+    const prevMembers = members
+    setJoined(!prevJoined)
+    setMembers(m => (m ?? 0) + (prevJoined ? -1 : 1))
+
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/communities/' + slug + '/follow', { method: 'POST', headers: { ...auth } })
+      const data = await res.json()
+      if (data.error) {
+        setJoined(prevJoined)
+        setMembers(prevMembers)
+        flash(data.error)
+      } else {
+        setJoined(!!data.joined)
+        setMembers(data.members ?? 0)
+      }
+    } catch (e) {
+      setJoined(prevJoined)
+      setMembers(prevMembers)
+      flash('Something went wrong. Try again.')
     }
+    setJoining(false)
+  }
+
+  async function handleVote(postId: string, direction: 'up' | 'down') {
+    if (!username) return flash('Log in to vote.', 2500)
 
     setPopId(postId + direction)
     setTimeout(() => setPopId(null), 300)
@@ -113,8 +157,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
       if (data.error) {
         setVotes(v => ({ ...v, [postId]: prevVote }))
         setPosts(prevPosts)
-        setVoteMsg(data.error)
-        setTimeout(() => setVoteMsg(''), 3500)
+        flash(data.error)
       } else {
         setVotes(v => ({ ...v, [postId]: data.myVote }))
         setPosts(ps => ps.map(p => p.id === postId ? { ...p, upvotes: data.upvotes } : p))
@@ -154,6 +197,8 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
       <p style={{color:'var(--muted)', textAlign:'center', padding:'64px 16px'}}>Loading...</p>
     </main>
   )
+
+  const loginLink = voteMsg === 'Log in to vote.' || voteMsg === 'Log in to join.'
 
   return (
     <main className='hk-dots' style={{minHeight:'100vh', color:'var(--text)', paddingBottom:'96px', overflowX:'hidden', ['--tube' as any]: accent}}>
@@ -214,8 +259,13 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           <div style={{flex:'1 1 160px', minWidth:0}}>
             <h1 className='font-display hk-banner-title' style={{fontSize:'2.4rem', lineHeight:1, margin:'0 0 4px', color:`var(--on-c${n})`}}>{community.name.toUpperCase()}</h1>
             <p className='hk-banner-desc' style={{fontSize:'0.92rem', margin:0, color:`var(--on-c${n})`}}>{community.description}</p>
+            {members !== null && (
+              <p className='hk-banner-desc' style={{fontSize:'0.82rem', fontWeight:700, margin:'6px 0 0', color:`var(--on-c${n})`}}>
+                {members} {members === 1 ? 'member' : 'members'}
+              </p>
+            )}
           </div>
-          <button onClick={() => setJoined(!joined)} className={joined ? 'hk-btn-ghost' : 'hk-btn'} style={{flexShrink:0, background: joined ? 'var(--bg)' : undefined}}>
+          <button onClick={handleJoin} disabled={joining} className={joined ? 'hk-btn-ghost' : 'hk-btn'} style={{flexShrink:0, background: joined ? 'var(--bg)' : undefined}}>
             {joined ? 'Joined' : 'Join'}
           </button>
         </div>
@@ -246,7 +296,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
 
         {voteMsg && (
           <div className='hk-card' style={{padding:'10px 14px', fontSize:'0.9rem', marginBottom:'12px', borderColor:'var(--border)'}}>
-            {voteMsg}{voteMsg === 'Log in to vote.' && <> <Link href='/auth/login' style={{color:'var(--c5)', fontWeight:700}}>Log in</Link></>}
+            {voteMsg}{loginLink && <> <Link href='/auth/login' style={{color:'var(--c5)', fontWeight:700}}>Log in</Link></>}
           </div>
         )}
 

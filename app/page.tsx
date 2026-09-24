@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Header from '../components/Header'
 import HeroScene from '../components/HeroScene'
 import { seededCommunities, seededBySlug } from '../lib/communities'
+import { getAuthHeader } from '../lib/authToken'
 import { CommunityIcon, ChevronIcon, CommentIcon } from '../components/Icons'
 
 const COLOR: Record<string, string> = {
@@ -25,6 +26,12 @@ function timeAgo(date: string) {
 export default function Home() {
   const [posts, setPosts] = useState<any[]>([])
   const [loadingPosts, setLoadingPosts] = useState(true)
+  const [feed, setFeed] = useState<'latest' | 'following'>('latest')
+  const [followedPosts, setFollowedPosts] = useState<any[]>([])
+  const [followedSlugs, setFollowedSlugs] = useState<string[] | null>(null)
+  const [loadingFollowed, setLoadingFollowed] = useState(false)
+  const [followMsg, setFollowMsg] = useState('')
+  const [loggedIn, setLoggedIn] = useState(false)
   const [type, setType] = useState('idea')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
@@ -34,12 +41,32 @@ export default function Home() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    setLoggedIn(!!localStorage.getItem('hektiq_username'))
     fetch('/api/posts/latest')
       .then(r => r.json())
       .then(d => setPosts(d.posts || []))
       .catch(() => {})
       .finally(() => setLoadingPosts(false))
   }, [])
+
+  // Load the Following feed the first time that tab is opened
+  useEffect(() => {
+    if (feed !== 'following' || followedSlugs !== null || !loggedIn) return
+    setLoadingFollowed(true)
+    setFollowMsg('')
+    getAuthHeader()
+      .then(auth => fetch('/api/posts/following', { headers: { ...auth }, cache: 'no-store' }))
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) setFollowMsg(d.error)
+        else {
+          setFollowedPosts(d.posts || [])
+          setFollowedSlugs(d.following || [])
+        }
+      })
+      .catch(() => setFollowMsg('Couldn\'t load your communities.'))
+      .finally(() => setLoadingFollowed(false))
+  }, [feed, followedSlugs, loggedIn])
 
   async function sendSuggestion() {
     setError('')
@@ -62,6 +89,38 @@ export default function Home() {
 
   const label = { fontSize:'1.4rem', color:'var(--text)', margin:'0 0 14px' }
   const section = { maxWidth:'1100px', margin:'0 auto', padding:'56px 16px 0' }
+
+  function PostGrid({ list }: { list: any[] }) {
+    return (
+      <div className='hk-grid-2'>
+        {list.map(post => {
+          const c = seededBySlug[post.community_id]
+          const n = COLOR[post.community_id] || '1'
+          return (
+            <Link key={post.id} href={'/c/' + post.community_id + '/post/' + post.id} className='hk-card' style={{display:'block', padding:'16px', textDecoration:'none', color:'var(--text)'}}>
+              <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.8rem', color:'var(--muted)', marginBottom:'8px'}}>
+                <span style={{color:`var(--c${n})`, display:'flex', alignItems:'center', gap:'6px', fontWeight:600}}>
+                  <CommunityIcon slug={post.community_id} size={16} />
+                  {c ? c.name : post.community_id}
+                </span>
+                <span>· {timeAgo(post.created_at)}</span>
+              </div>
+              <p style={{fontWeight:700, fontSize:'1.02rem', lineHeight:'1.4', margin:'0 0 6px', wordBreak:'break-word'}}>{post.title}</p>
+              <p style={{fontSize:'0.88rem', color:'var(--muted)', lineHeight:'1.55', margin:'0 0 10px', wordBreak:'break-word'}}>
+                {(post.body || '').substring(0, 110)}{(post.body || '').length > 110 ? '...' : ''}
+              </p>
+              <div style={{display:'flex', gap:'14px', fontSize:'0.8rem', color:'var(--faint)'}}>
+                <span>▲ {post.upvotes || 0}</span>
+                <span style={{display:'flex', alignItems:'center', gap:'4px'}}><CommentIcon size={14} /> Discuss</span>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const emptyBox = { padding:'28px 16px', textAlign:'center' as const, color:'var(--muted)', borderStyle:'dashed' }
 
   return (
     <main className='hk-dots' style={{minHeight:'100vh', overflowX:'hidden', color:'var(--text)'}}>
@@ -125,39 +184,40 @@ export default function Home() {
       </section>
 
       <section style={section}>
-        <h2 className='font-display' style={label}>LATEST FROM THE COMMUNITY</h2>
-        {loadingPosts ? (
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', margin:'0 0 14px'}}>
+          <h2 className='font-display' style={{...label, margin:0}}>FROM THE COMMUNITY</h2>
+          <div style={{display:'flex', gap:'8px'}} role='tablist' aria-label='Which posts'>
+            <button role='tab' aria-selected={feed === 'latest'} onClick={() => setFeed('latest')} className={'hk-type' + (feed === 'latest' ? ' active' : '')}>Latest</button>
+            <button role='tab' aria-selected={feed === 'following'} onClick={() => setFeed('following')} className={'hk-type' + (feed === 'following' ? ' active' : '')}>Following</button>
+          </div>
+        </div>
+
+        {feed === 'latest' ? (
+          loadingPosts ? (
+            <p style={{color:'var(--muted)'}}>Loading...</p>
+          ) : posts.length === 0 ? (
+            <div className='hk-card' style={emptyBox}>It's quiet in here. Be the first to post.</div>
+          ) : (
+            <PostGrid list={posts} />
+          )
+        ) : !loggedIn ? (
+          <div className='hk-card' style={emptyBox}>
+            <p style={{margin:'0 0 14px'}}>Log in to see posts from the communities you've joined.</p>
+            <Link href='/auth/login' className='hk-btn'>Log in</Link>
+          </div>
+        ) : loadingFollowed ? (
           <p style={{color:'var(--muted)'}}>Loading...</p>
-        ) : posts.length === 0 ? (
-          <div className='hk-card' style={{padding:'28px 16px', textAlign:'center', color:'var(--muted)', borderStyle:'dashed'}}>
-            It's quiet in here. Be the first to post.
+        ) : followMsg ? (
+          <div className='hk-card' style={emptyBox}>{followMsg}</div>
+        ) : followedSlugs && followedSlugs.length === 0 ? (
+          <div className='hk-card' style={emptyBox}>
+            <p style={{margin:'0 0 14px'}}>You haven't joined any communities yet. Hit Join on the ones you like and their posts show up here.</p>
+            <Link href='/communities' className='hk-btn'>Browse communities</Link>
           </div>
+        ) : followedPosts.length === 0 ? (
+          <div className='hk-card' style={emptyBox}>Nothing new in your communities yet. Be the first to post.</div>
         ) : (
-          <div className='hk-grid-2'>
-            {posts.map(post => {
-              const c = seededBySlug[post.community_id]
-              const n = COLOR[post.community_id] || '1'
-              return (
-                <Link key={post.id} href={'/c/' + post.community_id + '/post/' + post.id} className='hk-card' style={{display:'block', padding:'16px', textDecoration:'none', color:'var(--text)'}}>
-                  <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.8rem', color:'var(--muted)', marginBottom:'8px'}}>
-                    <span style={{color:`var(--c${n})`, display:'flex', alignItems:'center', gap:'6px', fontWeight:600}}>
-                      <CommunityIcon slug={post.community_id} size={16} />
-                      {c ? c.name : post.community_id}
-                    </span>
-                    <span>· {timeAgo(post.created_at)}</span>
-                  </div>
-                  <p style={{fontWeight:700, fontSize:'1.02rem', lineHeight:'1.4', margin:'0 0 6px', wordBreak:'break-word'}}>{post.title}</p>
-                  <p style={{fontSize:'0.88rem', color:'var(--muted)', lineHeight:'1.55', margin:'0 0 10px', wordBreak:'break-word'}}>
-                    {(post.body || '').substring(0, 110)}{(post.body || '').length > 110 ? '...' : ''}
-                  </p>
-                  <div style={{display:'flex', gap:'14px', fontSize:'0.8rem', color:'var(--faint)'}}>
-                    <span>▲ {post.upvotes || 0}</span>
-                    <span style={{display:'flex', alignItems:'center', gap:'4px'}}><CommentIcon size={14} /> Discuss</span>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
+          <PostGrid list={followedPosts} />
         )}
       </section>
 

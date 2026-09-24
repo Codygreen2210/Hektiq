@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getUserFromRequest } from '../../../lib/serverAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,21 @@ const LIMIT = 50
 export async function GET(req: NextRequest) {
   try {
     const type = req.nextUrl.searchParams.get('type') === 'videos' ? 'videos' : 'posts'
+    const followingOnly = req.nextUrl.searchParams.get('following') === '1'
     const since = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+    // Following: only communities this person joined
+    let slugs: string[] | null = null
+    if (followingOnly) {
+      const user = await getUserFromRequest(req, supabase)
+      if (!user) return NextResponse.json({ error: 'Log in to see your communities.' })
+      const { data: follows } = await supabase
+        .from('community_follows')
+        .select('community_slug')
+        .eq('user_id', user.id)
+      slugs = (follows || []).map((f) => f.community_slug)
+      if (slugs.length === 0) return NextResponse.json({ posts: [], following: [] })
+    }
 
     let query = supabase
       .from('posts')
@@ -26,10 +41,11 @@ export async function GET(req: NextRequest) {
       .limit(500)
 
     query = type === 'videos' ? query.not('video_url', 'is', null) : query.is('video_url', null)
+    if (slugs) query = query.in('community_id', slugs)
 
     const { data: posts, error } = await query
     if (error) throw error
-    if (!posts || posts.length === 0) return NextResponse.json({ posts: [] })
+    if (!posts || posts.length === 0) return NextResponse.json({ posts: [], following: slugs })
 
     const postIds = posts.map((p) => p.id)
 
@@ -76,7 +92,7 @@ export async function GET(req: NextRequest) {
       author_avatar_url: authors[p.author_id]?.avatar_url || null,
     }))
 
-    return NextResponse.json({ posts: result })
+    return NextResponse.json({ posts: result, following: slugs })
   } catch (err) {
     console.error('Trending error:', err)
     return NextResponse.json({ error: 'Could not load trending' }, { status: 500 })
