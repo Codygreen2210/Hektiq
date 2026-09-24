@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('posts')
-      .select('id, title, body, community_id, author_id, upvotes, video_url, created_at')
+      .select('id, title, body, community_id, author_id, upvotes, video_url, image_urls, created_at')
       .eq('is_deleted', false)
       .gte('created_at', since)
       .order('created_at', { ascending: false })

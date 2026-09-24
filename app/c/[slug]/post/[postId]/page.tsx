@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import Header from '../../../../../components/Header'
 import ReportButton from '../../../../../components/ReportButton'
 import VideoEmbed from '../../../../../components/VideoEmbed'
+import PhotoGallery from '../../../../../components/PhotoGallery'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
@@ -266,6 +267,8 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
           </div>
 
           <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 16px', wordBreak:'break-word'}}>{post.title}</h1>
+
+          {Array.isArray(post.image_urls) && post.image_urls.length > 0 && <PhotoGallery urls={post.image_urls} />}
 
           {post.video_url && <VideoEmbed url={post.video_url} />}
 

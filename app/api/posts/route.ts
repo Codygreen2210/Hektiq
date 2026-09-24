@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getUserFromRequest, attachAuthors, VERIFY_MESSAGE } from '../../../lib/serverAuth'
 import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../../../lib/video'
 
+const MAX_PHOTOS = 10
+
 function db() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -10,9 +12,22 @@ function db() {
   )
 }
 
+// Only allow photo links that point at our own post-images bucket
+function cleanImageUrls(input: unknown): string[] | null {
+  if (input === undefined || input === null) return []
+  if (!Array.isArray(input)) return null
+  const prefix = process.env.NEXT_PUBLIC_SUPABASE_URL + '/storage/v1/object/public/post-images/'
+  const out: string[] = []
+  for (const u of input) {
+    if (typeof u !== 'string' || !u.startsWith(prefix) || u.length > 500) return null
+    if (!out.includes(u)) out.push(u)
+  }
+  return out
+}
+
 export async function POST(request: Request) {
   try {
-    const { title, body, community_slug, video_url } = await request.json()
+    const { title, body, community_slug, video_url, image_urls } = await request.json()
     const t = (title || '').trim()
     const b = (body || '').trim()
     const rawVideo = (video_url || '').trim()
@@ -20,6 +35,10 @@ export async function POST(request: Request) {
     if (!t || !community_slug) return NextResponse.json({ error: 'Add a title.' })
     if (t.length > 300) return NextResponse.json({ error: 'Keep the title under 300 characters.' })
     if (b.length > 20000) return NextResponse.json({ error: 'That post is too long.' })
+
+    const images = cleanImageUrls(image_urls)
+    if (images === null) return NextResponse.json({ error: 'Something was wrong with those photos. Try adding them again.' })
+    if (images.length > MAX_PHOTOS) return NextResponse.json({ error: 'Up to ' + MAX_PHOTOS + ' photos per post.' })
 
     let videoCanonical: string | null = null
     if (rawVideo) {
@@ -31,7 +50,9 @@ export async function POST(request: Request) {
       videoCanonical = v.canonical
     }
 
-    if (!b && !videoCanonical) return NextResponse.json({ error: 'Add something in the body, or a video link.' })
+    if (!b && !videoCanonical && images.length === 0) {
+      return NextResponse.json({ error: 'Add something in the body, a photo, or a video link.' })
+    }
 
     const supabase = db()
     const user = await getUserFromRequest(request, supabase)
@@ -40,7 +61,14 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from('posts')
-      .insert({ title: t, body: b, community_id: community_slug, author_id: user.id, video_url: videoCanonical })
+      .insert({
+        title: t,
+        body: b,
+        community_id: community_slug,
+        author_id: user.id,
+        video_url: videoCanonical,
+        image_urls: images,
+      })
       .select()
       .single()
 

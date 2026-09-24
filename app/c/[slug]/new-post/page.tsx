@@ -3,6 +3,7 @@ import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import Header from '../../../../components/Header'
 import VideoEmbed from '../../../../components/VideoEmbed'
+import PhotoPicker from '../../../../components/PhotoPicker'
 import { getAuthHeader } from '../../../../lib/authToken'
 import { seededBySlug } from '../../../../lib/communities'
 import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../../../../lib/video'
@@ -23,6 +24,8 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
   const [body, setBody] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [showVideo, setShowVideo] = useState(false)
+  const [images, setImages] = useState<string[]>([])
+  const [photosBusy, setPhotosBusy] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
@@ -37,15 +40,17 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
   const videoProblem = trimmedVideo && !video
     ? (shortTiktok ? 'That\'s a TikTok short link. Open it, then copy the full link from your browser.' : 'That link isn\'t supported. Use a link from ' + VIDEO_SITES + '.')
     : ''
+  const hasMedia = !!video || images.length > 0
 
   useEffect(() => {
     setLoggedIn(!!localStorage.getItem('hektiq_username'))
   }, [])
 
   async function handleSubmit() {
+    if (photosBusy) return setError('Hang on, photos are still uploading.')
     if (!title.trim()) return setError('Add a title.')
     if (videoProblem) return setError(videoProblem)
-    if (!body.trim() && !video) return setError('Add something in the body, or a video link.')
+    if (!body.trim() && !hasMedia) return setError('Add something in the body, a photo, or a video link.')
     setLoading(true)
     setError('')
     try {
@@ -53,7 +58,7 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...auth },
-        body: JSON.stringify({ title, body, community_slug: slug, video_url: video ? trimmedVideo : '' })
+        body: JSON.stringify({ title, body, community_slug: slug, video_url: video ? trimmedVideo : '', image_urls: images })
       })
       const data = await res.json()
       if (data.error) setError(data.error)
@@ -123,6 +128,10 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
             </div>
 
             <div style={{marginBottom:'16px'}}>
+              <PhotoPicker urls={images} onChange={u => { setImages(u); setError('') }} onBusy={setPhotosBusy} />
+            </div>
+
+            <div style={{marginBottom:'16px'}}>
               {!showVideo ? (
                 <button type='button' onClick={() => setShowVideo(true)} className='hk-add-video'>
                   <VideoCamera size={18} weight='bold' />
@@ -158,20 +167,20 @@ export default function NewPost({ params }: { params: Promise<{ slug: string }> 
             </div>
 
             <div style={{marginBottom:'20px'}}>
-              <label className='font-display' style={labelStyle}>{video ? 'BODY (OPTIONAL)' : 'BODY'}</label>
+              <label className='font-display' style={labelStyle}>{hasMedia ? 'BODY (OPTIONAL)' : 'BODY'}</label>
               <textarea
                 value={body}
                 onChange={e => { setBody(e.target.value); setError('') }}
-                placeholder={video ? 'Say something about the video...' : 'Share the details...'}
-                rows={video ? 4 : 10}
+                placeholder={hasMedia ? 'Say something about it...' : 'Share the details...'}
+                rows={hasMedia ? 4 : 10}
                 className='hk-input'
                 style={{resize:'vertical', lineHeight:'1.7'}}
               />
             </div>
 
             <div style={{display:'flex', gap:'10px', flexWrap:'wrap'}}>
-              <button onClick={handleSubmit} disabled={loading} className='hk-btn'>
-                {loading ? 'Posting...' : 'Post it'}
+              <button onClick={handleSubmit} disabled={loading || photosBusy} className='hk-btn'>
+                {loading ? 'Posting...' : photosBusy ? 'Uploading photos...' : 'Post it'}
               </button>
               <Link href={'/c/' + slug} className='hk-btn-ghost'>Cancel</Link>
             </div>

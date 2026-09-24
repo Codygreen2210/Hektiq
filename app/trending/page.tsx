@@ -5,7 +5,7 @@ import Header from '../../components/Header'
 import VideoFeed, { FeedPost } from '../../components/VideoFeed'
 import { ArrowFatUp, ChatCircle } from '@phosphor-icons/react'
 
-type Post = FeedPost & { body: string | null; created_at: string }
+type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[] }
 
 const COLORS: Record<string, string> = {
   outdoors: 'var(--c4)',
@@ -50,14 +50,18 @@ export default function TrendingPage() {
         .hk-tab.on { background: var(--c1); color: var(--on-c1); box-shadow: var(--shadow-hard); }
         [data-theme='night'] .hk-tab { background: transparent; border-color: var(--border); color: var(--muted); }
         [data-theme='night'] .hk-tab.on { border-color: var(--c1); color: var(--c1); box-shadow: 0 0 12px var(--c1), inset 0 0 8px var(--c1); }
-        .hk-trend-card { display: block; padding: 14px 16px; margin-bottom: 12px; text-decoration: none; color: var(--text); }
+        .hk-trend-card { display: flex; gap: 12px; padding: 14px 16px; margin-bottom: 12px; text-decoration: none; color: var(--text); }
+        .hk-trend-main { flex: 1; min-width: 0; }
         .hk-trend-chip { display: inline-block; font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #111; margin-right: 8px; }
         [data-theme='night'] .hk-trend-chip { background: transparent !important; color: var(--chip) !important; border: 1.5px solid var(--chip); }
         .hk-trend-meta { font-size: .78rem; color: var(--faint); }
-        .hk-trend-title { font-weight: 700; font-size: 1.05rem; margin: 8px 0 4px; color: var(--ink); }
+        .hk-trend-title { font-weight: 700; font-size: 1.05rem; margin: 8px 0 4px; color: var(--ink); word-break: break-word; }
         .hk-trend-body { font-size: .9rem; color: var(--muted); margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .hk-trend-stats { display: flex; gap: 16px; font-size: .82rem; font-weight: 700; color: var(--muted); }
         .hk-trend-stats span { display: flex; align-items: center; gap: 4px; }
+        .hk-trend-thumb { position: relative; flex-shrink: 0; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border-soft); align-self: center; }
+        .hk-trend-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .hk-trend-more { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.72); color: #fff; font-size: .7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
       `}</style>
 
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '0 14px 40px' }}>
@@ -90,20 +94,29 @@ export default function TrendingPage() {
           ) : (
             posts.map((p) => {
               const color = COLORS[p.community_id] || 'var(--c2)'
+              const photos = Array.isArray(p.image_urls) ? p.image_urls : []
               return (
                 <Link key={p.id} href={'/c/' + p.community_id + '/post/' + p.id} className='hk-card hk-trend-card'>
-                  <div>
-                    <span className='hk-trend-chip' style={{ background: color, ['--chip' as string]: color } as React.CSSProperties}>
-                      {p.community_id}
-                    </span>
-                    <span className='hk-trend-meta'>by {p.author_username} · {timeAgo(p.created_at)}</span>
+                  <div className='hk-trend-main'>
+                    <div>
+                      <span className='hk-trend-chip' style={{ background: color, ['--chip' as string]: color } as React.CSSProperties}>
+                        {p.community_id}
+                      </span>
+                      <span className='hk-trend-meta'>by {p.author_username} · {timeAgo(p.created_at)}</span>
+                    </div>
+                    <p className='hk-trend-title'>{p.title}</p>
+                    {p.body && <p className='hk-trend-body'>{p.body}</p>}
+                    <div className='hk-trend-stats'>
+                      <span><ArrowFatUp size={16} weight='bold' /> {p.upvotes || 0}</span>
+                      <span><ChatCircle size={16} weight='bold' /> {p.comment_count}</span>
+                    </div>
                   </div>
-                  <p className='hk-trend-title'>{p.title}</p>
-                  {p.body && <p className='hk-trend-body'>{p.body}</p>}
-                  <div className='hk-trend-stats'>
-                    <span><ArrowFatUp size={16} weight='bold' /> {p.upvotes || 0}</span>
-                    <span><ChatCircle size={16} weight='bold' /> {p.comment_count}</span>
-                  </div>
+                  {photos.length > 0 && (
+                    <div className='hk-trend-thumb'>
+                      <img src={photos[0]} alt='' loading='lazy' />
+                      {photos.length > 1 && <span className='hk-trend-more'>+{photos.length - 1}</span>}
+                    </div>
+                  )}
                 </Link>
               )
             })

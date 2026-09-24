@@ -196,6 +196,10 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         .hk-vote.down.on { color: var(--c1); }
         [data-theme='night'] .hk-vote.on { filter: drop-shadow(0 0 6px currentColor); }
 
+        .hk-card-thumb { position: relative; flex-shrink: 0; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border-soft); align-self: center; }
+        .hk-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .hk-card-more { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.72); color: #fff; font-size: .7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+
         .hk-bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:2px solid var(--border-soft); display:flex; justify-content:space-around; padding:8px 0 12px; z-index:10; transition: background-color .6s ease; }
         [data-theme='night'] .hk-bottom-nav { border-top-color: var(--tube); box-shadow: 0 -4px 16px -8px var(--tube); }
       `}</style>
@@ -258,6 +262,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
             {sortedPosts.map((post) => {
               const userVote = votes[post.id]
               const name = post.author?.username
+              const photos: string[] = Array.isArray(post.image_urls) ? post.image_urls : []
               return (
                 <div key={post.id} className='hk-card' style={{display:'flex', overflow:'hidden'}}>
                   <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'10px 6px', gap:'2px', background:'var(--surface-2)', minWidth:'50px', borderRight:'2px solid var(--border-soft)'}}>
@@ -275,19 +280,27 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                       className={'hk-vote down' + (userVote === 'down' ? ' on' : '') + (popId === post.id + 'down' ? ' hk-pop' : '')}
                     ><DownIcon size={20} active={userVote === 'down'} /></button>
                   </div>
-                  <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'block', color:'var(--text)'}}>
-                    <p style={{fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
-                      {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
-                    </p>
-                    <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 8px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
-                    {post.video_url && <VideoPreview url={post.video_url} />}
-                    {post.body && (
-                      <p style={{color:'var(--muted)', fontSize:'0.9rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{post.body.substring(0, 150)}{post.body.length > 150 ? '...' : ''}</p>
+                  <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'flex', gap:'12px', color:'var(--text)'}}>
+                    <div style={{flex:1, minWidth:0}}>
+                      <p style={{fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
+                        {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : 'unknown'} · {timeAgo(post.created_at)}
+                      </p>
+                      <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 8px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
+                      {post.video_url && <VideoPreview url={post.video_url} />}
+                      {post.body && (
+                        <p style={{color:'var(--muted)', fontSize:'0.9rem', lineHeight:'1.6', margin:'0 0 10px', wordBreak:'break-word'}}>{post.body.substring(0, 150)}{post.body.length > 150 ? '...' : ''}</p>
+                      )}
+                      <span style={{display:'inline-flex', alignItems:'center', gap:'5px', color:'var(--faint)', fontSize:'0.82rem', fontWeight:600}}>
+                        <CommentIcon size={15} />
+                        {post.comment_count || 0} {post.comment_count === 1 ? 'comment' : 'comments'}
+                      </span>
+                    </div>
+                    {photos.length > 0 && (
+                      <div className='hk-card-thumb'>
+                        <img src={photos[0]} alt='' loading='lazy' />
+                        {photos.length > 1 && <span className='hk-card-more'>+{photos.length - 1}</span>}
+                      </div>
                     )}
-                    <span style={{display:'inline-flex', alignItems:'center', gap:'5px', color:'var(--faint)', fontSize:'0.82rem', fontWeight:600}}>
-                      <CommentIcon size={15} />
-                      {post.comment_count || 0} {post.comment_count === 1 ? 'comment' : 'comments'}
-                    </span>
                   </Link>
                 </div>
               )
