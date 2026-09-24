@@ -7,6 +7,7 @@ import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
 import { PixelFlame, PixelSparkle, PixelTrophy } from '../../../components/PixelIcons'
+import { TrendUp } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -299,6 +300,10 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         <Link href='/' style={{...navLink, color:'var(--faint)'}}>
           <HomeIcon />
           Home
+        </Link>
+        <Link href='/trending' style={{...navLink, color:'var(--faint)'}}>
+          <TrendUp size={24} weight='duotone' />
+          Trending
         </Link>
         <Link href='/communities' style={{...navLink, color: accent}}>
           <CommunitiesIcon active />
