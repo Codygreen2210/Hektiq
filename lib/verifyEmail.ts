@@ -51,8 +51,8 @@ export async function sendVerificationEmail(
   return { ok: !!res && res.ok }
 }
 
-export function baseUrlFrom(request: Request) {
-  const origin = request.headers.get('origin')
-  if (origin) return origin
+// Always link to the real site. Never trust the request's origin header,
+// since anyone can fake it and point the email link somewhere else.
+export function baseUrlFrom(_request: Request) {
   return process.env.NEXT_PUBLIC_SITE_URL || 'https://hektiq.com'
 }
