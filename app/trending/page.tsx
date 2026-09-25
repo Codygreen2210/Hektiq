@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Header from '../../components/Header'
 import VideoFeed, { FeedPost } from '../../components/VideoFeed'
+import FounderChip from '../../components/FounderChip'
 import { getAuthHeader } from '../../lib/authToken'
 import { ArrowFatUp, ChatCircle } from '@phosphor-icons/react'
 
-type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[] }
+type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[]; author_founder_number?: number | null }
 
 const COLORS: Record<string, string> = {
   outdoors: 'var(--c4)',
@@ -111,7 +112,8 @@ export default function TrendingPage() {
         .hk-scope button.on { border-color: var(--border); color: var(--text); background: var(--surface-2); }
         .hk-trend-card { display: flex; gap: 12px; padding: 14px 16px; margin-bottom: 12px; text-decoration: none; color: var(--text); }
         .hk-trend-main { flex: 1; min-width: 0; }
-        .hk-trend-chip { display: inline-block; font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #111; margin-right: 8px; }
+        .hk-trend-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .hk-trend-chip { display: inline-block; font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #111; margin-right: 2px; }
         [data-theme='night'] .hk-trend-chip { background: transparent !important; color: var(--chip) !important; border: 1.5px solid var(--chip); }
         .hk-trend-meta { font-size: .78rem; color: var(--faint); }
         .hk-trend-title { font-weight: 700; font-size: 1.05rem; margin: 8px 0 4px; color: var(--ink); word-break: break-word; }
@@ -162,11 +164,13 @@ export default function TrendingPage() {
           return (
             <Link key={p.id} href={'/c/' + p.community_id + '/post/' + p.id} className='hk-card hk-trend-card'>
               <div className='hk-trend-main'>
-                <div>
+                <div className='hk-trend-top'>
                   <span className='hk-trend-chip' style={{ background: color, ['--chip' as string]: color } as React.CSSProperties}>
                     {p.community_id}
                   </span>
-                  <span className='hk-trend-meta'>by {p.author_username} · {timeAgo(p.created_at)}</span>
+                  <span className='hk-trend-meta'>by {p.author_username}</span>
+                  <FounderChip number={p.author_founder_number} />
+                  <span className='hk-trend-meta'>· {timeAgo(p.created_at)}</span>
                 </div>
                 <p className='hk-trend-title'>{p.title}</p>
                 {p.body && <p className='hk-trend-body'>{p.body}</p>}

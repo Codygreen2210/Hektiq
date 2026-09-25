@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import VideoPreview from '../../../components/VideoPreview'
+import FounderChip from '../../../components/FounderChip'
 import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
@@ -332,8 +333,10 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                   </div>
                   <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'flex', gap:'12px', color:'var(--text)'}}>
                     <div style={{flex:1, minWidth:0}}>
-                      <p style={{fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
-                        {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : <span style={{fontStyle:'italic'}}>deleted account</span>} · {timeAgo(post.created_at)}
+                      <p style={{display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
+                        {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : <span style={{fontStyle:'italic'}}>deleted account</span>}
+                        {name && <FounderChip number={post.author?.founder_number} />}
+                        <span>· {timeAgo(post.created_at)}</span>
                       </p>
                       <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 8px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>
                       {post.video_url && <VideoPreview url={post.video_url} />}

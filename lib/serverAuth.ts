@@ -11,7 +11,7 @@ export async function getUserFromRequest(request: Request, supabase: SupabaseCli
 
     const { data: profile } = await supabase
       .from('users')
-      .select('id, username, avatar_url, email_verified')
+      .select('id, username, avatar_url, email_verified, founder_number')
       .eq('id', user.id)
       .single()
 
@@ -29,7 +29,7 @@ export async function attachAuthors(rows: any[], supabase: SupabaseClient) {
 
   const { data: users } = await supabase
     .from('users')
-    .select('id, username, avatar_url')
+    .select('id, username, avatar_url, founder_number')
     .in('id', ids)
 
   const byId = Object.fromEntries((users || []).map(u => [u.id, u]))

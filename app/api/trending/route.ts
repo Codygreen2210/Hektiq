@@ -75,14 +75,14 @@ export async function GET(req: NextRequest) {
 
     // Authors
     const authorIds = [...new Set(scored.map((p) => p.author_id).filter(Boolean))]
-    const authors: Record<string, { username: string; avatar_url: string | null }> = {}
+    const authors: Record<string, { username: string; avatar_url: string | null; founder_number: number | null }> = {}
     if (authorIds.length > 0) {
       const { data: users } = await supabase
         .from('users')
-        .select('id, username, avatar_url')
+        .select('id, username, avatar_url, founder_number')
         .in('id', authorIds)
       for (const u of users || []) {
-        authors[u.id] = { username: u.username, avatar_url: u.avatar_url }
+        authors[u.id] = { username: u.username, avatar_url: u.avatar_url, founder_number: u.founder_number }
       }
     }
 
@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
       ...p,
       author_username: authors[p.author_id]?.username || 'deleted account',
       author_avatar_url: authors[p.author_id]?.avatar_url || null,
+      author_founder_number: authors[p.author_id]?.founder_number ?? null,
     }))
 
     return NextResponse.json({ posts: result, following: slugs })

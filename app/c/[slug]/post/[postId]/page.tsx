@@ -5,6 +5,7 @@ import Header from '../../../../../components/Header'
 import ReportButton from '../../../../../components/ReportButton'
 import VideoEmbed from '../../../../../components/VideoEmbed'
 import PhotoGallery from '../../../../../components/PhotoGallery'
+import FounderChip from '../../../../../components/FounderChip'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
@@ -41,13 +42,14 @@ function Author({ author, date, size = 30 }: { author: any; date: string; size?:
   )
 
   return (
-    <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.85rem', minWidth:0}}>
+    <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.85rem', minWidth:0, flexWrap:'wrap'}}>
       {name ? <Link href={'/profile/' + name} style={{display:'flex'}}>{avatar}</Link> : avatar}
       {name ? (
         <Link href={'/profile/' + name} style={{color:'var(--text)', fontWeight:700, textDecoration:'none'}}>{name}</Link>
       ) : (
         <span style={{color:'var(--faint)', fontStyle:'italic'}}>deleted account</span>
       )}
+      {name && <FounderChip number={author?.founder_number} />}
       <span style={{color:'var(--faint)'}}>· {timeAgo(date)}</span>
     </div>
   )
