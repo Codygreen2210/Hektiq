@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import { CommunityIcon } from '../../../components/Icons'
+import { FounderPin, FounderRibbon } from '../../../components/FounderBadge'
 import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { shrinkImage } from '../../../lib/shrinkImage'
@@ -150,14 +151,19 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   )
 
   const stripes = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)']
+  const founder = typeof profile.founder_number === 'number' ? profile.founder_number : null
+  const isFounder = founder !== null
 
   return (
     <main className='hk-dots' style={{minHeight:'100vh', color:'var(--text)', overflowX:'hidden'}}>
       <style>{`
         .hk-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 3px solid var(--ink); background: var(--c2); color: var(--on-c2); display: flex; align-items: center; justify-content: center; font-family: var(--font-bebas), sans-serif; font-size: 2.8rem; box-shadow: var(--shadow-hard); }
         [data-theme='night'] .hk-avatar { border-color: var(--c1); box-shadow: 0 0 16px var(--c1); }
-        .hk-cam { position: absolute; bottom: 2px; right: 2px; width: 32px; height: 32px; border-radius: 50%; background: var(--c3); color: var(--on-c3); border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .hk-avatar.founder { width: 120px; height: 120px; font-size: 3.4rem; }
+        .hk-cam { position: absolute; bottom: 2px; right: 2px; width: 32px; height: 32px; border-radius: 50%; background: var(--c3); color: var(--on-c3); border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
+        .hk-cam.left { right: auto; left: 2px; }
         [data-theme='night'] .hk-cam { background: var(--bg); color: var(--c5); border-color: var(--c5); box-shadow: 0 0 8px var(--c5); }
+        .hk-pin-spot { position: absolute; right: -44px; bottom: -26px; z-index: 1; }
         .hk-stat { text-align: center; padding: 10px 14px; border: 2px solid var(--border-soft); border-radius: 8px; background: var(--surface-2); min-width: 80px; }
         .hk-profile-stripes { height: 14px; display: flex; flex-direction: column; }
         .hk-profile-stripes div { flex: 1; }
@@ -175,18 +181,23 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             {stripes.map(c => <div key={c} style={{background:c}} />)}
           </div>
 
-          <div style={{padding:'22px', display:'flex', gap:'20px', alignItems:'flex-start', flexWrap:'wrap'}}>
-            <div style={{position:'relative', flexShrink:0}}>
+          <div style={{padding: isFounder ? '26px 22px 30px' : '22px', display:'flex', gap:'20px', alignItems:'flex-start', flexWrap:'wrap'}}>
+            <div style={{position:'relative', flexShrink:0, marginRight: isFounder ? '44px' : 0, marginBottom: isFounder ? '20px' : 0}}>
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.username} className='hk-avatar' />
+                <img src={profile.avatar_url} alt={profile.username} className={'hk-avatar' + (isFounder ? ' founder' : '')} />
               ) : (
-                <div className='hk-avatar'>{profile.username?.charAt(0).toUpperCase()}</div>
+                <div className={'hk-avatar' + (isFounder ? ' founder' : '')}>{profile.username?.charAt(0).toUpperCase()}</div>
               )}
               {isOwner && (
-                <label className='hk-cam' aria-label='Change photo'>
+                <label className={'hk-cam' + (isFounder ? ' left' : '')} aria-label='Change photo'>
                   {uploading ? '...' : <Camera size={16} weight='bold' />}
                   <input type='file' accept='image/*' onChange={handleAvatarUpload} disabled={uploading} style={{display:'none'}} />
                 </label>
+              )}
+              {isFounder && (
+                <div className='hk-pin-spot'>
+                  <FounderPin number={founder as number} size={92} />
+                </div>
               )}
             </div>
 
@@ -200,6 +211,12 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                   </button>
                 )}
               </div>
+
+              {isFounder && (
+                <div style={{margin:'10px 0 16px 24px'}}>
+                  <FounderRibbon number={founder as number} />
+                </div>
+              )}
 
               {editing ? (
                 <div>
