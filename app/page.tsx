@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Header from '../components/Header'
 import HeroScene from '../components/HeroScene'
+import FounderCounter from '../components/FounderCounter'
 import { seededCommunities, seededBySlug } from '../lib/communities'
 import { getAuthHeader } from '../lib/authToken'
 import { CommunityIcon, ChevronIcon, CommentIcon } from '../components/Icons'
@@ -156,6 +157,9 @@ export default function Home() {
         <div style={{display:'flex', gap:'14px', justifyContent:'center', flexWrap:'wrap'}}>
           <Link href='/auth/signup' className='hk-btn'>Join free</Link>
           <a href='#suggest' className='hk-btn-ghost'>Suggest something</a>
+        </div>
+        <div style={{marginTop:'28px'}}>
+          <FounderCounter />
         </div>
       </div>
 

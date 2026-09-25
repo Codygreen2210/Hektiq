@@ -37,13 +37,20 @@ export async function POST(request: Request) {
 
     await supabase.from('email_verifications').delete().eq('user_id', row.user_id)
 
+    // Founding member number (1 to 1000). Null if all spots are taken.
+    let founderNumber: number | null = null
+    try {
+      const { data: n } = await supabase.rpc('claim_founder_number', { uid: user.id })
+      if (typeof n === 'number') founderNumber = n
+    } catch (e) {}
+
     let tokenHash: string | null = null
     try {
       const { data: link } = await supabase.auth.admin.generateLink({ type: 'magiclink', email: user.email })
       tokenHash = link?.properties?.hashed_token || null
     } catch (e) {}
 
-    return NextResponse.json({ ok: true, username: user.username, userId: user.id, tokenHash })
+    return NextResponse.json({ ok: true, username: user.username, userId: user.id, tokenHash, founderNumber })
   } catch (e) {
     return NextResponse.json({ error: 'Something went wrong.' })
   }
