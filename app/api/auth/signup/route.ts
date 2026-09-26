@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomBytes } from 'crypto'
 import { sendVerificationEmail, baseUrlFrom } from '../../../../lib/verifyEmail'
+import { isDisposableEmail, isReservedUsername } from '../../../../lib/blockedSignups'
 
 export async function POST(request: Request) {
   try {
@@ -10,9 +11,18 @@ export async function POST(request: Request) {
     const cleanName = (username || '').trim().toLowerCase()
 
     if (!cleanEmail || !password) return Response.json({ error: 'Email and password are required.' })
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail) || cleanEmail.length > 254) {
+      return Response.json({ error: 'That email doesn\'t look right.' })
+    }
+    if (isDisposableEmail(cleanEmail)) {
+      return Response.json({ error: 'Throwaway email addresses can\'t be used here. Hektiq is for real people, so use an email you actually check.' })
+    }
     if (password.length < 8) return Response.json({ error: 'Password must be at least 8 characters.' })
     if (!/^[a-z0-9_]{3,20}$/.test(cleanName)) {
       return Response.json({ error: 'Username must be 3 to 20 characters: letters, numbers, or underscores.' })
+    }
+    if (isReservedUsername(cleanName)) {
+      return Response.json({ error: 'That username is reserved. Try another.' })
     }
 
     const supabase = createClient(
