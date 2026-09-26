@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/import-videos",
+      "schedule": "0 13 * * *"
+    }
+  ]
+}

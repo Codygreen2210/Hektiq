@@ -2,7 +2,7 @@
 import {
   House, UsersThree, PencilSimpleLine, UserCircle, Fire, Sparkle, Trophy,
   ChatCircle, ArrowFatUp, ArrowFatDown, Mountains, SoccerBall, ChartLineUp,
-  Wrench, Palette, CaretRight
+  Wrench, Palette, CaretRight, GameController, CookingPot, MusicNotes, Cpu
 } from '@phosphor-icons/react'
 
 type IconProps = { size?: number; color?: string; active?: boolean }
@@ -71,6 +71,22 @@ export function ArtIcon({ size = 26, color = 'currentColor' }: IconProps) {
   return <Palette size={size} color={color} weight='duotone' aria-hidden='true' />
 }
 
+export function GamingIcon({ size = 26, color = 'currentColor' }: IconProps) {
+  return <GameController size={size} color={color} weight='duotone' aria-hidden='true' />
+}
+
+export function FoodIcon({ size = 26, color = 'currentColor' }: IconProps) {
+  return <CookingPot size={size} color={color} weight='duotone' aria-hidden='true' />
+}
+
+export function MusicIcon({ size = 26, color = 'currentColor' }: IconProps) {
+  return <MusicNotes size={size} color={color} weight='duotone' aria-hidden='true' />
+}
+
+export function TechIcon({ size = 26, color = 'currentColor' }: IconProps) {
+  return <Cpu size={size} color={color} weight='duotone' aria-hidden='true' />
+}
+
 export function ChevronIcon({ size = 18, color = 'currentColor' }: IconProps) {
   return <CaretRight size={size} color={color} weight='bold' aria-hidden='true' />
 }
@@ -81,5 +97,9 @@ export function CommunityIcon({ slug, ...p }: IconProps & { slug: string }) {
   if (slug === 'money-building') return <MoneyIcon {...p} />
   if (slug === 'garage') return <GarageIcon {...p} />
   if (slug === 'art-makers') return <ArtIcon {...p} />
+  if (slug === 'gaming') return <GamingIcon {...p} />
+  if (slug === 'food') return <FoodIcon {...p} />
+  if (slug === 'music') return <MusicIcon {...p} />
+  if (slug === 'tech') return <TechIcon {...p} />
   return <CommunitiesIcon {...p} />
 }

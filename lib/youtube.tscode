@@ -1,0 +1,95 @@
+// Searches YouTube for recent, safe, embeddable videos.
+// Uses the free YouTube Data API. Each search costs 100 of the 10,000 free daily units.
+
+const MIN_VIEWS = 1000
+
+export type FoundVideo = {
+  id: string
+  title: string
+  channel: string
+  description: string
+  views: number
+  url: string
+}
+
+function decodeHtml(s: string) {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
+// Strips links, hashtags, and clutter out of a YouTube description
+function cleanDescription(raw: string) {
+  let s = decodeHtml(raw || '')
+  s = s.replace(/https?:\/\/\S+/gi, '')          // web links
+  s = s.replace(/\bwww\.\S+/gi, '')               // bare www links
+  s = s.replace(/#[\w-]+/g, '')                   // hashtags
+  s = s.replace(/\b(subscribe|like and subscribe|use code|promo code|affiliate)\b[^.!?]*[.!?]?/gi, '')
+  s = s.replace(/\s+/g, ' ').trim()
+  if (s.length > 280) s = s.slice(0, 279).trimEnd() + '…'
+  return s
+}
+
+export async function searchYouTube(query: string, maxResults = 10): Promise<FoundVideo[]> {
+  const key = process.env.YOUTUBE_API_KEY
+  if (!key) return []
+
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const params = new URLSearchParams({
+    part: 'snippet',
+    q: query,
+    type: 'video',
+    safeSearch: 'strict',
+    videoEmbeddable: 'true',
+    order: 'viewCount',
+    publishedAfter: weekAgo,
+    regionCode: 'US',
+    relevanceLanguage: 'en',
+    maxResults: String(maxResults),
+    key,
+  })
+
+  const res = await fetch('https://www.googleapis.com/youtube/v3/search?' + params.toString(), { cache: 'no-store' }).catch(() => null)
+  if (!res || !res.ok) return []
+  const data = await res.json().catch(() => null)
+  const items: any[] = data?.items || []
+  const ids = items.map(i => i?.id?.videoId).filter(Boolean)
+  if (ids.length === 0) return []
+
+  // Look up view counts (1 unit per call) so we can skip junk uploads
+  const statsRes = await fetch(
+    'https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({ part: 'statistics,status', id: ids.join(','), key }).toString(),
+    { cache: 'no-store' }
+  ).catch(() => null)
+  const stats: Record<string, { views: number; embeddable: boolean }> = {}
+  if (statsRes && statsRes.ok) {
+    const sd = await statsRes.json().catch(() => null)
+    for (const v of sd?.items || []) {
+      stats[v.id] = {
+        views: Number(v?.statistics?.viewCount || 0),
+        embeddable: v?.status?.embeddable !== false,
+      }
+    }
+  }
+
+  return items
+    .map(i => {
+      const id = i?.id?.videoId
+      const s = stats[id]
+      return {
+        id,
+        title: decodeHtml(String(i?.snippet?.title || '')).slice(0, 300),
+        channel: decodeHtml(String(i?.snippet?.channelTitle || '')),
+        description: cleanDescription(String(i?.snippet?.description || '')),
+        views: s ? s.views : 0,
+        url: 'https://www.youtube.com/watch?v=' + id,
+        ok: !!s && s.embeddable && s.views >= MIN_VIEWS,
+      }
+    })
+    .filter(v => v.id && v.title && v.ok)
+    .map(({ ok, ...v }) => v)
+}

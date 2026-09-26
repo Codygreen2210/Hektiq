@@ -27,9 +27,11 @@ async function loadPost(postId: string) {
     if (!post || post.is_deleted) return null
 
     let author: string | null = null
+    let isBot = false
     if (post.author_id) {
-      const { data: u } = await supabase.from('users').select('username').eq('id', post.author_id).maybeSingle()
+      const { data: u } = await supabase.from('users').select('username, is_bot').eq('id', post.author_id).maybeSingle()
       author = u?.username || null
+      isBot = !!u?.is_bot
     }
 
     const { count } = await supabase
@@ -38,7 +40,7 @@ async function loadPost(postId: string) {
       .eq('post_id', postId)
       .eq('is_deleted', false)
 
-    return { ...post, author, comment_count: count || 0 }
+    return { ...post, author, isBot, comment_count: count || 0 }
   } catch (e) {
     return null
   }
@@ -71,6 +73,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const url = SITE + '/c/' + post.community_id + '/post/' + post.id
   const image = previewImage(post)
 
+  // Auto-posted videos stay out of Google until a real person comments.
+  // After that it's a real conversation, and it gets indexed like any post.
+  const waitingForConversation = post.isBot && post.comment_count === 0
+  const wrongSlug = slug !== post.community_id
+
   return {
     title,
     description: desc,
@@ -90,7 +97,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       description: desc,
       ...(image ? { images: [image] } : {}),
     },
-    ...(slug !== post.community_id ? { robots: { index: false } } : {}),
+    ...(waitingForConversation || wrongSlug ? { robots: { index: false, follow: true } } : {}),
   }
 }
 
@@ -98,8 +105,8 @@ export default async function PostLayout({ children, params }: { children: React
   const { postId } = await params
   const post = await loadPost(postId)
 
-  // Tells search engines this page is a discussion post
-  const jsonLd = post ? {
+  // Tells search engines this page is a discussion post (skipped for bot posts with no replies yet)
+  const jsonLd = post && !(post.isBot && post.comment_count === 0) ? {
     '@context': 'https://schema.org',
     '@type': 'DiscussionForumPosting',
     headline: cleanText(post.title, 110),

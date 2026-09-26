@@ -14,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE + '/', lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: SITE + '/trending', lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
     { url: SITE + '/communities', lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    { url: SITE + '/terms', lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
     { url: SITE + '/privacy', lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ]
 
@@ -40,17 +41,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       pages.push({ url: SITE + '/c/' + c.slug, lastModified: new Date(c.created_at), changeFrequency: 'daily', priority: 0.6 })
     }
 
+    // Bot accounts: their posts only count once a real person has commented
+    const { data: bots } = await supabase.from('users').select('id').eq('is_bot', true)
+    const botIds = new Set((bots || []).map(b => b.id))
+
+    const { data: commented } = await supabase
+      .from('comments')
+      .select('post_id')
+      .eq('is_deleted', false)
+      .limit(50000)
+    const hasComments = new Set((commented || []).map(c => c.post_id))
+
     const { data: posts } = await supabase
       .from('posts')
-      .select('id, community_id, created_at')
+      .select('id, community_id, author_id, created_at, edited_at')
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(5000)
 
     for (const p of posts || []) {
+      if (p.author_id && botIds.has(p.author_id) && !hasComments.has(p.id)) continue
       pages.push({
         url: SITE + '/c/' + p.community_id + '/post/' + p.id,
-        lastModified: new Date(p.created_at),
+        lastModified: new Date(p.edited_at || p.created_at),
         changeFrequency: 'weekly',
         priority: 0.7,
       })
