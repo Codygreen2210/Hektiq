@@ -3,10 +3,12 @@ import { useState } from 'react'
 import { Flag } from '@phosphor-icons/react'
 
 const REASONS = [
+  { key: 'minor', label: 'Involves a minor or child safety' },
+  { key: 'violence', label: 'Threats or violence' },
+  { key: 'harassment', label: 'Harassment or hate' },
+  { key: 'spam', label: 'Spam or advertising' },
   { key: 'bot', label: 'Bot or fake account' },
   { key: 'fake', label: 'Fake or copied content' },
-  { key: 'spam', label: 'Spam or advertising' },
-  { key: 'harassment', label: 'Harassment or hate' },
   { key: 'other', label: 'Something else' },
 ]
 
@@ -64,7 +66,7 @@ export default function ReportButton({ postId }: { postId: string }) {
             onClick={e => e.stopPropagation()}
             role='dialog'
             aria-label='Report this post'
-            style={{width:'100%', maxWidth:'440px', background:'var(--bg)', color:'var(--text)', border:'2px solid var(--border)', borderRadius:'12px', padding:'20px', boxShadow:'var(--shadow-hard)'}}
+            style={{width:'100%', maxWidth:'440px', maxHeight:'90dvh', overflowY:'auto', background:'var(--bg)', color:'var(--text)', border:'2px solid var(--border)', borderRadius:'12px', padding:'20px', boxShadow:'var(--shadow-hard)'}}
           >
             <p className='font-display' style={{fontSize:'1.6rem', margin:'0 0 2px'}}>REPORT THIS POST</p>
             <p style={{color:'var(--muted)', fontSize:'0.9rem', margin:'0 0 16px'}}>What's wrong with it?</p>
@@ -80,6 +82,12 @@ export default function ReportButton({ postId }: { postId: string }) {
                 </button>
               ))}
             </div>
+
+            {reason === 'minor' && (
+              <p style={{fontSize:'0.85rem', lineHeight:1.5, color:'var(--text)', background:'var(--surface-2)', border:'2px solid var(--c1)', borderRadius:'8px', padding:'10px 12px', margin:'0 0 12px'}}>
+                This hides the post right away while it gets reviewed. If a child is in danger right now, call 911.
+              </p>
+            )}
 
             <textarea
               value={details}
