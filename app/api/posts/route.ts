@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUserFromRequest, attachAuthors, VERIFY_MESSAGE } from '../../../lib/serverAuth'
 import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../../../lib/video'
+import { notifyMentions } from '../../../lib/mentions'
 
 const MAX_PHOTOS = 10
 
@@ -73,6 +74,9 @@ export async function POST(request: Request) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message })
+
+    await notifyMentions(supabase, { text: t + ' ' + b, from: user.id, postId: data.id })
+
     return NextResponse.json({ post: { ...data, author: user } })
   } catch (e) {
     return NextResponse.json({ error: 'Something went wrong' })

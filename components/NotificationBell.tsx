@@ -1,13 +1,13 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Bell, ArrowFatUp, ChatCircle, ArrowBendUpLeft } from '@phosphor-icons/react'
+import { Bell, ArrowFatUp, ChatCircle, ArrowBendUpLeft, At } from '@phosphor-icons/react'
 import { getAuthHeader } from '../lib/authToken'
 import FounderChip from './FounderChip'
 
 type Note = {
   id: string
-  type: 'upvote' | 'comment' | 'reply'
+  type: 'upvote' | 'comment' | 'reply' | 'mention'
   read: boolean
   created_at: string
   actor: { username: string; avatar_url: string | null; founder_number: number | null } | null
@@ -88,6 +88,7 @@ export default function NotificationBell() {
     const who = n.actor ? n.actor.username : 'Someone'
     if (n.type === 'upvote') return { who, what: 'upvoted your post', Icon: ArrowFatUp, color: 'var(--c4)' }
     if (n.type === 'comment') return { who, what: 'commented on your post', Icon: ChatCircle, color: 'var(--c5)' }
+    if (n.type === 'mention') return { who, what: 'mentioned you in', Icon: At, color: 'var(--c3)' }
     return { who, what: 'replied to your comment on', Icon: ArrowBendUpLeft, color: 'var(--c2)' }
   }
 
@@ -128,7 +129,7 @@ export default function NotificationBell() {
           {loading && !notes ? (
             <div className='hk-notes-empty'>Loading...</div>
           ) : !notes || notes.length === 0 ? (
-            <div className='hk-notes-empty'>Nothing yet. When someone upvotes, comments, or replies to you, it shows up here.</div>
+            <div className='hk-notes-empty'>Nothing yet. When someone upvotes, comments, replies, or mentions you, it shows up here.</div>
           ) : (
             notes.map(n => {
               const { who, what, Icon, color } = line(n)

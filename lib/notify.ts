@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
-type Kind = 'upvote' | 'comment' | 'reply'
+type Kind = 'upvote' | 'comment' | 'reply' | 'mention'
 
 // Creates one notification. Never notifies you about your own actions.
 // Never throws: a failed notice should never break a vote or comment.

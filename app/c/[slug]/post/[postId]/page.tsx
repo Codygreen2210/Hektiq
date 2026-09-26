@@ -7,6 +7,7 @@ import ShareButton from '../../../../../components/ShareButton'
 import VideoEmbed from '../../../../../components/VideoEmbed'
 import PhotoGallery from '../../../../../components/PhotoGallery'
 import FounderChip from '../../../../../components/FounderChip'
+import RichText from '../../../../../components/RichText'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
@@ -151,7 +152,7 @@ function CommentNode({ c, depth, ctx }: { c: any; depth: number; ctx: Ctx }) {
                 </div>
               </div>
             ) : (
-              <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
+              <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}><RichText text={c.body} /></p>
             )}
           </>
         )}
@@ -718,7 +719,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
           {post.video_url && <VideoEmbed url={post.video_url} />}
 
           {post.body && !editingPost && (
-            <p style={{color:'var(--text)', fontSize:'1.02rem', lineHeight:'1.8', margin:'0 0 20px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{post.body}</p>
+            <p style={{color:'var(--text)', fontSize:'1.02rem', lineHeight:'1.8', margin:'0 0 20px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}><RichText text={post.body} /></p>
           )}
 
           <div style={{display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap', paddingTop:'14px', borderTop:'2px solid var(--border-soft)'}}>
@@ -791,7 +792,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             <textarea
               value={comment}
               onChange={e => { setComment(e.target.value); setError('') }}
-              placeholder='Share your thoughts...'
+              placeholder='Share your thoughts... (type @name to tag someone)'
               rows={3}
               maxLength={5000}
               className='hk-input'

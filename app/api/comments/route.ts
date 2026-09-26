@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUserFromRequest, attachAuthors, VERIFY_MESSAGE } from '../../../lib/serverAuth'
 import { notify } from '../../../lib/notify'
+import { notifyMentions } from '../../../lib/mentions'
 
 function db() {
   return createClient(
@@ -53,11 +54,13 @@ export async function POST(request: Request) {
     if (error) return NextResponse.json({ error: 'Couldn\'t post that. Try again.' })
 
     // Notices
+    const alreadyTold = parent ? parent.author_id : post.author_id
     if (parent) {
       await notify(supabase, { to: parent.author_id, from: user.id, type: 'reply', postId: post_id, commentId: data.id })
     } else {
       await notify(supabase, { to: post.author_id, from: user.id, type: 'comment', postId: post_id, commentId: data.id })
     }
+    await notifyMentions(supabase, { text, from: user.id, postId: post_id, commentId: data.id, skip: [alreadyTold] })
 
     return NextResponse.json({ comment: { ...data, author: user } })
   } catch (e) {
