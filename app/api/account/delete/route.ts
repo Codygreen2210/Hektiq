@@ -12,7 +12,8 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY as string
     )
 
-    const user = await getUserFromRequest(request, admin)
+    // Banned people can still delete their own account
+    const user = await getUserFromRequest(request, admin, { allowBanned: true })
     if (!user) return NextResponse.json({ error: 'Log in first.' })
 
     const { data: row } = await admin

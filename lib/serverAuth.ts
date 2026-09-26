@@ -1,6 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
-export async function getUserFromRequest(request: Request, supabase: SupabaseClient) {
+// Returns the logged-in person, or null.
+// Banned accounts come back as null, which blocks them from every
+// action at once. Pass { allowBanned: true } only where a banned
+// person still needs access, like deleting their own account.
+export async function getUserFromRequest(
+  request: Request,
+  supabase: SupabaseClient,
+  opts: { allowBanned?: boolean } = {}
+) {
   try {
     const header = request.headers.get('authorization') || ''
     const token = header.startsWith('Bearer ') ? header.slice(7) : ''
@@ -11,11 +19,13 @@ export async function getUserFromRequest(request: Request, supabase: SupabaseCli
 
     const { data: profile } = await supabase
       .from('users')
-      .select('id, username, avatar_url, email_verified, founder_number')
+      .select('id, username, avatar_url, email_verified, founder_number, is_banned')
       .eq('id', user.id)
       .single()
 
-    return profile || null
+    if (!profile) return null
+    if (profile.is_banned && !opts.allowBanned) return null
+    return profile
   } catch (e) {
     return null
   }
