@@ -10,7 +10,7 @@ import FounderChip from '../../../../../components/FounderChip'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
-import { Trash, ArrowLeft, ArrowBendUpLeft, PushPin, ArrowFatUp, ArrowFatDown } from '@phosphor-icons/react'
+import { Trash, ArrowLeft, ArrowBendUpLeft, PushPin, ArrowFatUp, ArrowFatDown, PencilSimple } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -30,7 +30,7 @@ function timeAgo(date: string) {
   return Math.floor(s / 86400) + 'd ago'
 }
 
-function Author({ author, date, size = 30 }: { author: any; date: string; size?: number }) {
+function Author({ author, date, edited, size = 30 }: { author: any; date: string; edited?: string | null; size?: number }) {
   const name = author?.username
   const avatar = name ? (
     author.avatar_url ? (
@@ -53,7 +53,7 @@ function Author({ author, date, size = 30 }: { author: any; date: string; size?:
         <span style={{color:'var(--faint)', fontStyle:'italic'}}>deleted account</span>
       )}
       {name && <FounderChip number={author?.founder_number} />}
-      <span style={{color:'var(--faint)'}}>· {timeAgo(date)}</span>
+      <span style={{color:'var(--faint)'}}>· {timeAgo(date)}{edited ? ' · edited' : ''}</span>
     </div>
   )
 }
@@ -78,6 +78,14 @@ type Ctx = {
   highlight: string | null
   commentVotes: Record<string, 'up' | 'down' | null>
   voteComment: (id: string, direction: 'up' | 'down') => void
+  editingComment: string | null
+  startEditComment: (c: any) => void
+  cancelEditComment: () => void
+  commentEditText: string
+  setCommentEditText: (t: string) => void
+  commentEditError: string
+  savingCommentEdit: boolean
+  saveCommentEdit: (id: string) => void
 }
 
 function countAll(id: string, childrenOf: Record<string, any[]>): number {
@@ -88,8 +96,11 @@ function countAll(id: string, childrenOf: Record<string, any[]>): number {
 function CommentNode({ c, depth, ctx }: { c: any; depth: number; ctx: Ctx }) {
   const kids = ctx.childrenOf[c.id] || []
   const isCollapsed = !!ctx.collapsed[c.id]
-  const canDelete = !c.is_deleted && ((!!ctx.me && c.author?.username === ctx.me) || ctx.isAdmin)
+  const isMine = !!ctx.me && c.author?.username === ctx.me
+  const canDelete = !c.is_deleted && (isMine || ctx.isAdmin)
+  const canEdit = !c.is_deleted && isMine
   const isReplying = ctx.replyingTo === c.id
+  const isEditing = ctx.editingComment === c.id
   const indent = depth > 0 && depth <= MAX_INDENT
   const my = ctx.commentVotes[c.id] || null
 
@@ -105,14 +116,43 @@ function CommentNode({ c, depth, ctx }: { c: any; depth: number; ctx: Ctx }) {
         ) : (
           <>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'6px'}}>
-              <Author author={c.author} date={c.created_at} size={26} />
-              {canDelete && ctx.confirmComment !== c.id && (
-                <button onClick={() => ctx.setConfirmComment(c.id)} aria-label='Delete comment' className='hk-trash'>
-                  <Trash size={17} weight='duotone' />
-                </button>
-              )}
+              <Author author={c.author} date={c.created_at} edited={c.edited_at} size={26} />
+              <div style={{display:'flex', flexShrink:0}}>
+                {canEdit && !isEditing && (
+                  <button onClick={() => ctx.startEditComment(c)} aria-label='Edit comment' className='hk-trash'>
+                    <PencilSimple size={17} weight='duotone' />
+                  </button>
+                )}
+                {canDelete && ctx.confirmComment !== c.id && !isEditing && (
+                  <button onClick={() => ctx.setConfirmComment(c.id)} aria-label='Delete comment' className='hk-trash'>
+                    <Trash size={17} weight='duotone' />
+                  </button>
+                )}
+              </div>
             </div>
-            <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
+            {isEditing ? (
+              <div>
+                <textarea
+                  value={ctx.commentEditText}
+                  onChange={e => ctx.setCommentEditText(e.target.value)}
+                  rows={3}
+                  maxLength={5000}
+                  className='hk-input'
+                  autoFocus
+                  aria-label='Edit your comment'
+                  style={{resize:'vertical', lineHeight:'1.6', marginBottom:'8px'}}
+                />
+                {ctx.commentEditError && <p style={{color:'var(--c1)', fontSize:'0.85rem', fontWeight:600, margin:'0 0 8px'}}>{ctx.commentEditError}</p>}
+                <div style={{display:'flex', gap:'8px'}}>
+                  <button onClick={() => ctx.saveCommentEdit(c.id)} disabled={ctx.savingCommentEdit || !ctx.commentEditText.trim()} className='hk-btn' style={{padding:'6px 16px', minHeight:'36px', fontSize:'0.85rem'}}>
+                    {ctx.savingCommentEdit ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={ctx.cancelEditComment} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
+            )}
           </>
         )}
 
@@ -217,6 +257,17 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [pinning, setPinning] = useState(false)
   const [commentVotes, setCommentVotes] = useState<Record<string, 'up' | 'down' | null>>({})
   const [commentSort, setCommentSort] = useState<'best' | 'new'>('best')
+
+  const [editingPost, setEditingPost] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editBody, setEditBody] = useState('')
+  const [savingPost, setSavingPost] = useState(false)
+  const [postEditError, setPostEditError] = useState('')
+
+  const [editingComment, setEditingComment] = useState<string | null>(null)
+  const [commentEditText, setCommentEditText] = useState('')
+  const [commentEditError, setCommentEditError] = useState('')
+  const [savingCommentEdit, setSavingCommentEdit] = useState(false)
 
   const community = seededBySlug[slug]
   const n = COLOR[slug] || '2'
@@ -395,6 +446,64 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     setPinning(false)
   }
 
+  function startEditPost() {
+    setEditTitle(post.title || '')
+    setEditBody(post.body || '')
+    setPostEditError('')
+    setEditingPost(true)
+  }
+
+  async function savePostEdit() {
+    setSavingPost(true)
+    setPostEditError('')
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/posts/' + postId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ title: editTitle, body: editBody })
+      })
+      const data = await res.json()
+      if (data.error) setPostEditError(data.error)
+      else {
+        setPost((p: any) => ({ ...p, ...data.post }))
+        setEditingPost(false)
+      }
+    } catch (e) {
+      setPostEditError('Something went wrong. Try again.')
+    }
+    setSavingPost(false)
+  }
+
+  function startEditComment(c: any) {
+    setEditingComment(c.id)
+    setCommentEditText(c.body || '')
+    setCommentEditError('')
+    setConfirmComment(null)
+  }
+
+  async function saveCommentEdit(id: string) {
+    setSavingCommentEdit(true)
+    setCommentEditError('')
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/comments/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ body: commentEditText })
+      })
+      const data = await res.json()
+      if (data.error) setCommentEditError(data.error)
+      else {
+        setComments(cs => cs.map(c => c.id === id ? { ...c, ...data.comment } : c))
+        setEditingComment(null)
+      }
+    } catch (e) {
+      setCommentEditError('Something went wrong. Try again.')
+    }
+    setSavingCommentEdit(false)
+  }
+
   async function postComment(text: string, parentId: string | null) {
     const auth = await getAuthHeader()
     const res = await fetch('/api/comments', {
@@ -507,6 +616,8 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     collapsed, toggleCollapse: (id) => setCollapsed(c => ({ ...c, [id]: !c[id] })),
     highlight,
     commentVotes, voteComment,
+    editingComment, startEditComment, cancelEditComment: () => { setEditingComment(null); setCommentEditError('') },
+    commentEditText, setCommentEditText, commentEditError, savingCommentEdit, saveCommentEdit,
   }
 
   return (
@@ -564,20 +675,49 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
 
         <article className='hk-card hk-post' style={{padding:'20px'}}>
           <div style={{marginBottom:'12px'}}>
-            <Author author={post.author} date={post.created_at} />
+            <Author author={post.author} date={post.created_at} edited={post.edited_at} />
           </div>
 
           {post.is_pinned && (
             <p className='hk-pinned'><PushPin size={15} weight='fill' /> PINNED</p>
           )}
 
-          <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 16px', wordBreak:'break-word'}}>{post.title}</h1>
+          {editingPost ? (
+            <div style={{margin:'0 0 16px'}}>
+              <input
+                value={editTitle}
+                onChange={e => { setEditTitle(e.target.value); setPostEditError('') }}
+                maxLength={300}
+                className='hk-input'
+                aria-label='Edit title'
+                style={{fontSize:'1.1rem', fontWeight:700, marginBottom:'10px'}}
+              />
+              <textarea
+                value={editBody}
+                onChange={e => { setEditBody(e.target.value); setPostEditError('') }}
+                rows={8}
+                className='hk-input'
+                aria-label='Edit text'
+                style={{resize:'vertical', lineHeight:'1.7', marginBottom:'10px'}}
+              />
+              {postEditError && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'0 0 10px'}}>{postEditError}</p>}
+              <div style={{display:'flex', gap:'8px'}}>
+                <button onClick={savePostEdit} disabled={savingPost} className='hk-btn'>
+                  {savingPost ? 'Saving...' : 'Save changes'}
+                </button>
+                <button onClick={() => { setEditingPost(false); setPostEditError('') }} className='hk-btn-ghost'>Cancel</button>
+              </div>
+              <p style={{fontSize:'0.8rem', color:'var(--faint)', margin:'10px 0 0'}}>Photos and video links can't be changed. Delete and repost if you need to swap them.</p>
+            </div>
+          ) : (
+            <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 16px', wordBreak:'break-word'}}>{post.title}</h1>
+          )}
 
           {Array.isArray(post.image_urls) && post.image_urls.length > 0 && <PhotoGallery urls={post.image_urls} />}
 
           {post.video_url && <VideoEmbed url={post.video_url} />}
 
-          {post.body && (
+          {post.body && !editingPost && (
             <p style={{color:'var(--text)', fontSize:'1.02rem', lineHeight:'1.8', margin:'0 0 20px', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{post.body}</p>
           )}
 
@@ -598,6 +738,12 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             <ShareButton path={'/c/' + slug + '/post/' + postId} title={post.title} />
 
             <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+              {isOwner && !editingPost && (
+                <button onClick={startEditPost} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>
+                  <PencilSimple size={15} weight='duotone' aria-hidden='true' />
+                  Edit
+                </button>
+              )}
               {isAdmin && (
                 <button onClick={handlePin} disabled={pinning} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>
                   <PushPin size={15} weight={post.is_pinned ? 'fill' : 'duotone'} aria-hidden='true' />
