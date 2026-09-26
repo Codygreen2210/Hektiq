@@ -8,7 +8,7 @@ import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
 import { PixelFlame, PixelSparkle, PixelTrophy } from '../../../components/PixelIcons'
-import { TrendUp, Warning } from '@phosphor-icons/react'
+import { TrendUp, Warning, PushPin } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -98,7 +98,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
       } catch (e) {}
 
       try {
-        const res = await fetch('/api/posts?community=' + slug)
+        const res = await fetch('/api/posts?community=' + slug, { cache: 'no-store' })
         const data = await res.json()
         const list = data.posts || []
         setPosts(list)
@@ -213,6 +213,9 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
 
   const now = Date.now()
   const sortedPosts = [...posts].sort((a, b) => {
+    // Pinned posts always on top, newest pin first
+    if (!!a.is_pinned !== !!b.is_pinned) return a.is_pinned ? -1 : 1
+    if (a.is_pinned && b.is_pinned) return String(b.pinned_at).localeCompare(String(a.pinned_at))
     if (sort === 'new') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     if (sort === 'top') return (b.upvotes || 0) - (a.upvotes || 0)
     return hotScore(b, now) - hotScore(a, now)
@@ -291,6 +294,11 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         .hk-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .hk-card-more { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.72); color: #fff; font-size: .7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
 
+        .hk-card.pinned { border-color: var(--c4); }
+        [data-theme='night'] .hk-card.pinned { box-shadow: 0 0 12px -4px var(--c4); }
+        .hk-pin-tag { display:inline-flex; align-items:center; gap:4px; font-family: var(--font-bebas), sans-serif; font-size: 0.85rem; letter-spacing: .08em; color: var(--c4); margin: 0 0 4px; }
+        [data-theme='night'] .hk-pin-tag { text-shadow: 0 0 6px var(--c4); }
+
         .hk-admin-zone { border: 2px dashed var(--c1); border-radius: 10px; padding: 16px; margin-top: 36px; }
         .hk-danger-btn { display:inline-flex; align-items:center; gap:8px; background: var(--c1); color: var(--on-c1); border:2px solid var(--ink); border-radius:6px; padding:8px 16px; min-height:40px; font-size:0.9rem; font-weight:700; cursor:pointer; }
         .hk-danger-btn:disabled { opacity: .45; cursor: default; }
@@ -364,7 +372,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
               const name = post.author?.username
               const photos: string[] = Array.isArray(post.image_urls) ? post.image_urls : []
               return (
-                <div key={post.id} className='hk-card' style={{display:'flex', overflow:'hidden'}}>
+                <div key={post.id} className={'hk-card' + (post.is_pinned ? ' pinned' : '')} style={{display:'flex', overflow:'hidden'}}>
                   <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'10px 6px', gap:'2px', background:'var(--surface-2)', minWidth:'50px', borderRight:'2px solid var(--border-soft)'}}>
                     <button
                       onClick={() => handleVote(post.id, 'up')}
@@ -382,6 +390,9 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                   </div>
                   <Link href={'/c/' + slug + '/post/' + post.id} style={{flex:1, minWidth:0, padding:'14px', textDecoration:'none', display:'flex', gap:'12px', color:'var(--text)'}}>
                     <div style={{flex:1, minWidth:0}}>
+                      {post.is_pinned && (
+                        <p className='hk-pin-tag'><PushPin size={13} weight='fill' /> PINNED</p>
+                      )}
                       <p style={{display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
                         {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : <span style={{fontStyle:'italic'}}>deleted account</span>}
                         {name && <FounderChip number={post.author?.founder_number} />}

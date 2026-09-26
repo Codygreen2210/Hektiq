@@ -9,7 +9,7 @@ import FounderChip from '../../../../../components/FounderChip'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
-import { Trash, ArrowLeft, ArrowBendUpLeft } from '@phosphor-icons/react'
+import { Trash, ArrowLeft, ArrowBendUpLeft, PushPin } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -199,6 +199,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [replying, setReplying] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [highlight, setHighlight] = useState<string | null>(null)
+  const [pinning, setPinning] = useState(false)
 
   const community = seededBySlug[slug]
   const n = COLOR[slug] || '2'
@@ -216,7 +217,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
 
     async function load() {
       try {
-        const res = await fetch('/api/posts/' + postId)
+        const res = await fetch('/api/posts/' + postId, { cache: 'no-store' })
         const data = await res.json()
         if (data.post) setPost(data.post)
       } catch (e) {
@@ -312,6 +313,22 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
       setMyVote(prevVote)
       setPost((p: any) => ({ ...p, upvotes: prevScore }))
     }
+  }
+
+  async function handlePin() {
+    setPinning(true)
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/posts/' + postId + '/pin', { method: 'POST', headers: { ...auth } })
+      const data = await res.json()
+      if (data.error) {
+        setVoteMsg(data.error)
+        setTimeout(() => setVoteMsg(''), 3500)
+      } else {
+        setPost((p: any) => ({ ...p, is_pinned: !!data.pinned }))
+      }
+    } catch (e) {}
+    setPinning(false)
   }
 
   async function postComment(text: string, parentId: string | null) {
@@ -435,6 +452,9 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         .hk-comm-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:700; font-size:0.85rem; border:2px solid var(--ink); background: var(--tube); color: var(--chip-on); transition: background-color .6s, color .6s; }
         [data-theme='night'] .hk-comm-chip { background: transparent; color: var(--tube); border-color: var(--tube); box-shadow: 0 0 8px var(--tube); }
 
+        .hk-pinned { display:inline-flex; align-items:center; gap:5px; font-family: var(--font-bebas), sans-serif; font-size: 0.95rem; letter-spacing: .08em; color: var(--c4); margin: 0 0 6px; }
+        [data-theme='night'] .hk-pinned { text-shadow: 0 0 8px var(--c4); }
+
         .hk-vbar { display:inline-flex; align-items:center; gap:4px; border:2px solid var(--border-soft); border-radius:8px; background:var(--surface-2); padding:2px 6px; }
         .hk-vote { background:none; border:none; cursor:pointer; padding:6px; display:flex; color:var(--faint); }
         .hk-vote.up.on { color: var(--c4); }
@@ -472,6 +492,10 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             <Author author={post.author} date={post.created_at} />
           </div>
 
+          {post.is_pinned && (
+            <p className='hk-pinned'><PushPin size={15} weight='fill' /> PINNED</p>
+          )}
+
           <h1 style={{fontSize:'1.6rem', fontWeight:800, lineHeight:'1.3', margin:'0 0 16px', wordBreak:'break-word'}}>{post.title}</h1>
 
           {Array.isArray(post.image_urls) && post.image_urls.length > 0 && <PhotoGallery urls={post.image_urls} />}
@@ -498,6 +522,12 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             </span>
 
             <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+              {isAdmin && (
+                <button onClick={handlePin} disabled={pinning} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>
+                  <PushPin size={15} weight={post.is_pinned ? 'fill' : 'duotone'} aria-hidden='true' />
+                  {pinning ? '...' : post.is_pinned ? 'Unpin' : 'Pin'}
+                </button>
+              )}
               {canDelete && !confirmDelete && (
                 <button onClick={() => setConfirmDelete(true)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>
                   <Trash size={15} weight='duotone' aria-hidden='true' />
