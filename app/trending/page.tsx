@@ -6,16 +6,9 @@ import VideoFeed, { FeedPost } from '../../components/VideoFeed'
 import FounderChip from '../../components/FounderChip'
 import { getAuthHeader } from '../../lib/authToken'
 import { ArrowFatUp, ChatCircle } from '@phosphor-icons/react'
+import { COLORS } from '../../lib/communities'
 
 type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[]; author_founder_number?: number | null }
-
-const COLORS: Record<string, string> = {
-  outdoors: 'var(--c4)',
-  sports: 'var(--c5)',
-  'money-building': 'var(--c3)',
-  garage: 'var(--c1)',
-  'art-makers': 'var(--c2)',
-}
 
 function timeAgo(date: string) {
   const h = Math.floor((Date.now() - new Date(date).getTime()) / 3600000)

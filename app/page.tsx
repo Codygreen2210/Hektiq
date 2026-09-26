@@ -4,17 +4,9 @@ import Link from 'next/link'
 import Header from '../components/Header'
 import HeroScene from '../components/HeroScene'
 import FounderCounter from '../components/FounderCounter'
-import { seededCommunities, seededBySlug } from '../lib/communities'
+import { seededCommunities, seededBySlug, COLOR } from '../lib/communities'
 import { getAuthHeader } from '../lib/authToken'
 import { CommunityIcon, ChevronIcon, CommentIcon } from '../components/Icons'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)

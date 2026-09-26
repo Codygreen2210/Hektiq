@@ -4,14 +4,7 @@ import Link from 'next/link'
 import Header from '../../components/Header'
 import { CommunityIcon } from '../../components/Icons'
 import { MagnifyingGlass } from '@phosphor-icons/react'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
+import { COLOR } from '../../lib/communities'
 
 export default function Search() {
   const [query, setQuery] = useState('')

@@ -2,16 +2,8 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Header from '../../components/Header'
-import { seededCommunities } from '../../lib/communities'
+import { seededCommunities, COLOR } from '../../lib/communities'
 import { CommunityIcon, ChevronIcon } from '../../components/Icons'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 export default function Communities() {
   const [userCommunities, setUserCommunities] = useState<any[]>([])

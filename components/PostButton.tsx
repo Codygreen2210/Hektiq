@@ -5,17 +5,9 @@ import { usePathname } from 'next/navigation'
 import VideoEmbed from './VideoEmbed'
 import PhotoPicker from './PhotoPicker'
 import { getAuthHeader } from '../lib/authToken'
-import { seededBySlug } from '../lib/communities'
+import { seededBySlug, COLOR } from '../lib/communities'
 import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../lib/video'
 import { Plus, VideoCamera, X } from '@phosphor-icons/react'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 type Choice = { slug: string; name: string }
 

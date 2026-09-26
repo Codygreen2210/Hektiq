@@ -8,18 +8,10 @@ import VideoEmbed from '../../../../../components/VideoEmbed'
 import PhotoGallery from '../../../../../components/PhotoGallery'
 import FounderChip from '../../../../../components/FounderChip'
 import RichText from '../../../../../components/RichText'
-import { seededBySlug } from '../../../../../lib/communities'
+import { seededBySlug, COLOR } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
 import { Trash, ArrowLeft, ArrowBendUpLeft, PushPin, ArrowFatUp, ArrowFatDown, PencilSimple } from '@phosphor-icons/react'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 const MAX_INDENT = 5
 

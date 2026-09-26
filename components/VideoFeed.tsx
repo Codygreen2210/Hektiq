@@ -5,6 +5,7 @@ import VideoEmbed from './VideoEmbed'
 import { parseVideo } from '../lib/video'
 import { getAuthHeader } from '../lib/authToken'
 import { ArrowFatUp, ArrowFatDown, ChatCircle } from '@phosphor-icons/react'
+import { COLORS } from '../lib/communities'
 
 export type FeedPost = {
   id: string
@@ -14,14 +15,6 @@ export type FeedPost = {
   comment_count: number
   author_username: string
   video_url: string
-}
-
-const COLORS: Record<string, string> = {
-  outdoors: 'var(--c4)',
-  sports: 'var(--c5)',
-  'money-building': 'var(--c3)',
-  garage: 'var(--c1)',
-  'art-makers': 'var(--c2)',
 }
 
 export default function VideoFeed({ posts }: { posts: FeedPost[] }) {

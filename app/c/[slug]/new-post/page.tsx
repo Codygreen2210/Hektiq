@@ -5,18 +5,10 @@ import Header from '../../../../components/Header'
 import VideoEmbed from '../../../../components/VideoEmbed'
 import PhotoPicker from '../../../../components/PhotoPicker'
 import { getAuthHeader } from '../../../../lib/authToken'
-import { seededBySlug } from '../../../../lib/communities'
+import { seededBySlug, COLOR } from '../../../../lib/communities'
 import { parseVideo, isShortTiktokLink, VIDEO_SITES } from '../../../../lib/video'
 import { CommunityIcon } from '../../../../components/Icons'
 import { ArrowLeft, VideoCamera, X } from '@phosphor-icons/react'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 export default function NewPost({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)

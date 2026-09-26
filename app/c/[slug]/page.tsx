@@ -4,19 +4,11 @@ import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import VideoPreview from '../../../components/VideoPreview'
 import FounderChip from '../../../components/FounderChip'
-import { seededBySlug } from '../../../lib/communities'
+import { seededBySlug, COLOR } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
 import { PixelFlame, PixelSparkle, PixelTrophy } from '../../../components/PixelIcons'
 import { TrendUp, Warning, PushPin } from '@phosphor-icons/react'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)

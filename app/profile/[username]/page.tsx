@@ -4,18 +4,10 @@ import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import { CommunityIcon } from '../../../components/Icons'
 import { FounderPin, FounderRibbon } from '../../../components/FounderBadge'
-import { seededBySlug } from '../../../lib/communities'
+import { seededBySlug, COLOR } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { shrinkImage } from '../../../lib/shrinkImage'
 import { Camera, PencilSimple, Warning } from '@phosphor-icons/react'
-
-const COLOR: Record<string, string> = {
-  'outdoors': '4',
-  'sports': '5',
-  'money-building': '3',
-  'garage': '1',
-  'art-makers': '2',
-}
 
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
