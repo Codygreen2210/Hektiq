@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUserFromRequest, VERIFY_MESSAGE } from '../../../../lib/serverAuth'
+import { checkImage, alertChildSafety } from '../../../../lib/moderate'
 
 const MAX_BYTES = 3 * 1024 * 1024 // 3 MB after shrinking (normally ~300 KB)
 
@@ -21,8 +22,16 @@ export async function POST(request: Request) {
     if (file.type !== 'image/jpeg') return NextResponse.json({ error: 'That photo type isn\'t supported.' })
     if (file.size > MAX_BYTES) return NextResponse.json({ error: 'That photo is too big.' })
 
-    const path = user.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 10) + '.jpg'
     const bytes = new Uint8Array(await file.arrayBuffer())
+
+    // Check it before it's ever saved
+    const check = await checkImage(bytes, 'image/jpeg')
+    if (!check.ok) {
+      if (check.childSafety) await alertChildSafety(user.username, user.id)
+      return NextResponse.json({ error: check.reason })
+    }
+
+    const path = user.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 10) + '.jpg'
 
     const { error } = await supabase.storage
       .from('post-images')

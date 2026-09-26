@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '../../../../lib/serverAuth'
+import { checkImage, alertChildSafety } from '../../../../lib/moderate'
 
 const MAX_BYTES = 3 * 1024 * 1024
 const PUBLIC_FIELDS = 'id, username, bio, avatar_url, karma, created_at'
@@ -21,9 +22,17 @@ export async function POST(request: Request) {
     if (file.type !== 'image/jpeg') return NextResponse.json({ error: 'That photo type isn\'t supported.' })
     if (file.size > MAX_BYTES) return NextResponse.json({ error: 'That photo is too big.' })
 
+    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    // Check it before it's ever saved
+    const check = await checkImage(bytes, 'image/jpeg')
+    if (!check.ok) {
+      if (check.childSafety) await alertChildSafety(user.username, user.id)
+      return NextResponse.json({ error: check.reason })
+    }
+
     // Always saved under this person's own id
     const path = user.id + '.jpg'
-    const bytes = new Uint8Array(await file.arrayBuffer())
 
     const { error: upErr } = await supabase.storage
       .from('avatars')
