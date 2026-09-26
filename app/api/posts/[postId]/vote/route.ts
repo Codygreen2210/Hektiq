@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUserFromRequest, VERIFY_MESSAGE } from '../../../../../lib/serverAuth'
+import { notify } from '../../../../../lib/notify'
 
 export async function POST(
   request: Request,
@@ -52,6 +53,12 @@ export async function POST(
     const score = (all || []).reduce((sum, v) => sum + v.value, 0)
 
     await supabase.from('posts').update({ upvotes: score }).eq('id', postId)
+
+    // Let the post's author know about a new upvote
+    if (myVote === 'up') {
+      const { data: post } = await supabase.from('posts').select('author_id').eq('id', postId).maybeSingle()
+      await notify(supabase, { to: post?.author_id, from: user.id, type: 'upvote', postId })
+    }
 
     return NextResponse.json({ upvotes: score, myVote })
   } catch (e) {

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MagnifyingGlass, EnvelopeSimple, TrendUp, User, SignOut } from '@phosphor-icons/react'
 import ThemeToggle from './ThemeToggle'
+import NotificationBell from './NotificationBell'
 import { getAuthHeader } from '../lib/authToken'
 
 function LogoMark() {
@@ -153,7 +154,7 @@ export default function Header() {
 
           <div style={{flex:1}} className='hk-mobile' />
 
-          <nav style={{display:'flex', alignItems:'center', gap:'10px', flexShrink:0}}>
+          <nav style={{display:'flex', alignItems:'center', gap:'8px', flexShrink:0}}>
             <Link href='/trending' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>
               Trending
             </Link>
@@ -173,38 +174,41 @@ export default function Header() {
             <ThemeToggle />
 
             {username ? (
-              <div ref={menuRef} style={{position:'relative'}}>
-                <button
-                  className='hk-menu-btn'
-                  onClick={() => setMenuOpen(o => !o)}
-                  aria-label='Account menu'
-                  aria-haspopup='menu'
-                  aria-expanded={menuOpen}
-                >
-                  {avatar ? (
-                    <img src={avatar} alt='' style={{width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
-                  ) : (
-                    <div style={{width:'36px', height:'36px', borderRadius:'50%', background:'var(--c2)', color:'var(--on-c2)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', fontWeight:700}}>
-                      {username.charAt(0).toUpperCase()}
+              <>
+                <NotificationBell />
+                <div ref={menuRef} style={{position:'relative'}}>
+                  <button
+                    className='hk-menu-btn'
+                    onClick={() => setMenuOpen(o => !o)}
+                    aria-label='Account menu'
+                    aria-haspopup='menu'
+                    aria-expanded={menuOpen}
+                  >
+                    {avatar ? (
+                      <img src={avatar} alt='' style={{width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
+                    ) : (
+                      <div style={{width:'36px', height:'36px', borderRadius:'50%', background:'var(--c2)', color:'var(--on-c2)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', fontWeight:700}}>
+                        {username.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className='hk-desktop' style={{color:'var(--text)', fontSize:'0.9rem', fontWeight:600}}>{username}</span>
+                  </button>
+
+                  {menuOpen && (
+                    <div className='hk-menu' role='menu'>
+                      <div className='hk-menu-name'>Logged in as <strong style={{color:'var(--text)'}}>{username}</strong></div>
+                      <Link href={'/profile/' + username} className='hk-menu-item' role='menuitem' onClick={() => setMenuOpen(false)}>
+                        <User size={18} weight='bold' />
+                        Profile
+                      </Link>
+                      <button className='hk-menu-item danger' role='menuitem' onClick={handleLogout} disabled={loggingOut}>
+                        <SignOut size={18} weight='bold' />
+                        {loggingOut ? 'Logging out...' : 'Log out'}
+                      </button>
                     </div>
                   )}
-                  <span className='hk-desktop' style={{color:'var(--text)', fontSize:'0.9rem', fontWeight:600}}>{username}</span>
-                </button>
-
-                {menuOpen && (
-                  <div className='hk-menu' role='menu'>
-                    <div className='hk-menu-name'>Logged in as <strong style={{color:'var(--text)'}}>{username}</strong></div>
-                    <Link href={'/profile/' + username} className='hk-menu-item' role='menuitem' onClick={() => setMenuOpen(false)}>
-                      <User size={18} weight='bold' />
-                      Profile
-                    </Link>
-                    <button className='hk-menu-item danger' role='menuitem' onClick={handleLogout} disabled={loggingOut}>
-                      <SignOut size={18} weight='bold' />
-                      {loggingOut ? 'Logging out...' : 'Log out'}
-                    </button>
-                  </div>
-                )}
-              </div>
+                </div>
+              </>
             ) : (
               <>
                 <Link href='/auth/login' className='hk-desktop' style={{color:'var(--muted)', textDecoration:'none', fontSize:'0.9rem', fontWeight:600, padding:'8px 4px'}}>Log in</Link>

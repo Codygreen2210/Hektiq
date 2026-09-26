@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useMemo } from 'react'
 import Header from '../../../../../components/Header'
 import ReportButton from '../../../../../components/ReportButton'
 import VideoEmbed from '../../../../../components/VideoEmbed'
@@ -9,7 +9,7 @@ import FounderChip from '../../../../../components/FounderChip'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
-import { Trash, ArrowLeft } from '@phosphor-icons/react'
+import { Trash, ArrowLeft, ArrowBendUpLeft } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -18,6 +18,8 @@ const COLOR: Record<string, string> = {
   'garage': '1',
   'art-makers': '2',
 }
+
+const MAX_INDENT = 5
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -55,6 +57,124 @@ function Author({ author, date, size = 30 }: { author: any; date: string; size?:
   )
 }
 
+type Ctx = {
+  me: string | null
+  isAdmin: boolean
+  childrenOf: Record<string, any[]>
+  replyingTo: string | null
+  setReplyingTo: (id: string | null) => void
+  replyText: string
+  setReplyText: (t: string) => void
+  replyError: string
+  replying: boolean
+  submitReply: (parentId: string) => void
+  confirmComment: string | null
+  setConfirmComment: (id: string | null) => void
+  deletingComment: string | null
+  handleDeleteComment: (id: string) => void
+  collapsed: Record<string, boolean>
+  toggleCollapse: (id: string) => void
+  highlight: string | null
+}
+
+function countAll(id: string, childrenOf: Record<string, any[]>): number {
+  const kids = childrenOf[id] || []
+  return kids.reduce((n, k) => n + 1 + countAll(k.id, childrenOf), 0)
+}
+
+function CommentNode({ c, depth, ctx }: { c: any; depth: number; ctx: Ctx }) {
+  const kids = ctx.childrenOf[c.id] || []
+  const isCollapsed = !!ctx.collapsed[c.id]
+  const canDelete = !c.is_deleted && ((!!ctx.me && c.author?.username === ctx.me) || ctx.isAdmin)
+  const isReplying = ctx.replyingTo === c.id
+  const indent = depth > 0 && depth <= MAX_INDENT
+
+  return (
+    <div className={indent ? 'hk-thread' : ''} style={{marginLeft: indent ? 14 : 0}}>
+      <div
+        id={'c-' + c.id}
+        className={'hk-card hk-comment' + (ctx.highlight === c.id ? ' hk-flash' : '')}
+        style={{padding:'12px 14px', borderLeft: depth === 0 ? '4px solid var(--tube)' : undefined}}
+      >
+        {c.is_deleted ? (
+          <p style={{margin:0, fontSize:'0.88rem', color:'var(--faint)', fontStyle:'italic'}}>comment deleted</p>
+        ) : (
+          <>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'6px'}}>
+              <Author author={c.author} date={c.created_at} size={26} />
+              {canDelete && ctx.confirmComment !== c.id && (
+                <button onClick={() => ctx.setConfirmComment(c.id)} aria-label='Delete comment' className='hk-trash'>
+                  <Trash size={17} weight='duotone' />
+                </button>
+              )}
+            </div>
+            <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
+          </>
+        )}
+
+        <div style={{display:'flex', alignItems:'center', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
+          {!c.is_deleted && (
+            ctx.me ? (
+              <button
+                className='hk-mini'
+                onClick={() => { ctx.setReplyingTo(isReplying ? null : c.id); ctx.setReplyText('') }}
+              >
+                <ArrowBendUpLeft size={14} weight='bold' />
+                {isReplying ? 'Cancel' : 'Reply'}
+              </button>
+            ) : (
+              <Link href='/auth/login' className='hk-mini'>
+                <ArrowBendUpLeft size={14} weight='bold' />
+                Log in to reply
+              </Link>
+            )
+          )}
+          {kids.length > 0 && (
+            <button className='hk-mini' onClick={() => ctx.toggleCollapse(c.id)}>
+              {isCollapsed ? 'Show ' + countAll(c.id, ctx.childrenOf) + (countAll(c.id, ctx.childrenOf) === 1 ? ' reply' : ' replies') : 'Hide replies'}
+            </button>
+          )}
+        </div>
+
+        {ctx.confirmComment === c.id && (
+          <div style={{display:'flex', alignItems:'center', gap:'8px', marginTop:'10px', flexWrap:'wrap'}}>
+            <span style={{fontSize:'0.85rem', color:'var(--c1)', fontWeight:700}}>Delete this comment?</span>
+            <button onClick={() => ctx.handleDeleteComment(c.id)} disabled={ctx.deletingComment === c.id} className='hk-danger'>
+              {ctx.deletingComment === c.id ? 'Deleting...' : 'Yes, delete'}
+            </button>
+            <button onClick={() => ctx.setConfirmComment(null)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>Cancel</button>
+          </div>
+        )}
+
+        {isReplying && (
+          <div style={{marginTop:'10px'}}>
+            <textarea
+              value={ctx.replyText}
+              onChange={e => ctx.setReplyText(e.target.value)}
+              placeholder={'Reply to ' + (c.author?.username || 'this comment') + '...'}
+              rows={3}
+              maxLength={5000}
+              className='hk-input'
+              autoFocus
+              style={{resize:'vertical', lineHeight:'1.6', marginBottom:'8px'}}
+            />
+            {ctx.replyError && <p style={{color:'var(--c1)', fontSize:'0.85rem', fontWeight:600, margin:'0 0 8px'}}>{ctx.replyError}</p>}
+            <button onClick={() => ctx.submitReply(c.id)} disabled={ctx.replying || !ctx.replyText.trim()} className='hk-btn' style={{padding:'6px 16px', minHeight:'38px', fontSize:'0.88rem'}}>
+              {ctx.replying ? 'Posting...' : 'Post reply'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {kids.length > 0 && !isCollapsed && (
+        <div style={{display:'flex', flexDirection:'column', gap:'8px', marginTop:'8px'}}>
+          {kids.map(k => <CommentNode key={k.id} c={k} depth={depth + 1} ctx={ctx} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PostPage({ params }: { params: Promise<{ slug: string; postId: string }> }) {
   const { slug, postId } = use(params)
   const [post, setPost] = useState<any>(null)
@@ -73,6 +193,12 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [myVote, setMyVote] = useState<'up' | 'down' | null>(null)
   const [voteMsg, setVoteMsg] = useState('')
   const [pop, setPop] = useState<'' | 'up' | 'down'>('')
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [replyError, setReplyError] = useState('')
+  const [replying, setReplying] = useState(false)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [highlight, setHighlight] = useState<string | null>(null)
 
   const community = seededBySlug[slug]
   const n = COLOR[slug] || '2'
@@ -97,7 +223,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         console.error(e)
       }
       try {
-        const res = await fetch('/api/comments?post_id=' + postId)
+        const res = await fetch('/api/comments?post_id=' + postId, { cache: 'no-store' })
         const data = await res.json()
         if (data.comments) setComments(data.comments)
       } catch (e) {
@@ -115,6 +241,39 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     }
     load()
   }, [postId])
+
+  // Jump to a comment from a notification link (#c-<id>)
+  useEffect(() => {
+    if (loading) return
+    const hash = window.location.hash
+    if (!hash.startsWith('#c-')) return
+    const id = hash.slice(3)
+    setTimeout(() => {
+      const el = document.getElementById('c-' + id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setHighlight(id)
+        setTimeout(() => setHighlight(null), 2400)
+      }
+    }, 150)
+  }, [loading])
+
+  const { roots, childrenOf } = useMemo(() => {
+    const ids = new Set(comments.map(c => c.id))
+    const kids: Record<string, any[]> = {}
+    const top: any[] = []
+    for (const c of comments) {
+      if (c.parent_id && ids.has(c.parent_id)) {
+        if (!kids[c.parent_id]) kids[c.parent_id] = []
+        kids[c.parent_id].push(c)
+      } else {
+        top.push(c)
+      }
+    }
+    return { roots: top, childrenOf: kids }
+  }, [comments])
+
+  const liveCount = comments.filter(c => !c.is_deleted).length
 
   async function handleVote(direction: 'up' | 'down') {
     if (!me) {
@@ -155,18 +314,22 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     }
   }
 
+  async function postComment(text: string, parentId: string | null) {
+    const auth = await getAuthHeader()
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify({ body: text, post_id: postId, parent_id: parentId })
+    })
+    return res.json()
+  }
+
   async function handleComment() {
     if (!comment.trim()) return
     setSubmitting(true)
     setError('')
     try {
-      const auth = await getAuthHeader()
-      const res = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...auth },
-        body: JSON.stringify({ body: comment, post_id: postId })
-      })
-      const data = await res.json()
+      const data = await postComment(comment, null)
       if (data.error) setError(data.error)
       else if (data.comment) {
         setComments(prev => [...prev, data.comment])
@@ -176,6 +339,25 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
       setError('Something went wrong. Try again.')
     }
     setSubmitting(false)
+  }
+
+  async function submitReply(parentId: string) {
+    if (!replyText.trim()) return
+    setReplying(true)
+    setReplyError('')
+    try {
+      const data = await postComment(replyText, parentId)
+      if (data.error) setReplyError(data.error)
+      else if (data.comment) {
+        setComments(prev => [...prev, data.comment])
+        setCollapsed(c => ({ ...c, [parentId]: false }))
+        setReplyText('')
+        setReplyingTo(null)
+      }
+    } catch (e) {
+      setReplyError('Something went wrong. Try again.')
+    }
+    setReplying(false)
   }
 
   async function handleDelete() {
@@ -203,7 +385,12 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
       const auth = await getAuthHeader()
       const res = await fetch('/api/comments/' + id, { method: 'DELETE', headers: { ...auth } })
       const data = await res.json()
-      if (!data.error) setComments(prev => prev.filter(c => c.id !== id))
+      if (!data.error) {
+        const hasReplies = comments.some(c => c.parent_id === id)
+        setComments(prev => hasReplies
+          ? prev.map(c => c.id === id ? { ...c, is_deleted: true, body: '', author: null } : c)
+          : prev.filter(c => c.id !== id))
+      }
     } catch (e) {
       console.error(e)
     }
@@ -231,6 +418,15 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const isOwner = !!me && post.author?.username === me
   const canDelete = isOwner || isAdmin
 
+  const ctx: Ctx = {
+    me, isAdmin, childrenOf,
+    replyingTo, setReplyingTo: (id) => { setReplyingTo(id); setReplyError('') },
+    replyText, setReplyText, replyError, replying, submitReply,
+    confirmComment, setConfirmComment, deletingComment, handleDeleteComment,
+    collapsed, toggleCollapse: (id) => setCollapsed(c => ({ ...c, [id]: !c[id] })),
+    highlight,
+  }
+
   return (
     <main className='hk-dots' style={{minHeight:'100vh', color:'var(--text)', overflowX:'hidden', ['--tube' as any]: accent}}>
       <style>{`
@@ -248,6 +444,14 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         .hk-trash { background:none; border:none; color:var(--faint); cursor:pointer; padding:6px; display:flex; flex-shrink:0; }
         .hk-trash:hover { color: var(--c1); }
         .hk-danger { display:inline-flex; align-items:center; background: var(--c1); color: var(--on-c1); border:2px solid var(--ink); border-radius:6px; padding:6px 14px; min-height:36px; font-size:0.85rem; font-weight:700; cursor:pointer; }
+
+        .hk-thread { border-left: 2px solid var(--border-soft); padding-left: 10px; }
+        [data-theme='night'] .hk-thread { border-left-color: color-mix(in srgb, var(--tube) 45%, transparent); }
+        .hk-mini { display:inline-flex; align-items:center; gap:5px; background:none; border:none; padding:6px 2px; min-height:32px; font-size:0.8rem; font-weight:700; color:var(--muted); cursor:pointer; text-decoration:none; }
+        .hk-mini:hover { color: var(--text); }
+        @keyframes hkFlash { 0% { box-shadow: 0 0 0 3px var(--c3); } 100% { box-shadow: 0 0 0 0 transparent; } }
+        .hk-flash { animation: hkFlash 2.2s ease-out; }
+        @media (prefers-reduced-motion: reduce) { .hk-flash { animation: none; outline: 3px solid var(--c3); } }
       `}</style>
 
       <Header />
@@ -290,7 +494,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
             </div>
             <span style={{display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'0.88rem', color:'var(--muted)', fontWeight:600}}>
               <CommentIcon size={16} />
-              {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+              {liveCount} {liveCount === 1 ? 'comment' : 'comments'}
             </span>
 
             <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
@@ -345,37 +549,13 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
           </div>
         )}
 
-        {comments.length === 0 ? (
+        {roots.length === 0 ? (
           <div className='hk-card' style={{padding:'24px 16px', textAlign:'center', color:'var(--muted)', borderStyle:'dashed'}}>
             No comments yet. Start the conversation.
           </div>
         ) : (
           <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-            {comments.map((c, i) => {
-              const canDeleteComment = (!!me && c.author?.username === me) || isAdmin
-              return (
-                <div key={c.id || i} className='hk-card' style={{padding:'14px 16px', borderLeft:'4px solid var(--tube)'}}>
-                  <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'8px'}}>
-                    <Author author={c.author} date={c.created_at} size={26} />
-                    {canDeleteComment && c.id && confirmComment !== c.id && (
-                      <button onClick={() => setConfirmComment(c.id)} aria-label='Delete comment' className='hk-trash'>
-                        <Trash size={17} weight='duotone' />
-                      </button>
-                    )}
-                  </div>
-                  <p style={{fontSize:'0.95rem', lineHeight:'1.65', margin:0, whiteSpace:'pre-wrap', wordBreak:'break-word'}}>{c.body}</p>
-                  {confirmComment === c.id && (
-                    <div style={{display:'flex', alignItems:'center', gap:'8px', marginTop:'12px', flexWrap:'wrap'}}>
-                      <span style={{fontSize:'0.85rem', color:'var(--c1)', fontWeight:700}}>Delete this comment?</span>
-                      <button onClick={() => handleDeleteComment(c.id)} disabled={deletingComment === c.id} className='hk-danger'>
-                        {deletingComment === c.id ? 'Deleting...' : 'Yes, delete'}
-                      </button>
-                      <button onClick={() => setConfirmComment(null)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'36px', fontSize:'0.85rem'}}>Cancel</button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            {roots.map(c => <CommentNode key={c.id} c={c} depth={0} ctx={ctx} />)}
           </div>
         )}
       </div>
