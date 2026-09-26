@@ -26,6 +26,13 @@ function timeAgo(date: string) {
   return Math.floor(s / 86400) + 'd ago'
 }
 
+// Same idea as Trending: votes and comments, fading with age
+function hotScore(p: any, now: number) {
+  const hours = Math.max(0, (now - new Date(p.created_at).getTime()) / 3600000)
+  const points = (p.upvotes || 0) + (p.comment_count || 0) * 2 + 1
+  return points / Math.pow(hours + 2, 1.5)
+}
+
 export default function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const [community, setCommunity] = useState<any>(seededBySlug[slug] || null)
@@ -204,9 +211,11 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
     }
   }
 
+  const now = Date.now()
   const sortedPosts = [...posts].sort((a, b) => {
     if (sort === 'new') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    return (b.upvotes || 0) - (a.upvotes || 0)
+    if (sort === 'top') return (b.upvotes || 0) - (a.upvotes || 0)
+    return hotScore(b, now) - hotScore(a, now)
   })
 
   const sorts = [
