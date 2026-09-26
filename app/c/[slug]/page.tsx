@@ -8,7 +8,7 @@ import { seededBySlug } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
 import { PixelFlame, PixelSparkle, PixelTrophy } from '../../../components/PixelIcons'
-import { TrendUp } from '@phosphor-icons/react'
+import { TrendUp, Warning } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -40,13 +40,25 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({})
   const [voteMsg, setVoteMsg] = useState('')
   const [popId, setPopId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+  const [confirmName, setConfirmName] = useState('')
+  const [deletingCommunity, setDeletingCommunity] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const n = COLOR[slug] || '2'
   const accent = `var(--c${n})`
+  const isSeeded = !!seededBySlug[slug]
 
   useEffect(() => {
     const u = localStorage.getItem('hektiq_username')
-    if (u) setUsername(u)
+    if (u) {
+      setUsername(u)
+      fetch('/api/profile/' + encodeURIComponent(u), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => setIsAdmin(!!d.profile?.is_admin))
+        .catch(() => {})
+    }
 
     async function fetchData() {
       if (!seededBySlug[slug]) {
@@ -169,6 +181,29 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
     }
   }
 
+  async function handleDeleteCommunity() {
+    setDeletingCommunity(true)
+    setDeleteError('')
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/communities/' + slug, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ confirm: confirmName })
+      })
+      const data = await res.json()
+      if (data.error) {
+        setDeleteError(data.error)
+        setDeletingCommunity(false)
+        return
+      }
+      window.location.href = '/communities'
+    } catch (e) {
+      setDeleteError('Something went wrong. Try again.')
+      setDeletingCommunity(false)
+    }
+  }
+
   const sortedPosts = [...posts].sort((a, b) => {
     if (sort === 'new') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     return (b.upvotes || 0) - (a.upvotes || 0)
@@ -200,6 +235,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   )
 
   const loginLink = voteMsg === 'Log in to vote.' || voteMsg === 'Log in to join.'
+  const nameMatches = confirmName.trim() === community.name
 
   return (
     <main className='hk-dots' style={{minHeight:'100vh', color:'var(--text)', paddingBottom:'96px', overflowX:'hidden', ['--tube' as any]: accent}}>
@@ -245,6 +281,10 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
         .hk-card-thumb { position: relative; flex-shrink: 0; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border-soft); align-self: center; }
         .hk-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .hk-card-more { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.72); color: #fff; font-size: .7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+
+        .hk-admin-zone { border: 2px dashed var(--c1); border-radius: 10px; padding: 16px; margin-top: 36px; }
+        .hk-danger-btn { display:inline-flex; align-items:center; gap:8px; background: var(--c1); color: var(--on-c1); border:2px solid var(--ink); border-radius:6px; padding:8px 16px; min-height:40px; font-size:0.9rem; font-weight:700; cursor:pointer; }
+        .hk-danger-btn:disabled { opacity: .45; cursor: default; }
 
         .hk-bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:2px solid var(--border-soft); display:flex; justify-content:space-around; padding:8px 0 12px; z-index:10; transition: background-color .6s ease; }
         [data-theme='night'] .hk-bottom-nav { border-top-color: var(--tube); box-shadow: 0 -4px 16px -8px var(--tube); }
@@ -358,6 +398,41 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {isAdmin && !isSeeded && (
+          <div className='hk-admin-zone'>
+            {!showDelete ? (
+              <button onClick={() => setShowDelete(true)} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'38px', fontSize:'0.85rem', color:'var(--c1)'}}>
+                <Warning size={16} weight='bold' />
+                Admin: delete community
+              </button>
+            ) : (
+              <div>
+                <h2 className='font-display' style={{fontSize:'1.3rem', margin:'0 0 6px', color:'var(--c1)'}}>DELETE THIS COMMUNITY</h2>
+                <p style={{fontSize:'0.88rem', color:'var(--muted)', lineHeight:'1.6', margin:'0 0 12px'}}>
+                  This removes the community and hides all {posts.length} of its {posts.length === 1 ? 'post' : 'posts'}. Type <strong style={{color:'var(--text)'}}>{community.name}</strong> to confirm.
+                </p>
+                <input
+                  value={confirmName}
+                  onChange={e => { setConfirmName(e.target.value); setDeleteError('') }}
+                  placeholder={community.name}
+                  aria-label='Type the community name to confirm'
+                  className='hk-input'
+                  style={{marginBottom:'10px'}}
+                />
+                {deleteError && <p style={{color:'var(--c1)', fontSize:'0.85rem', fontWeight:600, margin:'0 0 10px'}}>{deleteError}</p>}
+                <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                  <button onClick={handleDeleteCommunity} disabled={!nameMatches || deletingCommunity} className='hk-danger-btn'>
+                    {deletingCommunity ? 'Deleting...' : 'Delete community'}
+                  </button>
+                  <button onClick={() => { setShowDelete(false); setConfirmName(''); setDeleteError('') }} disabled={deletingCommunity} className='hk-btn-ghost' style={{padding:'6px 14px', minHeight:'40px', fontSize:'0.85rem'}}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
