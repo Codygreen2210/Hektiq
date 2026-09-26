@@ -10,7 +10,7 @@ import FounderChip from '../../../../../components/FounderChip'
 import { seededBySlug } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
 import { CommunityIcon, UpIcon, DownIcon, CommentIcon } from '../../../../../components/Icons'
-import { Trash, ArrowLeft, ArrowBendUpLeft, PushPin } from '@phosphor-icons/react'
+import { Trash, ArrowLeft, ArrowBendUpLeft, PushPin, ArrowFatUp, ArrowFatDown } from '@phosphor-icons/react'
 
 const COLOR: Record<string, string> = {
   'outdoors': '4',
@@ -76,6 +76,8 @@ type Ctx = {
   collapsed: Record<string, boolean>
   toggleCollapse: (id: string) => void
   highlight: string | null
+  commentVotes: Record<string, 'up' | 'down' | null>
+  voteComment: (id: string, direction: 'up' | 'down') => void
 }
 
 function countAll(id: string, childrenOf: Record<string, any[]>): number {
@@ -89,6 +91,7 @@ function CommentNode({ c, depth, ctx }: { c: any; depth: number; ctx: Ctx }) {
   const canDelete = !c.is_deleted && ((!!ctx.me && c.author?.username === ctx.me) || ctx.isAdmin)
   const isReplying = ctx.replyingTo === c.id
   const indent = depth > 0 && depth <= MAX_INDENT
+  const my = ctx.commentVotes[c.id] || null
 
   return (
     <div className={indent ? 'hk-thread' : ''} style={{marginLeft: indent ? 14 : 0}}>
@@ -114,6 +117,17 @@ function CommentNode({ c, depth, ctx }: { c: any; depth: number; ctx: Ctx }) {
         )}
 
         <div style={{display:'flex', alignItems:'center', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
+          {!c.is_deleted && (
+            <div className='hk-cvote'>
+              <button onClick={() => ctx.voteComment(c.id, 'up')} aria-label='Upvote comment' className={my === 'up' ? 'on up' : ''}>
+                <ArrowFatUp size={15} weight={my === 'up' ? 'fill' : 'bold'} />
+              </button>
+              <span style={{color: my === 'up' ? 'var(--c4)' : my === 'down' ? 'var(--c1)' : 'var(--muted)'}}>{c.score || 0}</span>
+              <button onClick={() => ctx.voteComment(c.id, 'down')} aria-label='Downvote comment' className={my === 'down' ? 'on down' : ''}>
+                <ArrowFatDown size={15} weight={my === 'down' ? 'fill' : 'bold'} />
+              </button>
+            </div>
+          )}
           {!c.is_deleted && (
             ctx.me ? (
               <button
@@ -201,6 +215,8 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [highlight, setHighlight] = useState<string | null>(null)
   const [pinning, setPinning] = useState(false)
+  const [commentVotes, setCommentVotes] = useState<Record<string, 'up' | 'down' | null>>({})
+  const [commentSort, setCommentSort] = useState<'best' | 'new'>('best')
 
   const community = seededBySlug[slug]
   const n = COLOR[slug] || '2'
@@ -225,9 +241,11 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         console.error(e)
       }
       try {
-        const res = await fetch('/api/comments?post_id=' + postId, { cache: 'no-store' })
+        const auth = u ? await getAuthHeader() : {}
+        const res = await fetch('/api/comments?post_id=' + postId, { headers: { ...auth }, cache: 'no-store' })
         const data = await res.json()
         if (data.comments) setComments(data.comments)
+        if (data.myVotes) setCommentVotes(data.myVotes)
       } catch (e) {
         console.error(e)
       }
@@ -272,8 +290,17 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         top.push(c)
       }
     }
+    const order = (a: any, b: any) => {
+      if (commentSort === 'best') {
+        const d = (b.score || 0) - (a.score || 0)
+        if (d !== 0) return d
+      }
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    }
+    top.sort(order)
+    for (const k of Object.keys(kids)) kids[k].sort(order)
     return { roots: top, childrenOf: kids }
-  }, [comments])
+  }, [comments, commentSort])
 
   const liveCount = comments.filter(c => !c.is_deleted).length
 
@@ -313,6 +340,42 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     } catch (e) {
       setMyVote(prevVote)
       setPost((p: any) => ({ ...p, upvotes: prevScore }))
+    }
+  }
+
+  async function voteComment(id: string, direction: 'up' | 'down') {
+    if (!me) {
+      setVoteMsg('Log in to vote.')
+      setTimeout(() => setVoteMsg(''), 2500)
+      return
+    }
+    const prev = commentVotes[id] || null
+    const prevComments = comments
+    const next = prev === direction ? null : direction
+    const delta = (next === 'up' ? 1 : next === 'down' ? -1 : 0) - (prev === 'up' ? 1 : prev === 'down' ? -1 : 0)
+    setCommentVotes(v => ({ ...v, [id]: next }))
+    setComments(cs => cs.map(c => c.id === id ? { ...c, score: (c.score || 0) + delta } : c))
+
+    try {
+      const auth = await getAuthHeader()
+      const res = await fetch('/api/comments/' + id + '/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ direction })
+      })
+      const data = await res.json()
+      if (data.error) {
+        setCommentVotes(v => ({ ...v, [id]: prev }))
+        setComments(prevComments)
+        setVoteMsg(data.error)
+        setTimeout(() => setVoteMsg(''), 3500)
+      } else {
+        setCommentVotes(v => ({ ...v, [id]: data.myVote }))
+        setComments(cs => cs.map(c => c.id === id ? { ...c, score: data.score } : c))
+      }
+    } catch (e) {
+      setCommentVotes(v => ({ ...v, [id]: prev }))
+      setComments(prevComments)
     }
   }
 
@@ -443,6 +506,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
     confirmComment, setConfirmComment, deletingComment, handleDeleteComment,
     collapsed, toggleCollapse: (id) => setCollapsed(c => ({ ...c, [id]: !c[id] })),
     highlight,
+    commentVotes, voteComment,
   }
 
   return (
@@ -461,6 +525,16 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
         .hk-vote.up.on { color: var(--c4); }
         .hk-vote.down.on { color: var(--c1); }
         [data-theme='night'] .hk-vote.on { filter: drop-shadow(0 0 6px currentColor); }
+
+        .hk-cvote { display:inline-flex; align-items:center; gap:2px; font-size:0.82rem; font-weight:800; }
+        .hk-cvote button { background:none; border:none; cursor:pointer; padding:6px 4px; min-height:32px; display:flex; align-items:center; color:var(--faint); }
+        .hk-cvote button.on.up { color: var(--c4); }
+        .hk-cvote button.on.down { color: var(--c1); }
+        .hk-cvote span { min-width:14px; text-align:center; }
+
+        .hk-csort { display:flex; gap:6px; }
+        .hk-csort button { border-radius:6px; padding:6px 12px; min-height:34px; font-size:0.8rem; font-weight:700; cursor:pointer; border:2px solid var(--border-soft); background:transparent; color:var(--muted); }
+        .hk-csort button.on { border-color: var(--border); color: var(--text); background: var(--surface-2); }
 
         .hk-trash { background:none; border:none; color:var(--faint); cursor:pointer; padding:6px; display:flex; flex-shrink:0; }
         .hk-trash:hover { color: var(--c1); }
@@ -556,7 +630,15 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
           {deleteError && <p style={{color:'var(--c1)', fontSize:'0.88rem', fontWeight:600, margin:'10px 0 0'}}>{deleteError}</p>}
         </article>
 
-        <h2 className='font-display' style={{fontSize:'1.6rem', margin:'32px 0 14px'}}>COMMENTS</h2>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', margin:'32px 0 14px'}}>
+          <h2 className='font-display' style={{fontSize:'1.6rem', margin:0}}>COMMENTS</h2>
+          {liveCount > 1 && (
+            <div className='hk-csort' role='tablist' aria-label='Sort comments'>
+              <button role='tab' aria-selected={commentSort === 'best'} className={commentSort === 'best' ? 'on' : ''} onClick={() => setCommentSort('best')}>Best</button>
+              <button role='tab' aria-selected={commentSort === 'new'} className={commentSort === 'new' ? 'on' : ''} onClick={() => setCommentSort('new')}>New</button>
+            </div>
+          )}
+        </div>
 
         {me ? (
           <div style={{marginBottom:'24px'}}>

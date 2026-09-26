@@ -97,11 +97,24 @@ export async function GET(request: Request) {
     const visible = all
       .filter(c => keep.has(c.id))
       .map(c => c.is_deleted
-        ? { id: c.id, post_id: c.post_id, parent_id: c.parent_id, created_at: c.created_at, is_deleted: true, body: '', author_id: null }
+        ? { id: c.id, post_id: c.post_id, parent_id: c.parent_id, created_at: c.created_at, is_deleted: true, body: '', author_id: null, score: 0 }
         : c)
 
     const withAuthors = await attachAuthors(visible, supabase)
-    return NextResponse.json({ comments: withAuthors })
+
+    // Your own votes, if you're logged in
+    const myVotes: Record<string, 'up' | 'down'> = {}
+    const user = await getUserFromRequest(request, supabase, { allowBanned: true })
+    if (user && visible.length > 0) {
+      const { data: votes } = await supabase
+        .from('comment_votes')
+        .select('comment_id, value')
+        .eq('user_id', user.id)
+        .in('comment_id', visible.map(c => c.id))
+      for (const v of votes || []) myVotes[v.comment_id] = v.value === 1 ? 'up' : 'down'
+    }
+
+    return NextResponse.json({ comments: withAuthors, myVotes })
   } catch (e) {
     return NextResponse.json({ error: 'Something went wrong' })
   }
