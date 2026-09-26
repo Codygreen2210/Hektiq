@@ -39,7 +39,7 @@ export async function attachAuthors(rows: any[], supabase: SupabaseClient) {
 
   const { data: users } = await supabase
     .from('users')
-    .select('id, username, avatar_url, founder_number')
+    .select('id, username, avatar_url, founder_number, is_bot')
     .in('id', ids)
 
   const byId = Object.fromEntries((users || []).map(u => [u.id, u]))

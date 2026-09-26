@@ -24,17 +24,23 @@ export async function GET(request: Request) {
     const slugs = (follows || []).map(f => f.community_slug)
     if (slugs.length === 0) return NextResponse.json({ posts: [], following: [] })
 
+    // Real people only in this feed
+    const { data: bots } = await supabase.from('users').select('id').eq('is_bot', true)
+    const botIds = new Set((bots || []).map(b => b.id))
+
     const { data, error } = await supabase
       .from('posts')
       .select('*')
       .in('community_id', slugs)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
-      .limit(LIMIT)
+      .limit(LIMIT * 4)
 
     if (error) return NextResponse.json({ error: 'Couldn\'t load posts.' })
 
-    const posts = data || []
+    const posts = (data || [])
+      .filter(p => !p.author_id || !botIds.has(p.author_id))
+      .slice(0, LIMIT)
     const ids = posts.map(p => p.id)
     const counts: Record<string, number> = {}
 

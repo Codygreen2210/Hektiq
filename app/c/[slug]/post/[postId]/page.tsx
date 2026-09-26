@@ -7,6 +7,7 @@ import ShareButton from '../../../../../components/ShareButton'
 import VideoEmbed from '../../../../../components/VideoEmbed'
 import PhotoGallery from '../../../../../components/PhotoGallery'
 import FounderChip from '../../../../../components/FounderChip'
+import AutoChip from '../../../../../components/AutoChip'
 import RichText from '../../../../../components/RichText'
 import { seededBySlug, COLOR } from '../../../../../lib/communities'
 import { getAuthHeader } from '../../../../../lib/authToken'
@@ -25,6 +26,7 @@ function timeAgo(date: string) {
 
 function Author({ author, date, edited, size = 30 }: { author: any; date: string; edited?: string | null; size?: number }) {
   const name = author?.username
+  const isBot = !!author?.is_bot
   const avatar = name ? (
     author.avatar_url ? (
       <img src={author.avatar_url} alt='' style={{width:size, height:size, borderRadius:'50%', objectFit:'cover', border:'2px solid var(--border)'}} />
@@ -45,7 +47,8 @@ function Author({ author, date, edited, size = 30 }: { author: any; date: string
       ) : (
         <span style={{color:'var(--faint)', fontStyle:'italic'}}>deleted account</span>
       )}
-      {name && <FounderChip number={author?.founder_number} />}
+      <AutoChip show={isBot} />
+      {name && !isBot && <FounderChip number={author?.founder_number} />}
       <span style={{color:'var(--faint)'}}>· {timeAgo(date)}{edited ? ' · edited' : ''}</span>
     </div>
   )

@@ -4,11 +4,12 @@ import Link from 'next/link'
 import Header from '../../components/Header'
 import VideoFeed, { FeedPost } from '../../components/VideoFeed'
 import FounderChip from '../../components/FounderChip'
+import AutoChip from '../../components/AutoChip'
 import { getAuthHeader } from '../../lib/authToken'
-import { ArrowFatUp, ChatCircle } from '@phosphor-icons/react'
 import { COLORS } from '../../lib/communities'
+import { ArrowFatUp, ChatCircle } from '@phosphor-icons/react'
 
-type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[]; author_founder_number?: number | null }
+type Post = FeedPost & { body: string | null; created_at: string; image_urls?: string[]; author_founder_number?: number | null; author_is_bot?: boolean }
 
 function timeAgo(date: string) {
   const h = Math.floor((Date.now() - new Date(date).getTime()) / 3600000)
@@ -162,7 +163,8 @@ export default function TrendingPage() {
                     {p.community_id}
                   </span>
                   <span className='hk-trend-meta'>by {p.author_username}</span>
-                  <FounderChip number={p.author_founder_number} />
+                  <AutoChip show={p.author_is_bot} />
+                  {!p.author_is_bot && <FounderChip number={p.author_founder_number} />}
                   <span className='hk-trend-meta'>· {timeAgo(p.created_at)}</span>
                 </div>
                 <p className='hk-trend-title'>{p.title}</p>

@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import Header from '../../../components/Header'
 import VideoPreview from '../../../components/VideoPreview'
 import FounderChip from '../../../components/FounderChip'
+import AutoChip from '../../../components/AutoChip'
 import { seededBySlug, COLOR } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
@@ -25,6 +26,18 @@ function hotScore(p: any, now: number) {
   return points / Math.pow(hours + 2, 1.5)
 }
 
+// Real posts first: 2 real posts, then 1 auto video, repeat. Leftovers at the end.
+function weave(people: any[], auto: any[], every = 2) {
+  const out: any[] = []
+  let a = 0
+  people.forEach((p, i) => {
+    out.push(p)
+    if ((i + 1) % every === 0 && a < auto.length) out.push(auto[a++])
+  })
+  while (a < auto.length) out.push(auto[a++])
+  return out
+}
+
 export default function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const [community, setCommunity] = useState<any>(seededBySlug[slug] || null)
@@ -35,6 +48,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [sort, setSort] = useState('hot')
+  const [peopleOnly, setPeopleOnly] = useState(false)
   const [username, setUsername] = useState<string | null>(null)
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({})
   const [voteMsg, setVoteMsg] = useState('')
@@ -50,6 +64,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   const isSeeded = !!seededBySlug[slug]
 
   useEffect(() => {
+    try { setPeopleOnly(localStorage.getItem('hektiq_people_only') === '1') } catch (e) {}
     const u = localStorage.getItem('hektiq_username')
     if (u) {
       setUsername(u)
@@ -108,6 +123,12 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
     }
     fetchData()
   }, [slug])
+
+  function togglePeopleOnly() {
+    const next = !peopleOnly
+    setPeopleOnly(next)
+    try { localStorage.setItem('hektiq_people_only', next ? '1' : '0') } catch (e) {}
+  }
 
   function flash(msg: string, ms = 3500) {
     setVoteMsg(msg)
@@ -204,14 +225,16 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
   }
 
   const now = Date.now()
-  const sortedPosts = [...posts].sort((a, b) => {
-    // Pinned posts always on top, newest pin first
-    if (!!a.is_pinned !== !!b.is_pinned) return a.is_pinned ? -1 : 1
-    if (a.is_pinned && b.is_pinned) return String(b.pinned_at).localeCompare(String(a.pinned_at))
+  const byOrder = (a: any, b: any) => {
     if (sort === 'new') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     if (sort === 'top') return (b.upvotes || 0) - (a.upvotes || 0)
     return hotScore(b, now) - hotScore(a, now)
-  })
+  }
+  const pinned = posts.filter(p => p.is_pinned).sort((a, b) => String(b.pinned_at).localeCompare(String(a.pinned_at)))
+  const people = posts.filter(p => !p.is_pinned && !p.author?.is_bot).sort(byOrder)
+  const auto = posts.filter(p => !p.is_pinned && p.author?.is_bot).sort(byOrder)
+  const sortedPosts = [...pinned, ...(peopleOnly ? people : weave(people, auto, 2))]
+  const autoCount = auto.length
 
   const sorts = [
     { key: 'hot', label: 'HOT', Icon: PixelFlame, day: '1' },
@@ -277,6 +300,13 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           50% { box-shadow: inset 0 0 0 2px rgba(255,255,255,.7), 0 0 20px var(--tube), 0 0 32px var(--tube), inset 0 0 16px var(--tube); }
         }
 
+        .hk-people { display:inline-flex; align-items:center; gap:8px; border-radius:6px; padding:6px 12px; min-height:38px; font-size:0.82rem; font-weight:700; cursor:pointer; border:2px solid var(--border-soft); background:transparent; color:var(--muted); }
+        .hk-people.on { border-color: var(--border); color: var(--text); background: var(--surface-2); }
+        .hk-switch { position:relative; width:28px; height:16px; border-radius:999px; background: var(--border-soft); transition: background .2s; flex-shrink:0; }
+        .hk-switch::after { content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background: var(--surface); transition: transform .2s; }
+        .hk-people.on .hk-switch { background: var(--tube); }
+        .hk-people.on .hk-switch::after { transform: translateX(12px); }
+
         .hk-vote { background:none; border:none; cursor:pointer; padding:6px; display:flex; color:var(--faint); }
         .hk-vote.up.on { color: var(--c4); }
         .hk-vote.down.on { color: var(--c1); }
@@ -323,7 +353,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
 
       <div style={{maxWidth:'740px', margin:'0 auto', padding:'20px 16px'}}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px', gap:'10px', flexWrap:'wrap'}}>
-          <div style={{display:'flex', gap:'8px'}} role='tablist' aria-label='Sort posts'>
+          <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}} role='tablist' aria-label='Sort posts'>
             {sorts.map(({ key, label, Icon, day }) => (
               <button
                 key={key}
@@ -338,10 +368,18 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
               </button>
             ))}
           </div>
-          <Link href={'/c/' + slug + '/new-post'} className='hk-btn' style={{padding:'8px 16px', minHeight:'42px', fontSize:'0.88rem'}}>
-            <PostIcon size={16} />
-            Post
-          </Link>
+          <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+            {autoCount > 0 && (
+              <button onClick={togglePeopleOnly} className={'hk-people' + (peopleOnly ? ' on' : '')} aria-pressed={peopleOnly} title='Hide videos posted automatically from YouTube'>
+                <span className='hk-switch' aria-hidden='true' />
+                People only
+              </button>
+            )}
+            <Link href={'/c/' + slug + '/new-post'} className='hk-btn' style={{padding:'8px 16px', minHeight:'42px', fontSize:'0.88rem'}}>
+              <PostIcon size={16} />
+              Post
+            </Link>
+          </div>
         </div>
 
         {voteMsg && (
@@ -354,7 +392,9 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           <div style={{textAlign:'center', padding:'48px', color:'var(--muted)'}}>Loading...</div>
         ) : sortedPosts.length === 0 ? (
           <div className='hk-card' style={{padding:'40px 20px', textAlign:'center', borderStyle:'dashed'}}>
-            <p style={{color:'var(--muted)', margin:'0 0 16px'}}>No posts yet. Start the first conversation.</p>
+            <p style={{color:'var(--muted)', margin:'0 0 16px'}}>
+              {peopleOnly && autoCount > 0 ? 'No posts from people yet. Be the first.' : 'No posts yet. Start the first conversation.'}
+            </p>
             <Link href={'/c/' + slug + '/new-post'} className='hk-btn'>Create first post</Link>
           </div>
         ) : (
@@ -362,6 +402,7 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
             {sortedPosts.map((post) => {
               const userVote = votes[post.id]
               const name = post.author?.username
+              const isBot = !!post.author?.is_bot
               const photos: string[] = Array.isArray(post.image_urls) ? post.image_urls : []
               return (
                 <div key={post.id} className={'hk-card' + (post.is_pinned ? ' pinned' : '')} style={{display:'flex', overflow:'hidden'}}>
@@ -387,7 +428,8 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
                       )}
                       <p style={{display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', fontSize:'0.8rem', color:'var(--muted)', margin:'0 0 6px'}}>
                         {name ? <span style={{color:'var(--text)', fontWeight:700}}>{name}</span> : <span style={{fontStyle:'italic'}}>deleted account</span>}
-                        {name && <FounderChip number={post.author?.founder_number} />}
+                        <AutoChip show={isBot} />
+                        {name && !isBot && <FounderChip number={post.author?.founder_number} />}
                         <span>· {timeAgo(post.created_at)}</span>
                       </p>
                       <h3 style={{fontSize:'1.05rem', fontWeight:700, margin:'0 0 8px', lineHeight:'1.4', wordBreak:'break-word'}}>{post.title}</h3>

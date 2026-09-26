@@ -12,6 +12,7 @@ const supabase = createClient(
 
 const DAYS = 14
 const LIMIT = 50
+const BOT_WEIGHT = 0.5   // auto-posted videos count for half, so real people rise above them
 
 export async function GET(req: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
       .eq('is_deleted', false)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
-      .limit(500)
+      .limit(1000)
 
     query = type === 'videos' ? query.not('video_url', 'is', null) : query.is('video_url', null)
     if (slugs) query = query.in('community_id', slugs)
@@ -47,18 +48,22 @@ export async function GET(req: NextRequest) {
     if (error) throw error
     if (!posts || posts.length === 0) return NextResponse.json({ posts: [], following: slugs })
 
+    const { data: bots } = await supabase.from('users').select('id').eq('is_bot', true)
+    const botIds = new Set((bots || []).map((b) => b.id))
+
     const postIds = posts.map((p) => p.id)
 
     // Comment counts
-    const { data: comments } = await supabase
-      .from('comments')
-      .select('post_id')
-      .in('post_id', postIds)
-      .eq('is_deleted', false)
-
     const commentCounts: Record<string, number> = {}
-    for (const c of comments || []) {
-      commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1
+    for (let i = 0; i < postIds.length; i += 300) {
+      const { data: comments } = await supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', postIds.slice(i, i + 300))
+        .eq('is_deleted', false)
+      for (const c of comments || []) {
+        commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1
+      }
     }
 
     // Score and sort
@@ -67,8 +72,9 @@ export async function GET(req: NextRequest) {
       .map((p) => {
         const hours = (now - new Date(p.created_at).getTime()) / 3600000
         const count = commentCounts[p.id] || 0
-        const score = ((p.upvotes || 0) + count * 2 + 1) / Math.pow(hours + 2, 1.5)
-        return { ...p, comment_count: count, score }
+        const isBot = !!p.author_id && botIds.has(p.author_id)
+        const base = ((p.upvotes || 0) + count * 2 + 1) / Math.pow(hours + 2, 1.5)
+        return { ...p, comment_count: count, score: isBot ? base * BOT_WEIGHT : base, is_bot: isBot }
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, LIMIT)
@@ -91,6 +97,7 @@ export async function GET(req: NextRequest) {
       author_username: authors[p.author_id]?.username || 'deleted account',
       author_avatar_url: authors[p.author_id]?.avatar_url || null,
       author_founder_number: authors[p.author_id]?.founder_number ?? null,
+      author_is_bot: p.is_bot,
     }))
 
     return NextResponse.json({ posts: result, following: slugs })
