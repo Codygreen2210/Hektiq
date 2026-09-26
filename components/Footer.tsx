@@ -24,6 +24,7 @@ export default function Footer() {
       <nav style={{ display: 'flex', justifyContent: 'center', gap: '18px', flexWrap: 'wrap', marginBottom: '10px' }}>
         <Link href='/communities' style={link}>Communities</Link>
         <Link href='/trending' style={link}>Trending</Link>
+        <Link href='/terms' style={link}>Terms</Link>
         <Link href='/privacy' style={link}>Privacy</Link>
       </nav>
       <p style={{ margin: 0, color: 'var(--faint)' }}>Hektiq 2026. Built by the community.</p>
