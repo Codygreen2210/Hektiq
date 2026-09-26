@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, use, useMemo } from 'react'
 import Header from '../../../../../components/Header'
 import ReportButton from '../../../../../components/ReportButton'
+import ShareButton from '../../../../../components/ShareButton'
 import VideoEmbed from '../../../../../components/VideoEmbed'
 import PhotoGallery from '../../../../../components/PhotoGallery'
 import FounderChip from '../../../../../components/FounderChip'
@@ -520,6 +521,7 @@ export default function PostPage({ params }: { params: Promise<{ slug: string; p
               <CommentIcon size={16} />
               {liveCount} {liveCount === 1 ? 'comment' : 'comments'}
             </span>
+            <ShareButton path={'/c/' + slug + '/post/' + postId} title={post.title} />
 
             <div style={{marginLeft:'auto', display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
               {isAdmin && (
