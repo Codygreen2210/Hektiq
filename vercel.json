@@ -4,5 +4,16 @@
       "path": "/api/cron/import-videos",
       "schedule": "0 13 * * *"
     }
+  ],
+  "headers": [
+    {
+      "source": "/promo/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
   ]
 }
