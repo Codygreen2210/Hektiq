@@ -5,7 +5,7 @@ import Header from '../../../components/Header'
 import VideoPreview from '../../../components/VideoPreview'
 import FounderChip from '../../../components/FounderChip'
 import AutoChip from '../../../components/AutoChip'
-import { seededBySlug, COLOR } from '../../../lib/communities'
+import { seededBySlug, localCommunities, COLOR } from '../../../lib/communities'
 import { getAuthHeader } from '../../../lib/authToken'
 import { HomeIcon, CommunitiesIcon, PostIcon, ProfileIcon, CommentIcon, UpIcon, DownIcon, CommunityIcon } from '../../../components/Icons'
 import { PixelFlame, PixelSparkle, PixelTrophy } from '../../../components/PixelIcons'
@@ -339,6 +339,19 @@ export default function CommunityPage({ params }: { params: Promise<{ slug: stri
           <div style={{flex:'1 1 160px', minWidth:0}}>
             <h1 className='font-display hk-banner-title' style={{fontSize:'2.4rem', lineHeight:1, margin:'0 0 4px', color:`var(--on-c${n})`}}>{community.name.toUpperCase()}</h1>
             <p className='hk-banner-desc' style={{fontSize:'0.92rem', margin:0, color:`var(--on-c${n})`}}>{community.description}</p>
+            {seededBySlug[slug]?.parent && seededBySlug[seededBySlug[slug].parent as string] && (
+              <p className='hk-banner-desc' style={{fontSize:'0.82rem', fontWeight:700, margin:'6px 0 0', color:`var(--on-c${n})`}}>
+                Part of <Link href={'/c/' + seededBySlug[slug].parent} style={{color:'inherit', textDecoration:'underline'}}>{seededBySlug[seededBySlug[slug].parent as string].name}</Link>
+              </p>
+            )}
+            {localCommunities.filter(l => l.parent === slug).length > 0 && (
+              <p className='hk-banner-desc' style={{fontSize:'0.82rem', fontWeight:700, margin:'6px 0 0', color:`var(--on-c${n})`}}>
+                Local:{' '}
+                {localCommunities.filter(l => l.parent === slug).map((l, i) => (
+                  <span key={l.slug}>{i > 0 ? ', ' : ''}<Link href={'/c/' + l.slug} style={{color:'inherit', textDecoration:'underline'}}>{l.name}</Link></span>
+                ))}
+              </p>
+            )}
             {members !== null && (
               <p className='hk-banner-desc' style={{fontSize:'0.82rem', fontWeight:700, margin:'6px 0 0', color:`var(--on-c${n})`}}>
                 {members} {members === 1 ? 'member' : 'members'}
