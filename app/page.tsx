@@ -118,13 +118,15 @@ export default function Home() {
   return (
     <main className='hk-dots' style={{minHeight:'100vh', overflowX:'hidden', color:'var(--text)'}}>
       <style>{`
-        .hk-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .hk-grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-        @media (max-width: 820px) { .hk-grid-2, .hk-grid-3 { grid-template-columns: 1fr; } }
+        .hk-grid-2 { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .hk-grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        @media (max-width: 820px) { .hk-grid-2, .hk-grid-3 { grid-template-columns: minmax(0, 1fr); } }
 
         .hk-comm { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:8px; text-decoration:none; border:2px solid var(--ink); box-shadow: var(--shadow-hard); transition: transform .15s ease, box-shadow .15s ease, background-color .6s ease, color .6s ease; }
         .hk-comm:hover { transform: translate(-2px,-2px); }
         .hk-comm-title, .hk-comm-icon, .hk-comm-desc { color: var(--comm-on); transition: color .6s ease, text-shadow .6s ease; }
+        .hk-comm-desc { font-size: 0.8rem; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        @media (max-width: 820px) { .hk-comm-desc { white-space: normal; line-height: 1.35; } }
 
         [data-theme='night'] .hk-comm { background: transparent !important; border-color: currentColor; box-shadow: 0 0 10px currentColor; }
         [data-theme='night'] .hk-comm-title { color: var(--comm-glow); text-shadow: 0 0 10px var(--comm-glow); }
@@ -168,7 +170,7 @@ export default function Home() {
                 </span>
                 <div style={{flex:1, minWidth:0}}>
                   <p className='font-display hk-comm-title' style={{fontSize:'1.45rem', lineHeight:1, margin:'0 0 3px'}}>{c.name.toUpperCase()}</p>
-                  <p className='hk-comm-desc' style={{fontSize:'0.8rem', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
+                  <p className='hk-comm-desc'>{c.description}</p>
                 </div>
               </Link>
             )
