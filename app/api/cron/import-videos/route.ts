@@ -11,6 +11,9 @@ const PER_COMMUNITY_PER_DAY = 20
 const PER_CHANNEL_PER_DAY = 2
 const SIMILAR_LIMIT = 0.6        // titles sharing 60%+ of their words count as the same video
 const DUPLICATE_DAYS = 14
+// The daily limits count imports from the last 20 hours, not 24. Vercel's daily cron can fire
+// anywhere inside its hour, so a 24-hour window can catch yesterday's run and starve today's.
+const LIMIT_WINDOW_HOURS = 20
 
 const FILLER = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'on', 'at', 'for', 'with', 'vs', 'is', 'my', 'this', 'from', 'by'])
 
@@ -68,11 +71,11 @@ export async function GET(request: Request) {
   const seenIds = new Set((recent || []).map(r => r.video_id))
   const recentTitles = (recent || []).filter(r => r.title).map(r => titleWords(r.title))
 
-  const dayAgoMs = Date.now() - 24 * 60 * 60 * 1000
+  const windowStartMs = Date.now() - LIMIT_WINDOW_HOURS * 60 * 60 * 1000
   const channelCount: Record<string, number> = {}
   const room: Record<string, number> = {}
   for (const r of recent || []) {
-    if (new Date(r.created_at).getTime() < dayAgoMs) continue
+    if (new Date(r.created_at).getTime() < windowStartMs) continue
     if (r.channel) {
       const k = String(r.channel).toLowerCase().trim()
       channelCount[k] = (channelCount[k] || 0) + 1
