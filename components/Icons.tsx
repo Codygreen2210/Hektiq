@@ -4,6 +4,7 @@ import {
   ChatCircle, ArrowFatUp, ArrowFatDown, Mountains, SoccerBall, ChartLineUp,
   Wrench, Palette, CaretRight, GameController, CookingPot, MusicNotes, Cpu
 } from '@phosphor-icons/react'
+import { seededBySlug } from '../lib/communities'
 
 type IconProps = { size?: number; color?: string; active?: boolean }
 
@@ -91,7 +92,9 @@ export function ChevronIcon({ size = 18, color = 'currentColor' }: IconProps) {
   return <CaretRight size={size} color={color} weight='bold' aria-hidden='true' />
 }
 
-export function CommunityIcon({ slug, ...p }: IconProps & { slug: string }) {
+export function CommunityIcon({ slug: rawSlug, ...p }: IconProps & { slug: string }) {
+  // Local corners (like Louisiana Hunting & Fishing) use their parent community's icon
+  const slug = seededBySlug[rawSlug]?.parent || rawSlug
   if (slug === 'outdoors') return <OutdoorsIcon {...p} />
   if (slug === 'sports') return <SportsIcon {...p} />
   if (slug === 'money-building') return <MoneyIcon {...p} />

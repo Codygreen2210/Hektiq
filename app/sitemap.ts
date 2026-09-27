@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
-import { seededCommunities } from '../lib/communities'
+import { seededCommunities, LOCAL_INDEX_MIN_POSTS } from '../lib/communities'
+import { realPostCount } from '../lib/realPosts'
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://hektiq.com'
 
@@ -19,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   for (const c of seededCommunities) {
+    if (c.local) continue   // local corners are added below, once real people have posted in them
     pages.push({ url: SITE + '/c/' + c.slug, lastModified: now, changeFrequency: 'daily', priority: 0.9 })
   }
 
@@ -28,6 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       process.env.SUPABASE_SERVICE_ROLE_KEY as string,
       { auth: { persistSession: false } }
     )
+
+    for (const c of seededCommunities) {
+      if (!c.local) continue
+      if ((await realPostCount(supabase, c.slug)) < LOCAL_INDEX_MIN_POSTS) continue
+      pages.push({ url: SITE + '/c/' + c.slug, lastModified: now, changeFrequency: 'daily', priority: 0.8 })
+    }
 
     const seeded = new Set(seededCommunities.map(c => c.slug))
 

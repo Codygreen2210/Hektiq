@@ -25,8 +25,8 @@ const bebas = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: 'Hektiq - Your corner of the internet',
-  description: 'Your corner of the internet, run by the people in it. Outdoors, sports, money, garage, and art communities built by the people who use them.',
+  title: 'Hektiq: Forums for Hunting, Fishing, Sports, Gaming & More',
+  description: 'Your corner of the internet, run by the people in it. Forums for outdoors, sports, gaming, garage, food & BBQ, music, tech, art and money. No ads, one account one vote. Free to join.',
 };
 
 const themeScript = `

@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Header from '../../components/Header'
-import { seededCommunities, COLOR } from '../../lib/communities'
+import { seededCommunities, mainCommunities, localCommunities, COLOR } from '../../lib/communities'
 import { CommunityIcon, ChevronIcon } from '../../components/Icons'
 
 export default function Communities() {
@@ -42,7 +42,7 @@ export default function Communities() {
 
         <h2 className='font-display' style={{fontSize:'1.3rem', margin:'0 0 12px'}}>MAIN COMMUNITIES</h2>
         <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'40px'}}>
-          {seededCommunities.map(c => {
+          {mainCommunities.map(c => {
             const n = COLOR[c.slug] || '1'
             return (
               <Link key={c.slug} href={'/c/' + c.slug} className='hk-card hk-row' style={{['--row-glow' as any]: `var(--c${n})`}}>
@@ -58,6 +58,29 @@ export default function Communities() {
             )
           })}
         </div>
+
+        {localCommunities.length > 0 && (
+          <>
+            <h2 className='font-display' style={{fontSize:'1.3rem', margin:'0 0 12px'}}>LOCAL CORNERS</h2>
+            <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'40px'}}>
+              {localCommunities.map(c => {
+                const n = COLOR[c.slug] || '1'
+                return (
+                  <Link key={c.slug} href={'/c/' + c.slug} className='hk-card hk-row' style={{['--row-glow' as any]: `var(--c${n})`}}>
+                    <div className='hk-row-icon' style={{background:`var(--c${n})`, color:`var(--on-c${n})`}}>
+                      <CommunityIcon slug={c.slug} size={28} />
+                    </div>
+                    <div style={{flex:1, minWidth:0}}>
+                      <p className='font-display hk-row-title' style={{fontSize:'1.5rem', lineHeight:1, margin:'0 0 4px'}}>{c.name.toUpperCase()}</p>
+                      <p style={{fontSize:'0.88rem', color:'var(--muted)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.description}</p>
+                    </div>
+                    <span style={{color:'var(--faint)', display:'flex', flexShrink:0}}><ChevronIcon size={18} /></span>
+                  </Link>
+                )
+              })}
+            </div>
+          </>
+        )}
 
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 0 12px', gap:'12px'}}>
           <h2 className='font-display' style={{fontSize:'1.3rem', margin:0}}>STARTED BY MEMBERS</h2>

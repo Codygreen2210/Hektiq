@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Header from '../components/Header'
 import HeroScene from '../components/HeroScene'
 import FounderCounter from '../components/FounderCounter'
-import { seededCommunities, seededBySlug, COLOR } from '../lib/communities'
+import { mainCommunities, seededBySlug, COLOR } from '../lib/communities'
 import { getAuthHeader } from '../lib/authToken'
 import { CommunityIcon, ChevronIcon, CommentIcon } from '../components/Icons'
 
@@ -160,7 +160,7 @@ export default function Home() {
       <section style={section}>
         <h2 className='font-display' style={label}>PICK YOUR CORNER</h2>
         <div className='hk-grid-3'>
-          {seededCommunities.map(c => {
+          {mainCommunities.map(c => {
             const n = COLOR[c.slug] || '1'
             const vars = { background:`var(--c${n})`, color:`var(--c${n})`, ['--comm-on' as any]:`var(--on-c${n})`, ['--comm-glow' as any]:`var(--c${n})` }
             return (
