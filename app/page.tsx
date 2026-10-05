@@ -7,6 +7,8 @@ import FounderCounter from '../components/FounderCounter'
 import { mainCommunities, seededBySlug, COLOR } from '../lib/communities'
 import { getAuthHeader } from '../lib/authToken'
 import { CommunityIcon, ChevronIcon, CommentIcon } from '../components/Icons'
+import VideoEmbed from '../components/VideoEmbed'
+import RichText from '../components/RichText'
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -19,6 +21,7 @@ function timeAgo(date: string) {
 export default function Home() {
   const [posts, setPosts] = useState<any[]>([])
   const [loadingPosts, setLoadingPosts] = useState(true)
+  const [pinned, setPinned] = useState<any>(null)
   const [feed, setFeed] = useState<'latest' | 'following'>('latest')
   const [followedPosts, setFollowedPosts] = useState<any[]>([])
   const [followedSlugs, setFollowedSlugs] = useState<string[] | null>(null)
@@ -37,7 +40,7 @@ export default function Home() {
     setLoggedIn(!!localStorage.getItem('hektiq_username'))
     fetch('/api/posts/latest')
       .then(r => r.json())
-      .then(d => setPosts(d.posts || []))
+      .then(d => { setPosts(d.posts || []); setPinned(d.pinned || null) })
       .catch(() => {})
       .finally(() => setLoadingPosts(false))
   }, [])
@@ -119,6 +122,9 @@ export default function Home() {
     <main className='hk-dots' style={{minHeight:'100vh', overflowX:'hidden', color:'var(--text)'}}>
       <style>{`
         .hk-grid-2 { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .hk-pin { display:grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 22px; align-items: center; padding: 18px; }
+        .hk-pin .hk-video { margin: 0 !important; }
+        @media (max-width: 820px) { .hk-pin { grid-template-columns: minmax(0, 1fr); } }
         .hk-grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
         @media (max-width: 820px) { .hk-grid-2, .hk-grid-3 { grid-template-columns: minmax(0, 1fr); } }
 
@@ -180,6 +186,37 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {pinned && (() => {
+        const pc = seededBySlug[pinned.community_id]
+        const pn = COLOR[pinned.community_id] || '1'
+        const href = '/c/' + pinned.community_id + '/post/' + pinned.id
+        const text = pinned.body || ''
+        return (
+          <section style={section}>
+            <h2 className='font-display' style={label}>PINNED</h2>
+            <div className={'hk-card' + (pinned.video_url ? ' hk-pin' : '')} style={pinned.video_url ? undefined : {padding:'18px'}}>
+              {pinned.video_url && <VideoEmbed url={pinned.video_url} />}
+              <div style={{minWidth:0}}>
+                <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'0.8rem', color:'var(--muted)', marginBottom:'8px'}}>
+                  <span style={{color:`var(--c${pn})`, display:'flex', alignItems:'center', gap:'6px', fontWeight:600}}>
+                    <CommunityIcon slug={pinned.community_id} size={16} />
+                    {pc ? pc.name : pinned.community_id}
+                  </span>
+                  <span>· {timeAgo(pinned.created_at)}</span>
+                </div>
+                <p style={{fontWeight:700, fontSize:'1.3rem', lineHeight:'1.3', margin:'0 0 10px', wordBreak:'break-word'}}>
+                  <Link href={href} style={{color:'var(--text)', textDecoration:'none'}}>{pinned.title}</Link>
+                </p>
+                <p style={{fontSize:'0.95rem', color:'var(--muted)', lineHeight:'1.6', margin:'0 0 16px', wordBreak:'break-word', whiteSpace:'pre-wrap'}}>
+                  <RichText text={text.length > 420 ? text.substring(0, 420) + '...' : text} />
+                </p>
+                <Link href={href} className='hk-btn'>Open the post</Link>
+              </div>
+            </div>
+          </section>
+        )
+      })()}
 
       <section style={section}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', margin:'0 0 14px'}}>
