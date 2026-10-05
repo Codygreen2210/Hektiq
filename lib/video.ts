@@ -1,5 +1,5 @@
 export type VideoInfo = {
-  provider: 'youtube' | 'tiktok' | 'vimeo' | 'instagram' | 'twitch'
+  provider: 'youtube' | 'tiktok' | 'vimeo' | 'instagram' | 'twitch' | 'hektiq'
   id: string
   canonical: string
   vertical: boolean
@@ -19,6 +19,19 @@ export function parseVideo(input: string): VideoInfo | null {
 
   const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '')
   const parts = url.pathname.split('/').filter(Boolean)
+
+  // Videos hosted on Hektiq itself: files under /builds (public/builds in the code), with a .jpg of the same name as the cover.
+  // The id is the path, so the player loads it from whatever address the site is running on.
+  if (host === 'hektiq.com') {
+    if (!/^\/builds\/[a-z0-9-]+(\/[a-z0-9-]+)*\.mp4$/.test(url.pathname)) return null
+    return {
+      provider: 'hektiq',
+      id: url.pathname,
+      canonical: 'https://hektiq.com' + url.pathname,
+      vertical: true,
+      thumb: 'https://hektiq.com' + url.pathname.replace(/\.mp4$/, '.jpg'),
+    }
+  }
 
   if (host === 'youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com') {
     let id = ''
@@ -102,6 +115,8 @@ export function embedUrl(v: VideoInfo, hostname: string, autoplay = false) {
         (autoplay ? '&autoplay=1&muted=1' : '')
     case 'instagram':
       return 'https://www.instagram.com/' + v.id + '/embed'
+    case 'hektiq':
+      return v.id
     case 'twitch':
       return 'https://clips.twitch.tv/embed?clip=' + encodeURIComponent(v.id) +
         '&parent=' + encodeURIComponent(hostname) +
@@ -110,5 +125,5 @@ export function embedUrl(v: VideoInfo, hostname: string, autoplay = false) {
 }
 
 export function providerName(p: VideoInfo['provider']) {
-  return { youtube: 'YouTube', tiktok: 'TikTok', vimeo: 'Vimeo', instagram: 'Instagram', twitch: 'Twitch' }[p]
+  return { youtube: 'YouTube', tiktok: 'TikTok', vimeo: 'Vimeo', instagram: 'Instagram', twitch: 'Twitch', hektiq: 'Hektiq' }[p]
 }

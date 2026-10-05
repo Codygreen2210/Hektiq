@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// Homepage "Latest": real people's posts only
+// Homepage "Latest": real people's posts only, plus the newest pinned post (shown on its own above the feed)
 export async function GET() {
   try {
     const supabase = createClient(
@@ -23,12 +23,22 @@ export async function GET() {
 
     if (error) return NextResponse.json({ posts: [] })
 
+    const { data: pins } = await supabase
+      .from('posts')
+      .select('id, title, body, community_id, upvotes, created_at, video_url')
+      .eq('is_deleted', false)
+      .eq('is_pinned', true)
+      .order('pinned_at', { ascending: false })
+      .limit(1)
+    const pinned = (pins || [])[0] || null
+
     const posts = (data || [])
       .filter(p => !p.author_id || !botIds.has(p.author_id))
+      .filter(p => !pinned || p.id !== pinned.id)
       .slice(0, 6)
       .map(({ author_id, ...p }) => p)
 
-    return NextResponse.json({ posts })
+    return NextResponse.json({ posts, pinned })
   } catch (e) {
     return NextResponse.json({ posts: [] })
   }

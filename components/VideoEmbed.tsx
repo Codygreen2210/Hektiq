@@ -43,7 +43,19 @@ export default function VideoEmbed({ url, autoplay = false, fill = false }: Prop
       `}</style>
 
       <div className={'hk-video-frame' + (fill ? ' hk-fill' : '')} style={boxStyle}>
-        {playing ? (
+        {playing && v.provider === 'hektiq' ? (
+          // Our own file: a plain video player, nothing from another site
+          <video
+            src={v.id}
+            poster={v.id.replace(/\.mp4$/, '.jpg')}
+            controls
+            playsInline
+            autoPlay
+            muted={autoplay}
+            loop={autoplay}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0B0B0B' }}
+          />
+        ) : playing ? (
           <iframe
             src={embedUrl(v, host, autoplay)}
             title={providerName(v.provider) + ' video'}
@@ -55,14 +67,14 @@ export default function VideoEmbed({ url, autoplay = false, fill = false }: Prop
           />
         ) : (
           <button className='hk-video-cover' onClick={() => setPlaying(true)} aria-label={'Play ' + providerName(v.provider) + ' video'}>
-            {v.thumb && <img src={v.thumb} alt='' loading='lazy' />}
+            {v.thumb && <img src={v.provider === 'hektiq' ? v.id.replace(/\.mp4$/, '.jpg') : v.thumb} alt='' loading='lazy' />}
             <span className='hk-play'><Play size={30} weight='fill' /></span>
             <span className='hk-video-tag'>{providerName(v.provider)}</span>
           </button>
         )}
       </div>
 
-      {!fill && (
+      {!fill && v.provider !== 'hektiq' && (
         <p style={{ fontSize: '0.8rem', margin: '8px 0 0', textAlign: v.vertical ? 'center' : 'left' }}>
           <a href={v.canonical} target='_blank' rel='noopener noreferrer' style={{ color: 'var(--faint)', fontWeight: 600 }}>
             Watch on {providerName(v.provider)}
